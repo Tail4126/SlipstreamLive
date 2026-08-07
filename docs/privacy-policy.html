@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プライバシーポリシー — Slipstream Live</title>
+<meta name="description" content="Slipstream Live のプライバシーポリシー。個人情報の収集なし、外部通信なし、解析・テレメトリなし。要求する権限は storage と activeTab の2つのみ。">
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --base:#0a0c10;
+  --surface:#12151b;
+  --surface-2:#1a1f28;
+  --border:#242a35;
+  --border-soft:#1c212b;
+  --ink:#edeff2;
+  --ink-muted:#8b93a3;
+  --ink-faint:#565e6c;
+  --speedup:#ff7a6b;
+  --floor:#6fb6ff;
+  --floor-soft:rgba(111,182,255,.12);
+  --radius:16px;
+  --radius-sm:9px;
+  --container:840px;
+  --font-ui:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic","Segoe UI",Meiryo,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono","Consolas",monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--base);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--floor);text-decoration:none;}
+a:hover{text-decoration:underline;}
+h1,h2,h3,p{margin:0;}
+
+:focus-visible{
+  outline:2px solid var(--floor);
+  outline-offset:3px;
+  border-radius:4px;
+}
+
+.wrap{
+  width:100%;
+  max-width:var(--container);
+  margin:0 auto;
+  padding:0 24px;
+}
+
+/* header */
+.site-header{
+  border-bottom:1px solid var(--border-soft);
+}
+.header-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:64px;
+  max-width:1000px;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  text-decoration:none;
+  font-weight:700;
+  font-size:15px;
+  color:var(--ink);
+}
+.logo:hover{text-decoration:none;}
+.logo svg{width:22px;height:22px;flex-shrink:0;}
+.back-link{
+  font-size:13.5px;
+  color:var(--ink-muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.back-link:hover{color:var(--ink);text-decoration:none;}
+
+/* page head */
+.page-head{
+  padding:56px 0 40px;
+  border-bottom:1px solid var(--border-soft);
+}
+.page-head h1{
+  font-size:clamp(26px,4vw,34px);
+  font-weight:800;
+  letter-spacing:-.01em;
+}
+.page-meta{
+  margin-top:14px;
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  font-size:13px;
+  color:var(--ink-faint);
+  font-family:var(--font-mono);
+}
+.lang-note{
+  margin-top:22px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.85;
+}
+.lang-note strong{color:var(--ink);}
+
+/* glance table */
+.glance{
+  margin:40px 0 56px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:6px;
+}
+.glance-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  padding:14px 16px;
+}
+.glance-row+.glance-row{border-top:1px solid var(--border-soft);}
+.glance-q{font-size:13.5px;color:var(--ink-muted);}
+.glance-a{
+  font-size:12px;
+  font-weight:700;
+  font-family:var(--font-mono);
+  padding:4px 11px;
+  border-radius:999px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.glance-a.no{background:var(--floor-soft);color:var(--floor);}
+.glance-a.local{background:rgba(255,122,107,.12);color:var(--speedup);}
+
+/* body sections */
+.policy-lang{
+  padding:48px 0;
+}
+.policy-lang+.policy-lang{
+  border-top:1px solid var(--border-soft);
+}
+.lang-title{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:36px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.lang-title::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:var(--border-soft);
+}
+.policy-section{margin-bottom:38px;}
+.policy-section:last-child{margin-bottom:0;}
+.policy-section h2{
+  font-size:16px;
+  font-weight:700;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+.policy-section h2 .num{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--ink-faint);
+  font-weight:600;
+}
+.policy-section p{
+  margin-top:12px;
+  font-size:14.5px;
+  color:var(--ink-muted);
+  line-height:1.9;
+}
+.policy-section p+p{margin-top:10px;}
+.policy-section ul{
+  margin:12px 0 0;
+  padding-left:20px;
+  font-size:14.5px;
+  color:var(--ink-muted);
+  line-height:1.9;
+}
+.policy-section li+li{margin-top:4px;}
+
+.data-table{
+  margin-top:16px;
+  width:100%;
+  border-collapse:collapse;
+  font-size:13.5px;
+}
+.data-table th,.data-table td{
+  text-align:left;
+  padding:10px 14px;
+  border:1px solid var(--border-soft);
+  color:var(--ink-muted);
+  line-height:1.7;
+}
+.data-table th{
+  background:var(--surface);
+  color:var(--ink);
+  font-weight:700;
+  font-size:12.5px;
+}
+.data-table td:first-child{color:var(--ink);white-space:nowrap;}
+.data-table code{
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  color:var(--floor);
+  background:var(--floor-soft);
+  padding:2px 7px;
+  border-radius:5px;
+}
+
+.host-list{
+  margin-top:14px;
+  padding:16px 18px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  color:var(--ink-muted);
+  line-height:2;
+  overflow-x:auto;
+  white-space:pre;
+}
+
+/* footer */
+.site-footer{
+  border-top:1px solid var(--border-soft);
+  padding:32px 0 48px;
+}
+.footer-inner{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+.footer-inner a{color:var(--ink-muted);}
+
+@media (max-width:600px){
+  .glance-row{flex-direction:column;align-items:flex-start;gap:6px;}
+  .data-table{display:block;overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M5 22 L13 22 L17 10 L21 22 L27 22" stroke="url(#g)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="g" x1="5" y1="10" x2="27" y2="22" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6fb6ff"/><stop offset="1" stop-color="#ff7a6b"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span>Slipstream Live</span>
+    </a>
+    <a href="index.html" class="back-link">← トップページへ戻る</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <h1>プライバシーポリシー</h1>
+    <div class="page-meta">
+      <span>対象バージョン: 1.0.0</span>
+      <span>最終更新: 2026-08-08</span>
+    </div>
+    <div class="lang-note">
+      <strong>言語について。</strong>
+      このポリシーは英語版が正式なもので、日本語版は参考としてご用意しています。両者の内容に食い違いがある場合は、英語版が優先されます。
+    </div>
+  </div>
+
+  <div class="glance">
+    <div class="glance-row"><span class="glance-q">個人情報を収集しますか？</span><span class="glance-a no">NO</span></div>
+    <div class="glance-row"><span class="glance-q">外部と通信しますか？</span><span class="glance-a no">NO — 一切なし</span></div>
+    <div class="glance-row"><span class="glance-q">解析・テレメトリはありますか？</span><span class="glance-a no">NO</span></div>
+    <div class="glance-row"><span class="glance-q">閲覧履歴を記録しますか？</span><span class="glance-a no">NO</span></div>
+    <div class="glance-row"><span class="glance-q">設定の保存先は？</span><span class="glance-a local">端末内のみ</span></div>
+    <div class="glance-row"><span class="glance-q">端末間で同期されますか？</span><span class="glance-a no">NO</span></div>
+    <div class="glance-row"><span class="glance-q">外部コードを読み込みますか？</span><span class="glance-a no">NO</span></div>
+    <div class="glance-row"><span class="glance-q">完全に削除できますか？</span><span class="glance-a local">アンインストールで全消去</span></div>
+  </div>
+
+  <!-- ================= ENGLISH (OFFICIAL) ================= -->
+  <section class="policy-lang">
+    <div class="lang-title">English — Official</div>
+
+    <div class="policy-section">
+      <h2>Overview</h2>
+      <p>This policy explains what data the Slipstream Live browser extension (the "Extension") touches and how.</p>
+      <p>The Extension runs entirely on your device. It doesn't collect, transmit, store remotely, or sell any personal data, browsing history, or activity of any kind. It never contacts an external server — the only code it runs is what's bundled inside the extension itself.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">1</span> What gets stored, and what doesn't</h2>
+      <p><strong style="color:var(--ink)">1.1 Saved to local storage</strong></p>
+      <table class="data-table">
+        <tr><th>Item</th><th>Example</th><th>Why</th></tr>
+        <tr><td>Per-site settings</td><td>Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting</td><td>So your preferences apply on each site</td></tr>
+        <tr><td>Global settings</td><td>Master switch, badge display</td><td>So your preferences apply everywhere</td></tr>
+        <tr><td>Popup tab state</td><td><code>youtube</code>, <code>twitch</code>, or <code>twitcasting</code></td><td>So the popup opens on the right tab next time</td></tr>
+      </table>
+      <p>The "popup tab state" is just a short label for which of the three supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. For any site outside the supported three, nothing is recorded at all.</p>
+      <p><strong style="color:var(--ink)">1.2 Only ever in memory (never saved)</strong></p>
+      <table class="data-table">
+        <tr><th>Item</th><th>Why</th></tr>
+        <tr><td>Playback position</td><td>To measure how much video is buffered ahead</td></tr>
+        <tr><td>Buffer health</td><td>To decide whether to speed up, slow down, or leave it alone</td></tr>
+        <tr><td>Stream latency</td><td>To show the optional latency badge</td></tr>
+      </table>
+      <p>This exists only while the video is playing, gets used to compute a speed adjustment, and is discarded right after. None of it is ever written to disk or sent anywhere.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">2</span> Permissions and site access</h2>
+      <p>Two permissions, nothing more:</p>
+      <table class="data-table">
+        <tr><th>Permission</th><th>Why</th></tr>
+        <tr><td><code>storage</code></td><td>To save and load your settings via <code>chrome.storage.local</code> / <code>browser.storage.local</code>. Local rather than synced, on purpose — so your settings stay on your device.</td></tr>
+        <tr><td><code>activeTab</code></td><td>Used only when you open the popup, to check the active tab's hostname and pick the right settings panel. The hostname itself is discarded immediately; only the three-way site label (see §1.1) might get saved.</td></tr>
+      </table>
+      <p>Content scripts only run on these sites — nowhere else:</p>
+      <div class="host-list">https://www.youtube.com/*          https://www.twitch.tv/*
+https://m.youtube.com/*            https://player.twitch.tv/*
+https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
+https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
+      <p>Live-chat frames are excluded on purpose. On these pages, the Extension only looks at the video player's buffer state and adjusts speed/volume. It doesn't touch page content, form inputs, cookies, credentials, or account info.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">3</span> External communication and tracking</h2>
+      <ul>
+        <li><strong style="color:var(--ink)">No network requests</strong> — not to a developer server, an analytics provider, an ad network, a CDN, anything.</li>
+        <li><strong style="color:var(--ink)">No remote code</strong> — everything that runs ships inside the package. Nothing gets downloaded or evaluated at runtime.</li>
+        <li><strong style="color:var(--ink)">No tracking</strong> — no analytics, no telemetry, no unique IDs, no fingerprinting, no tracking cookies, no ads.</li>
+      </ul>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">4</span> Third parties</h2>
+      <p>There's nothing to share, sell, or hand over, because nothing is collected or transmitted in the first place — including in a business transfer scenario.</p>
+      <p>The Extension also isn't acting as a data processor for YouTube, Twitch, or TwitCasting. Using those sites is still governed by their own privacy policies.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">5</span> Keeping and deleting data</h2>
+      <p>Settings stay on your device until you remove them. You can:</p>
+      <ul>
+        <li>hit <strong style="color:var(--ink)">Reset</strong> in the settings popup to restore defaults, or</li>
+        <li>uninstall the Extension, which wipes its local storage along with it.</li>
+      </ul>
+      <p>Since no copy exists anywhere else, there's no separate deletion request to make.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">6</span> Children's privacy</h2>
+      <p>Not directed at children, and no personal data is collected from anyone regardless of age.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">7</span> Changes to this policy</h2>
+      <p>This may get updated as the Extension changes or as store requirements change. The "Last updated" date above will move accordingly, and anything significant also gets a note in <a href="https://github.com/Tail4126/SlipstreamLive/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>. The current version always lives in <code>PRIVACY.md</code> in the source repo.</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">8</span> Contact</h2>
+      <p>Questions, privacy concerns, bug reports — open a <a href="https://github.com/Tail4126/SlipstreamLive/issues" target="_blank" rel="noopener">GitHub issue</a>, or reach out through the Chrome Web Store / Firefox Add-ons support section.</p>
+    </div>
+  </section>
+
+  <!-- ================= JAPANESE (REFERENCE) ================= -->
+  <section class="policy-lang">
+    <div class="lang-title">日本語 — 参考訳</div>
+
+    <div class="policy-section">
+      <h2>概要</h2>
+      <p>このポリシーでは、ブラウザ拡張機能「Slipstream Live」（以下「本拡張機能」）がどんなデータを扱うのか、扱わないのかを説明します。</p>
+      <p>本拡張機能は端末内だけで完結して動きます。個人情報や閲覧履歴、利用状況を収集・送信・外部保存・販売することは一切ありません。外部サーバーとの通信も一切なく、実行されるのは拡張機能に同梱されたコードだけです。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">1</span> 保存するデータ・しないデータ</h2>
+      <p><strong style="color:var(--ink)">1.1 ローカルストレージに保存するもの</strong></p>
+      <table class="data-table">
+        <tr><th>内容</th><th>例</th><th>理由</th></tr>
+        <tr><td>サイト別設定</td><td>YouTube / Twitch / ツイキャスごとの再生速度、しきい値、機能のオン・オフ</td><td>各サイトで設定を反映させるため</td></tr>
+        <tr><td>全体設定</td><td>マスタースイッチ、バッジ表示</td><td>どのサイトでも設定を反映させるため</td></tr>
+        <tr><td>ポップアップのタブ状態</td><td><code>youtube</code> / <code>twitch</code> / <code>twitcasting</code></td><td>次回ポップアップを開いたとき同じタブを表示するため</td></tr>
+      </table>
+      <p>「ポップアップのタブ状態」は、対応3サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。</p>
+      <p><strong style="color:var(--ink)">1.2 メモリ上だけで扱うもの（保存しない）</strong></p>
+      <table class="data-table">
+        <tr><th>内容</th><th>理由</th></tr>
+        <tr><td>再生位置</td><td>バッファの先読み量を測るため</td></tr>
+        <tr><td>バッファ残量</td><td>加速・減速・そのままにするかを判断するため</td></tr>
+        <tr><td>配信の遅延</td><td>任意機能である遅延バッジの表示のため</td></tr>
+      </table>
+      <p>これらは再生中だけメモリ上に存在し、速度計算に使われた直後に破棄されます。保存も送信もされません。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">2</span> 権限とサイトアクセス</h2>
+      <p>要求する権限は2つだけです。</p>
+      <table class="data-table">
+        <tr><th>権限</th><th>理由</th></tr>
+        <tr><td><code>storage</code></td><td>設定を <code>chrome.storage.local</code> / <code>browser.storage.local</code> に保存・読み込みするため。設定を端末外に出さないよう、あえて同期ストレージではなくローカルストレージを使っています。</td></tr>
+        <tr><td><code>activeTab</code></td><td>ポップアップを開いた瞬間だけ使い、アクティブなタブのホスト名を見て該当する設定パネルを選びます。ホスト名自体はすぐ破棄され、保存されうるのは3択のサイトラベル（§1.1参照）だけです。</td></tr>
+      </table>
+      <p>コンテンツスクリプトが動くのは以下のサイトだけです。</p>
+      <div class="host-list">https://www.youtube.com/*          https://www.twitch.tv/*
+https://m.youtube.com/*            https://player.twitch.tv/*
+https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
+https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
+      <p>ライブチャットのフレームはあえて対象外にしています。これらのページで行うのは、プレイヤーのバッファ状態を見て速度・音量を調整することだけです。ページ内容やフォーム入力、Cookie、認証情報、アカウント情報には触れません。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">3</span> 外部通信・トラッキング</h2>
+      <ul>
+        <li><strong style="color:var(--ink)">通信なし</strong> — 開発者のサーバーにも、解析サービスにも、広告ネットワークにも、CDNにも、どこにも接続しません。</li>
+        <li><strong style="color:var(--ink)">外部コードなし</strong> — 動くコードは全部パッケージ内にあります。実行時に何かをダウンロードしたり評価したりはしません。</li>
+        <li><strong style="color:var(--ink)">トラッキングなし</strong> — 解析、テレメトリ、識別子、フィンガープリンティング、トラッキングCookie、広告、どれも使いません。</li>
+      </ul>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">4</span> 第三者への提供</h2>
+      <p>そもそも何も収集・送信していないので、渡せるものがありません。事業譲渡があった場合も同じです。</p>
+      <p>また本拡張機能はYouTube・Twitch・ツイキャスの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">5</span> データの保持と削除</h2>
+      <p>設定は消すまで端末内に残ります。消し方は2通りです。</p>
+      <ul>
+        <li>設定画面の <strong style="color:var(--ink)">「リセット」</strong> で初期状態に戻す</li>
+        <li>拡張機能をアンインストールする（ローカルストレージごと消えます）</li>
+      </ul>
+      <p>どこにも複製がないので、開発者への削除依頼は不要です。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">6</span> 子どものプライバシー</h2>
+      <p>子ども向けの拡張機能ではなく、年齢に関わらず個人情報は集めていません。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">7</span> ポリシーの改定</h2>
+      <p>機能変更やストア側の要件変更に応じて更新することがあります。その際は冒頭の「最終更新」日を更新し、重要な変更は <a href="https://github.com/Tail4126/SlipstreamLive/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> にも記載します。最新版は常にソースリポジトリの <code>PRIVACY.md</code> にあります。</p>
+    </div>
+
+    <div class="policy-section">
+      <h2><span class="num">8</span> お問い合わせ</h2>
+      <p>質問、プライバシーに関する懸念、不具合報告は <a href="https://github.com/Tail4126/SlipstreamLive/issues" target="_blank" rel="noopener">GitHubのIssue</a>、またはChrome Web Store / Firefox Add-onsのサポート欄からどうぞ。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>Slipstream Live — Apache-2.0 OR MIT license</span>
+    <a href="index.html">← トップページへ戻る</a>
+  </div>
+</footer>
+
+</body>
+</html>
