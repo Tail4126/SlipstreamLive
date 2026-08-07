@@ -1,7 +1,7 @@
 {
-    "appName": { "message": "Slipstream Live — Detecta e ajusta automaticamente a latência de transmissões ao vivo" },
+    "appName": { "message": "Slipstream Live — Ajusta automaticamente a latência da transmissão ao vivo" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Detecta automaticamente o atraso em transmissões ao vivo no YouTube, Twitch e TwitCasting, ajustando a velocidade de reprodução para alcançar o ponto ao vivo em tempo real." },
+    "appDesc": { "message": "Detecta a latência no YouTube, Twitch e TwitCasting e ajusta a velocidade de reprodução para alcançar o ponto ao vivo." },
     "enabled": { "message": "Ajustar velocidade de reprodução" },
     "speedup": { "message": "Acelerar quando houver atraso" },
     "speedupDesc": { "message": "Acelera automaticamente quando há buffer suficiente para alcançar o ponto ao vivo. Retorna à velocidade normal ao alcançar a transmissão ou se o buffer diminuir." },

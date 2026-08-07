@@ -1,7 +1,7 @@
 {
     "appName": { "message": "Slipstream Live — Detect and Adjust Live Stream Latency Automatically" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Automatically detects stream latency on YouTube, Twitch, and TwitCasting. Smartly adjusts playback speed to always catch up to the live edge in real time." },
+    "appDesc": { "message": "Detects stream latency on YouTube, Twitch, and TwitCasting, and adjusts playback speed to catch up to the live edge in real time." },
     "enabled": { "message": "Change playback speed" },
     "speedup": { "message": "Speed up when delayed" },
     "speedupDesc": { "message": "Automatically speeds up when there is sufficient buffer to catch up to the live edge. Returns to normal speed once caught up or if the buffer drops." },
