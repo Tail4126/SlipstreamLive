@@ -1,0 +1,23 @@
+# 空の Issue を許可するかどうか。
+# 現在テンプレートは bug_report.yml の 1 つだけなので true にしています。
+# false にすると、機能要望や「不具合とまでは言えない相談」の行き場が
+# Discussions しか無くなります。feature_request テンプレートを追加した
+# タイミングで false へ切り替えるのが自然です。
+blank_issues_enabled: true
+
+contact_links:
+  - name: "🔒 Security vulnerability / 脆弱性の報告"
+    url: "https://github.com/Tail4126/SlipstreamLive/security/advisories/new"
+    about: "Report privately — a public issue is effectively a published exploit. See SECURITY.md. / 公開 Issue ではなく非公開でご報告ください。公開 Issue は事実上エクスプロイトの公表になります。詳細は SECURITY.md。"
+
+  - name: "❓ Troubleshooting / トラブルシューティング"
+    url: "https://github.com/Tail4126/SlipstreamLive#-troubleshooting"
+    about: "Video stalling, never speeding up, badges not showing, TwitCasting low-latency streams — most of these are already explained in the README. / 映像が止まる、まったく加速しない、バッジが出ない、ツイキャスの低遅延配信。多くは README で解説済みです。"
+
+  - name: "💬 Questions & ideas / 質問・要望"
+    url: "https://github.com/Tail4126/SlipstreamLive/discussions"
+    about: "Feature requests, site support requests, and anything without a reproducible bug. / 機能要望、対応サイトの追加要望、再現手順のない相談はこちらへ。"
+
+  - name: "🌍 Translation issues / 翻訳の指摘"
+    url: "https://github.com/Tail4126/SlipstreamLive/discussions"
+    about: "Wording that reads oddly in your language. A pull request against _locales/ is also very welcome. / 表示文言が不自然な場合。_locales/ へのプルリクエストも歓迎します。"

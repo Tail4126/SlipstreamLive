@@ -1,0 +1,689 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+/* ================================================================================================
+ * popup.css — 設定画面（popup.html）のスタイル
+ *
+ * 【どこから読まれるか】
+ *   popup.html の <link rel="stylesheet" href="popup.css"> から読み込まれる。
+ *   ツールバーの小窓としても、オプションページの独立タブとしても、同じこのファイルが使われる。
+ *
+ * 【2 つの仕掛け】
+ *   1. ライト／ダークの自動切り替え
+ *      color-scheme: light dark; を宣言したうえで、色を light-dark(明るい色, 暗い色) と書く。
+ *      これだけで OS のテーマ設定に自動で追従するため、JavaScript の出番は無い。
+ *
+ *   2. サイトごとのアクセント色
+ *      popup.js がタブ切り替え時に <html data-site="youtube"> のように属性を書き換える。
+ *      その属性に反応して --site-accent を差し替えることで、パネル全体の色味が変わる。
+ *
+ * 【全体の大きさ】
+ *   幅を決める定数は存在しない。html / body とも width: max-content なので、
+ *   中身の実寸がそのままポップアップの大きさになる。したがって画面を大きく／小さくしたいときは
+ *   body の font-size を基準に、下記の固定 px（スイッチ・入力欄・アイコン・余白）を
+ *   同じ比率で動かすこと。現在の基準は 13px。
+ * ================================================================================================ */
+
+/* ================================================================================================
+   カスタムプロパティ（配色と角丸の定義）
+   ------------------------------------------------------------------------------------------------
+   カスタムプロパティとは --名前: 値; で定義する CSS の変数のこと。
+   使うときは var(--名前) と書く。色をここへ集約しておけば、変更が 1 か所で済む。
+   ================================================================================================ */
+
+:root
+{
+    /* light-dark() を使うための前提条件。OS のテーマ設定に追従させる宣言 */
+    color-scheme: light dark;
+
+    /* 基本色。書式は light-dark(明るいテーマのときの色, 暗いテーマのときの色) */
+    --bg: light-dark(#f9f9f9, #0f0f0f);                     /* 画面全体の背景 */
+    --surface: light-dark(#ffffff, #212121);                /* カードやヘッダーの面の色 */
+    --surface-hover: light-dark(#f2f2f2, #313131);          /* 面にマウスを乗せたときの色 */
+    --line: light-dark(#e3e3e3, #303030);                   /* 枠線・区切り線 */
+    --fg: light-dark(#0f0f0f, #f1f1f1);                     /* 通常の文字色 */
+    --muted: light-dark(#606060, #aaaaaa);                  /* 補助的な文字色（説明・単位など） */
+    --accent: light-dark(#065fd4, #3ea6ff);                 /* サイトに依存しない既定のアクセント色 */
+    --off: light-dark(#d4d4d4, #4d4d4d);                    /* OFF 状態のトグルスイッチの色 */
+    --knob: #ffffff;                                        /* トグルスイッチのつまみ（常に白） */
+    --hover: light-dark(#00000008, #ffffff12);              /* 行にマウスを乗せたときの薄い色 */
+    --shadow: light-dark(#00000014, #00000059);             /* カードの弱い影 */
+    --shadow-lg: light-dark(#00000029, #0000008c);          /* 吹き出しの強い影 */
+
+    /* --ui-accent は「その領域で使うアクセント色」。既定はサイト非依存の色にしておく */
+    --ui-accent: var(--accent);
+
+    /* サイト色。下の :root[data-site = '...'] で上書きされる */
+    --site-accent: var(--accent);
+
+    /* color-mix() は 2 色を指定した割合で混ぜる関数。サイト色を薄めて背景と枠線に使う */
+    --site-tint: color-mix(in srgb, var(--site-accent) 7%, transparent);
+    --site-edge: color-mix(in srgb, var(--site-accent) 28%, transparent);
+
+    /* 共通設定パネル用の、色味を持たない淡い背景と枠線 */
+    --common-tint: light-dark(#0000000a, #ffffff0a);
+    --common-edge: var(--line);
+
+    --radius-lg: 14px;                                      /* パネルの角丸 */
+    --radius: 11px;                                         /* カードと吹き出しの角丸 */
+    --radius-sm: 7px;                                       /* 行と入力欄の角丸 */
+}
+
+/* 選択中のタブに応じたブランドカラー（popup.js が data-site を書き換えることで切り替わる） */
+:root[data-site = 'youtube']
+{
+    --site-accent: light-dark(#d90029, #ff0033);
+}
+
+:root[data-site = 'twitch']
+{
+    --site-accent: light-dark(#772ce8, #a970ff);
+}
+
+:root[data-site = 'twitcasting']
+{
+    --site-accent: light-dark(#0081b4, #4fc3f7);
+}
+
+/* ================================================================================================
+   ベース
+   ================================================================================================ */
+
+*
+{
+    /* 幅と高さの計算に padding と border を含める。レイアウト計算が直感的になる */
+    box-sizing: border-box;
+}
+
+[hidden]
+{
+    /* JavaScript から hidden 属性で確実に隠せるようにする（他の display 指定に必ず勝たせる） */
+    display: none !important;
+}
+
+/* 中身の幅に合わせてポップアップの大きさを決める。翻訳すると語の長さが大きく変わるため */
+html
+{
+    width: max-content;
+    min-width: 100%;
+}
+
+body
+{
+    margin: 0 auto;                                         /* 左右中央寄せ */
+    width: max-content;
+    background-color: var(--bg);
+    color: var(--fg);
+    font: 13px/1.35 system-ui, sans-serif;                  /* OS 標準のフォントを使う。画面全体の大きさの基準 */
+}
+
+/* ================================================================================================
+   ヘッダー
+   ================================================================================================ */
+
+#header
+{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 8px;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--line);
+}
+
+#brand
+{
+    display: flex;
+    align-items: baseline;                                  /* 名前とバージョンの文字の下端を揃える */
+    gap: 6px;
+    user-select: none;
+}
+
+#title
+{
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+#version
+{
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;                     /* 数字の幅を揃え、桁が変わってもずれないようにする */
+}
+
+/* マスタースイッチの行だけをヘッダーの右端へ押しやる */
+#header .row
+{
+    margin-left: auto;
+}
+
+/* ================================================================================================
+   スコープ（サイト別パネル / 共通パネル）
+   ================================================================================================ */
+
+#scopes
+{
+    display: flex;
+    align-items: flex-start;                                /* 高さの違う 2 枚のパネルを上端で揃える */
+    gap: 8px;
+    padding: 8px;
+}
+
+.scope
+{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid;
+    border-radius: var(--radius-lg);
+}
+
+/* サイト別パネルの内側だけ、アクセント色をそのサイトのブランドカラーに差し替える */
+#site
+{
+    --ui-accent: var(--site-accent);
+    background-color: var(--site-tint);
+    border-color: var(--site-edge);
+    transition: background-color 120ms ease, border-color 120ms ease;    /* タブ切り替え時になめらかに変色させる */
+}
+
+#common
+{
+    background-color: var(--common-tint);
+    border-color: var(--common-edge);
+}
+
+.scope-head
+{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.groups
+{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ================================================================================================
+   タブ
+   ================================================================================================ */
+
+.tab
+{
+    flex: 1 1 0;                                            /* 3 つのタブを均等幅にする */
+    padding: 4px 10px;
+    background-color: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;                                   /* 極端に大きな値を指定して完全な丸型にする */
+    font: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.tab:hover
+{
+    background-color: var(--surface-hover);
+    color: var(--fg);
+}
+
+/* 選択中のタブは、そのサイトの色で塗りつぶす（aria-selected は popup.js が設定する） */
+.tab[aria-selected = 'true']
+{
+    background-color: var(--ui-accent);
+    color: var(--bg);
+    border-color: var(--ui-accent);
+}
+
+/* :focus-visible はキーボード操作のときだけ枠を出す指定。マウスクリックでは出ない */
+.tab:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 1px;
+}
+
+/* ================================================================================================
+   チップ（「共通」と書かれた小さなラベル）
+   ================================================================================================ */
+
+.chip
+{
+    flex: none;                                             /* 伸び縮みさせず、文字の幅のまま保つ */
+    padding: 2px 7px;
+    background-color: var(--surface);
+    color: var(--muted);
+    border: 1px dashed var(--line);                         /* 破線にして「注釈」であることを示す */
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* 行の中に置かれたチップは右端へ寄せる */
+.row > .chip
+{
+    margin-left: auto;
+}
+
+/* 見出し位置に置かれたチップは、単独で目立つよう大きめにする */
+.scope-head .chip
+{
+    padding: 5px 12px;
+    font-size: inherit;
+}
+
+/* ================================================================================================
+   設定グループと行
+   ================================================================================================ */
+
+.group
+{
+    padding: 4px;
+    background-color: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px var(--shadow);                    /* わずかに浮かせてカードらしく見せる */
+}
+
+.row
+{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    user-select: none;                                      /* 連続クリックで文字が選択されるのを防ぐ */
+    transition: background-color 120ms ease;
+}
+
+.row:hover
+{
+    background-color: var(--hover);
+}
+
+/*
+ * :has() は「その要素を含む親」を選ぶ指定。
+ * 数値入力とスライダーの行は、ラベルを押しただけで値が動いてほしくないので
+ * 行全体をクリック対象にはしない
+ */
+.row:has(.number),
+.row:has(.slider)
+{
+    cursor: default;
+}
+
+/* ラベルが長い言語のとき、ポップアップが横に伸びすぎないよう上限を設ける */
+.row > span
+{
+    flex: 0 1 auto;
+    max-width: 250px;
+}
+
+/* スイッチや入力欄は常に行の右端へ寄せる */
+.row > input
+{
+    margin-left: auto;
+}
+
+/* 機能そのものの ON / OFF を担う見出し行 */
+.row.head
+{
+    position: relative;                                     /* 下の ::after を絶対配置する基準にする */
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* 見出しの下に区切り線を引く。左右に少し余白を残して、線が窮屈に見えないようにする */
+.row.head::after
+{
+    content: '';
+    position: absolute;
+    right: 7px;
+    bottom: -3px;
+    left: 7px;
+    border-top: 1px solid var(--line);
+}
+
+/* ~ は「同じ親を持つ後続の要素」を選ぶ指定。見出しに続く行は字下げして従属関係を示す */
+.row.head ~ .row > span
+{
+    padding-left: 12px;
+}
+
+/* 「0.05 ~ 4.00」のような入力範囲の目安表示 */
+.hint
+{
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* 前提条件を満たしていない行（data-needs / data-not を見て popup.js が付け外しする） */
+.row.disabled
+{
+    opacity: 0.4;                                           /* 薄くして操作できないことを伝える */
+    cursor: default;
+}
+
+.row.disabled:hover
+{
+    background-color: transparent;                          /* 反応しないことを示すためホバー効果も消す */
+}
+
+/* 無効な行では ? ボタンも押せないようにする */
+.row.disabled .help-icon
+{
+    pointer-events: none;
+}
+
+/* サイト固有の注釈（左に色付きの縦線を引いた引用風の見た目） */
+.note
+{
+    margin: 3px 5px 4px;
+    padding: 5px 8px;
+    max-width: 270px;
+    background-color: color-mix(in srgb, var(--ui-accent) 6%, transparent);
+    color: var(--muted);
+    border-left: 2px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;   /* 左側だけ角を立てて縦線と繋げる */
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/* ================================================================================================
+   フォーム部品
+   ================================================================================================ */
+
+/*
+ * トグルスイッチ。
+ * appearance: none でチェックボックス本来の見た目を消し、
+ * つまみ（丸）を radial-gradient（円形のグラデーション）で背景として描く。
+ * ON / OFF の切り替えは、その背景の位置を background-position で左右へ動かすことで表現している。
+ * 要素を 1 つも増やさずにスイッチを作れるのがこの方法の利点。
+ */
+.switch
+{
+    appearance: none;
+    flex: none;
+    margin: 0;
+    width: 30px;
+    height: 16px;
+    border-radius: 8px;                                     /* 高さの半分にして両端を丸くする */
+    background-color: var(--off);
+    background-image: radial-gradient(circle 6px at 8px 8px, var(--knob) 98%, #0000);
+    background-repeat: no-repeat;
+    transition: background-color 160ms ease, background-position 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.switch:enabled
+{
+    cursor: pointer;
+}
+
+.switch:checked
+{
+    background-color: var(--ui-accent);
+    background-position: 14px 0;                            /* つまみを右へ 14px（幅 − 高さ）動かす */
+}
+
+.switch:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 1px;
+}
+
+.number
+{
+    flex: none;
+    width: 64px;
+    padding: 3px 5px;
+    background-color: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    text-align: right;                                      /* 数字は右揃えのほうが桁を比べやすい */
+}
+
+.number:enabled:hover
+{
+    border-color: var(--muted);
+}
+
+.number:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 1px;
+}
+
+/*
+ * 段階スライダー（type="range"）。
+ * appearance: none で OS 標準の見た目を消し、溝（トラック）とつまみを自前で描く。
+ * トラックは要素そのものの背景として、つまみは ::-webkit-slider-thumb /
+ * ::-moz-range-thumb という専用の擬似要素として指定する必要がある。
+ * この 2 つはブラウザごとに別々の名前を持ち、まとめて書くと規則ごと無視されるため、
+ * 面倒でも別々の規則に分けて書かなければならない。
+ *
+ * 目盛りの線は repeating-linear-gradient で描いている。段階の数が変わっても
+ * --steps を書き換えるだけで済むよう、間隔をパーセントで表している。
+ * 左右を 12px（つまみの直径ぶん）詰めているのは、ブラウザがつまみの中心を
+ * 「半径ぶん内側」の範囲でしか動かさないため。詰めないと両端の目盛りが
+ * つまみの止まる位置から半径ぶんずれて見える。
+ */
+.slider
+{
+    --steps: 3;                                             /* 目盛りの数（speedupAuto は 0 / 1 / 2 の 3 段階） */
+
+    appearance: none;
+    flex: none;
+    margin: 0;
+    width: 64px;
+    height: 14px;
+    background: none;
+}
+
+/* 溝。中央に細い線を敷き、その上へ目盛りを重ねる */
+.slider::-webkit-slider-runnable-track
+{
+    height: 14px;
+    background:
+        repeating-linear-gradient(to right,
+            var(--line) 0 1px,
+            #0000 1px calc((100% - 1px) / (var(--steps) - 1)))
+            center / calc(100% - 12px) 10px no-repeat,
+        linear-gradient(var(--line), var(--line)) center / calc(100% - 12px) 2px no-repeat;
+    border-radius: 1px;
+}
+
+.slider::-moz-range-track
+{
+    height: 14px;
+    background:
+        repeating-linear-gradient(to right,
+            var(--line) 0 1px,
+            #0000 1px calc((100% - 1px) / (var(--steps) - 1)))
+            center / calc(100% - 12px) 10px no-repeat,
+        linear-gradient(var(--line), var(--line)) center / calc(100% - 12px) 2px no-repeat;
+    border-radius: 1px;
+}
+
+/* つまみ。margin-top で、トラックの高さに対して上下中央へ寄せる（WebKit のみ必要） */
+.slider::-webkit-slider-thumb
+{
+    appearance: none;
+    margin-top: 1px;
+    width: 12px;
+    height: 12px;
+    background-color: var(--ui-accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb
+{
+    width: 12px;
+    height: 12px;
+    background-color: var(--ui-accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* 操作できない行では、つまみもアクセント色をやめて沈ませる */
+.slider:disabled::-webkit-slider-thumb
+{
+    background-color: var(--muted);
+    cursor: default;
+}
+
+.slider:disabled::-moz-range-thumb
+{
+    background-color: var(--muted);
+    cursor: default;
+}
+
+.slider:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
+}
+
+/*
+ * スライダーにマウスを乗せている間だけ出る、現在の段階名の吹き出し。
+ * 位置は popup.js がカーソル座標から計算して left / top へ直接入れる。
+ * pointer-events: none が要。これが無いと吹き出し自身がカーソルの下に入り込み、
+ * スライダーから mouse が離れたと判定されて点滅する。
+ */
+.tip
+{
+    position: fixed;
+    z-index: 10;
+    padding: 4px 8px;
+    background-color: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 8px var(--shadow-lg);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ================================================================================================
+   ヘルプ（? ボタンとポップオーバー）
+   ================================================================================================ */
+
+.help-icon
+{
+    flex: none;
+    display: grid;
+    place-items: center;                                    /* ? の文字を縦横とも中央に置く */
+    padding: 0;
+    width: 15px;
+    height: 15px;
+    background: none;
+    color: var(--muted);
+    border: 1px solid currentColor;                         /* 枠線を文字色に追従させる */
+    border-radius: 50%;
+    font: 600 10px/1 system-ui, sans-serif;
+    cursor: pointer;
+    transition: color 120ms ease;
+}
+
+/* currentColor のおかげで、文字色を変えるだけで枠線も一緒にアクセント色へ変わる */
+.help-icon:hover
+{
+    color: var(--ui-accent);
+}
+
+.help-icon:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 1px;
+}
+
+/* popover 属性で開閉される吹き出し。表示位置は popup.js が実測して決める */
+.help
+{
+    position: fixed;
+    inset: auto;                                            /* ブラウザ既定の中央寄せを打ち消す */
+    margin: 0;
+    max-width: 260px;
+    padding: 9px 12px;
+    background-color: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 6px 20px var(--shadow-lg);
+    font: inherit;
+    line-height: 1.55;
+}
+
+/* ::backdrop は popover の背後に敷かれる層。透明にして、外側クリックで閉じる挙動だけを活かす */
+.help::backdrop
+{
+    background-color: transparent;
+}
+
+/* ================================================================================================
+   フッター（リセットボタン）
+   ================================================================================================ */
+
+.footer
+{
+    display: flex;
+    justify-content: flex-end;                              /* ボタンを右端へ寄せる */
+    padding: 2px 2px 0;
+}
+
+.reset
+{
+    padding: 4px 12px;
+    background-color: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.reset:hover
+{
+    background-color: var(--surface-hover);
+    border-color: var(--muted);
+}
+
+.reset:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 1px;
+}
+
+/* ================================================================================================
+   アクセシビリティ: アニメーションを控える設定への対応
+   ------------------------------------------------------------------------------------------------
+   OS の「視差効果を減らす」設定を有効にしている利用者には、動きが体調不良の原因になり得る。
+   その場合はすべてのトランジションを無効にする。
+   ================================================================================================ */
+
+@media (prefers-reduced-motion: reduce)
+{
+    *
+    {
+        transition: none !important;
+    }
+}

@@ -1,0 +1,202 @@
+<!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+
+    <!--
+        読み込み順に意味がある。defer を付けているので、HTML の解析が終わってから
+        この並び順どおりに実行される。
+          shared/schema.js … 設定の設計図を globalThis へ置く
+          common.js        … その設計図を取り込んで窓口 SLPSTRM を作る
+          popup.js         … SLPSTRM を使ってこの画面を組み立てる
+    -->
+    <script src="shared/schema.js" defer></script>
+    <script src="common.js" defer></script>
+    <script src="popup.js" defer></script>
+
+    <title>Slipstream Live</title>
+</head>
+
+<!--
+    ================================================================================================
+    popup.html — 設定画面（ツールバーのポップアップ兼オプションページ）
+    ================================================================================================
+
+    【どこから呼ばれるか】
+      manifest.json の 2 か所から開かれる。中身はまったく同じで、表示のされ方だけが違う。
+        action.default_popup   … ツールバーのアイコンをクリックしたときの小窓
+        options_ui.page        … 拡張機能の管理画面から開く独立したタブ
+
+    【この HTML の考え方】
+      文言（ラベル・説明文）は一切書かれていない。すべて data-msg などの属性でキー名だけを示し、
+      popup.js が _locales/*/messages.json から翻訳を流し込む。
+      同様に、どの入力欄がどの設定に対応するか・どの行がいつ有効になるかも、
+      すべて data 属性で宣言してある。つまりこの HTML は「画面の設計図」であり、
+      実際の組み立ては popup.js がこれを読み取って行う。
+
+    【data 属性の対応表】（すべて popup.js が解釈する）
+      data-msg    : i18n メッセージを textContent へ流し込む
+      data-title  : i18n メッセージを title 属性（マウスオーバー時の吹き出し）へ流し込む
+      data-hint   : 入力できる範囲の目安「最小 ~ 最大」を自動生成する
+      data-help   : ? ボタンを押したときに開く吹き出しの本文キー
+      data-key    : この入力欄が対応する設定キー（shared/schema.js の KEYS と一致させること）
+      data-labels : 段階スライダー（type="range"）の目盛り名を、最小値から順に並べた i18n キー
+      data-needs  : 列挙した設定がすべて ON のときだけ、この行を操作可能にする
+      data-not    : 列挙した設定が 1 つでも ON なら、この行を操作不可にする
+      data-reset  : リセットボタンの対象範囲（'site' = 表示中のサイト / 'common' = 全サイト共通）
+      data-site   : その注釈を表示するサイト（表示中のタブと一致したときだけ見える）
+    ================================================================================================
+-->
+
+<body>
+    <!-- ヘッダー: 拡張機能名・バージョンと、全体のマスタースイッチ -->
+    <div id="header">
+        <div id="brand">
+            <span id="title" data-msg="appShortName"></span>
+            <!-- バージョン番号は popup.js が manifest.json から読んで入れる -->
+            <span id="version"></span>
+        </div>
+
+        <!-- これを OFF にすると、以下すべての機能とバッジ表示が停止する -->
+        <label class="row">
+            <span data-msg="enabled"></span>
+            <small class="chip" data-msg="scopeCommon" data-title="scopeCommonDesc"></small>
+            <input class="switch" type="checkbox" data-key="enabled" />
+        </label>
+    </div>
+
+    <!-- 設定パネルは「サイト別」と「全サイト共通」の 2 枚を横に並べる -->
+    <div id="scopes">
+
+        <!-- ========================================================================================
+             サイト別設定パネル
+             タブで YouTube / Twitch / TwitCasting を切り替え、それぞれ別々の値を保存する
+             ======================================================================================== -->
+        <section id="site" class="scope">
+            <!-- タブボタンは popup.js が SITES の定義から動的に生成する（HTML には書かない） -->
+            <div id="tabs" class="scope-head" role="tablist"></div>
+
+            <div class="groups">
+
+                <!-- ---- 早送り: バッファに余裕があるとき、遅れを詰めて配信の最先端へ追いつく ---- -->
+                <div class="group">
+                    <label class="row head" data-needs="enabled">
+                        <span data-msg="speedup"></span>
+                        <button class="help-icon" type="button" data-help="speedupDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="speedup" />
+                    </label>
+
+                    <label class="row" data-needs="enabled speedup">
+                        <span><span data-msg="speedupRate"></span> <small class="hint" data-hint="speedupRate"></small></span>
+                        <button class="help-icon" type="button" data-help="speedupRateDesc">?</button>
+                        <input class="number" type="number" data-key="speedupRate" />
+                    </label>
+
+                    <!--
+                        自動しきい値が ON の間は、この手動しきい値は使われないので操作不可にする。
+                        行そのものは消さずに残すことで、切り替えたときに画面の高さが変わらない
+                    -->
+                    <label class="row" data-needs="enabled speedup" data-not="speedupAuto">
+                        <span data-msg="speedupThreshold"></span>
+                        <button class="help-icon" type="button" data-help="speedupThresholdDesc">?</button>
+                        <input class="number" type="number" data-key="speedupThreshold" />
+                    </label>
+
+                    <!--
+                        0 なら手動しきい値、1 以上で inject.js の Auto がしきい値を自動計算する。
+                        3 段階しかないうえ数値そのものに意味は無いので、数値入力ではなく段階スライダーで選ばせる。
+                        data-labels には目盛りに対応する i18n キーを 低い順に 並べる。
+                        popup.js がこれを読んで、マウスカーソルの近くへ現在の段階名を出す
+                    -->
+                    <label class="row" data-needs="enabled speedup">
+                        <span data-msg="speedupAuto"></span>
+                        <button class="help-icon" type="button" data-help="speedupAutoDesc">?</button>
+                        <input class="slider" type="range" data-key="speedupAuto"
+                               data-labels="speedupAutoOff speedupAutoStandard speedupAutoAggressive" />
+                    </label>
+                </div>
+
+                <!-- ---- 下限: 枯渇寸前は 0.15 倍速までほぼ停止させ、一気にバッファを貯め直す ---- -->
+                <div class="group">
+                    <label class="row head" data-needs="enabled">
+                        <span data-msg="floor"></span>
+                        <button class="help-icon" type="button" data-help="floorDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="floor" />
+                    </label>
+
+                    <label class="row" data-needs="enabled floor">
+                        <span data-msg="floorThreshold"></span>
+                        <button class="help-icon" type="button" data-help="floorThresholdDesc">?</button>
+                        <input class="number" type="number" data-key="floorThreshold" />
+                    </label>
+
+                    <!-- 極端な減速中は音が不快に歪むため、その間だけ音量を絞る機能 -->
+                    <label class="row" data-needs="enabled floor">
+                        <span data-msg="duck"></span>
+                        <button class="help-icon" type="button" data-help="duckDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="duck" />
+                    </label>
+
+                    <!-- 通常音量に対する割合（%）。100 なら変化なし、0 なら無音 -->
+                    <label class="row" data-needs="enabled floor duck">
+                        <span><span data-msg="duckVolume"></span> <small class="hint" data-hint="duckVolume"></small></span>
+                        <button class="help-icon" type="button" data-help="duckVolumeDesc">?</button>
+                        <input class="number" type="number" data-key="duckVolume" />
+                    </label>
+
+                    <!-- Twitch タブを選んでいるときだけ表示される注釈 -->
+                    <p class="note" data-site="twitch" data-msg="floorThresholdNote_twitch"></p>
+                </div>
+            </div>
+
+            <div class="footer">
+                <!-- ラベル（「リセット · サイト名」）は表示中のタブに応じて popup.js が書き込む -->
+                <button id="reset-site" class="reset" type="button" data-reset="site" data-title="resetDesc"></button>
+            </div>
+        </section>
+
+        <!-- ========================================================================================
+             全サイト共通設定パネル
+             プレイヤー上に出すバッジの表示・非表示を切り替える
+             ======================================================================================== -->
+        <section id="common" class="scope">
+            <div class="scope-head">
+                <span class="chip" data-msg="scopeCommon" data-title="scopeCommonDesc"></span>
+            </div>
+
+            <div class="groups">
+                <div class="group">
+                    <!-- 現在の再生倍率（例: 1.25x）。制御状態に応じて色が変わる -->
+                    <label class="row" data-needs="enabled">
+                        <span data-msg="showPlaybackRate"></span>
+                        <button class="help-icon" type="button" data-help="showPlaybackRateDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="showPlaybackRate" />
+                    </label>
+
+                    <!-- 配信の最先端からの遅れ（例: 1.50s）。巻き戻し中は (DVR) と出る -->
+                    <label class="row" data-needs="enabled">
+                        <span data-msg="showLatency"></span>
+                        <button class="help-icon" type="button" data-help="showLatencyDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="showLatency" />
+                    </label>
+
+                    <!-- 先読み済みバッファの残量（例: 2.50s） -->
+                    <label class="row" data-needs="enabled">
+                        <span data-msg="showHealth"></span>
+                        <button class="help-icon" type="button" data-help="showHealthDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="showHealth" />
+                    </label>
+                </div>
+            </div>
+
+            <div class="footer">
+                <button class="reset" type="button" data-reset="common" data-title="resetDesc"><span data-msg="reset"></span> · <span data-msg="scopeCommon"></span></button>
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>

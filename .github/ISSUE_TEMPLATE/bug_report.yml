@@ -1,0 +1,136 @@
+name: Bug report / 不具合報告
+description: Something isn't working as expected / 動作がおかしいときはこちら
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. 報告ありがとうございます。
+
+        ⚠️ **Do not report security vulnerabilities here.** Use private reporting — see [SECURITY.md](../blob/main/SECURITY.md).
+        ⚠️ **セキュリティ上の問題はここに書かないでください。** 非公開報告をご利用ください。
+
+        日本語・英語のどちらでも構いません。
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start / 事前確認
+      options:
+        - label: I searched the existing issues and this hasn't been reported yet. / 既存の Issue を検索し、同じ報告がないことを確認した
+          required: true
+        - label: The stream was **live** — not a VOD, a clip, or an ad break. / 対象は**ライブ配信**である（VOD・クリップ・広告ではない）
+          required: true
+        - label: I reproduced it with my other extensions disabled. / 他の拡張機能を無効にしても再現した
+          required: false
+
+  - type: dropdown
+    id: site
+    attributes:
+      label: Site / サイト
+      options:
+        - YouTube
+        - Twitch
+        - TwitCasting / ツイキャス
+        - Multiple sites / 複数サイト
+        - Not site-specific — settings page, etc. / サイトに依存しない（設定画面など）
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser / ブラウザ
+      options:
+        - Chrome
+        - Edge
+        - Brave
+        - Other Chromium-based / その他 Chromium 系
+        - Firefox
+        - Firefox Developer Edition / Nightly
+    validations:
+      required: true
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser version / ブラウザのバージョン
+      placeholder: "e.g. 134.0.6998.89"
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Slipstream Live version / 拡張機能のバージョン
+      description: The `version` field in `manifest.json`, or the version shown on your browser's extensions page. / `manifest.json` の `version`、またはブラウザの拡張機能ページに表示される値
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "e.g. Windows 11 / macOS 15.3 / Ubuntu 24.04"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened / 起きたこと
+      description: Describe the actual behaviour. If the video stalled, sped up at the wrong time, or the badge showed something unexpected, say which. / 実際の動作を書いてください。映像が止まった、おかしなタイミングで加速した、バッジの表示が想定外だった、など。
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead / 期待した動作
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 再現手順
+      description: If it only happens on a particular channel or at a particular time of day, that's useful — please say so. / 特定のチャンネルや時間帯でのみ起きる場合は、その情報も有用です。
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Settings changed from the defaults / 既定値から変更した設定
+      description: Only the ones you changed. "None" is a perfectly good answer. / 変更したものだけで結構です。「なし」でも構いません。
+      placeholder: "e.g. Auto-adjust buffer threshold: Aggressive / Speed-up playback rate: 2.00x"
+    validations:
+      required: false
+
+  - type: textarea
+    id: debug-log
+    attributes:
+      label: Debug log / デバッグログ
+      description: |
+        Open the **page** console (F12 on the stream itself, *not* the extension's own console), run `window.__slipstreamliveDebug = true`, then wait about 30 seconds while the problem is happening and paste the output here.
+
+        配信ページ側のコンソール（F12。拡張機能のコンソールでは**ありません**）で `window.__slipstreamliveDebug = true` を実行し、症状が出ている状態で 30 秒ほど待ってから、出力を貼り付けてください。
+
+        Note: `timer stopped` appears often even when things are working — content scripts run in every frame, and frames without a `<video>` shut down after 5 seconds. / `timer stopped` は正常時も頻繁に出ます。全フレームに注入され、`<video>` の無いフレームは 5 秒で停止するためです。
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else / その他
+      description: Screenshots, screen recordings, or other console errors. / スクリーンショット、画面録画、その他のコンソールエラーなど。
+    validations:
+      required: false

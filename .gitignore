@@ -1,0 +1,10 @@
+.env
+*.pem
+*.key
+*.crx
+*.xpi
+*.zip
+web-ext-artifacts/
+.DS_Store
+Thumbs.db
+desktop.ini
