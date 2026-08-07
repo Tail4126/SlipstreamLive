@@ -12,6 +12,14 @@
 
 ---
 
+## [1.0.1] - 2026-08-08
+
+### 修正
+
+- 各言語のメッセージファイル（`_locales/de/messages.json`、`_locales/en/messages.json`、`_locales/es/messages.json`、`_locales/fr/messages.json`、`_locales/pt_BR/messages.json`）にて、長かったテキスト・メッセージ文言を短縮・最適化。
+
+---
+
 ## [1.0.0] - 2026-08-08
 
 初回公開リリース。
@@ -123,5 +131,6 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Tail4126/SlipstreamLive/releases/tag/v1.0.0
