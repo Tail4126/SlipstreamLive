@@ -4,12 +4,7 @@
 
 ### Supported versions
 
-| Version | Supported |
-| :--- | :---: |
-| 1.0.0 (latest) | ✅ |
-| Older releases | ❌ |
-
-I only patch the latest release. If you're running an older build, update first and check whether the issue still shows up before reporting it.
+Only the latest release gets fixes. If you're running an older build, update first and check whether the issue still shows up before reporting it.
 
 ### Reporting a vulnerability
 
@@ -65,11 +60,6 @@ Give me a reasonable amount of time to ship a fix before you publish details. On
 ## 日本語
 
 ### サポート対象バージョン
-
-| バージョン | サポート |
-| :--- | :---: |
-| 1.0.0（最新） | ✅ |
-| それ以前 | ❌ |
 
 修正を出すのは最新版だけです。古いビルドを使っている場合は、報告の前にまず更新して、症状が直らないか確認してください。
 
