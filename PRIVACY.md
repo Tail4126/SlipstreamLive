@@ -1,6 +1,5 @@
 # Privacy Policy / プライバシーポリシー
 
-**Applies to / 対象バージョン:** Slipstream Live 1.0.0
 **Last updated / 最終更新:** 2026-08-08
 
 > **Note on Language / 言語に関する注記**
@@ -21,6 +20,7 @@
 | Are settings synced across devices? / 端末間で同期されますか？ | **No / されません** |
 | Does it load remote code? / 外部コードを読み込みますか？ | **No / いいえ** |
 | Can I delete everything? / 完全に削除できますか？ | Yes — uninstalling removes all data / はい。アンインストールで全て消えます |
+| Firefox data collection declaration / Firefox のデータ収集宣言 | `none` — nothing is collected / 収集なし |
 
 ---
 

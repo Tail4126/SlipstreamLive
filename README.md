@@ -313,7 +313,8 @@ Twitch's own troubleshooting resources are worth a look too:
 
 * **Manifest version:** V3
 * **Google Chrome / Chromium-based browsers:** v128 or later
-* **Mozilla Firefox:** v128.0 or later
+* **Mozilla Firefox:** v140.0 or later
+* **Firefox for Android:** v142.0 or later
 
 ---
 

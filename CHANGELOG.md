@@ -8,7 +8,10 @@
 
 ## [未リリース]
 
-（次のリリースに向けた変更はここに追記）
+### 変更
+
+- Firefox の対応バージョン下限を 128.0 から **140.0** へ、Firefox for Android を **142.0** へ引き上げ。`manifest.json` で宣言している `browser_specific_settings.gecko.data_collection_permissions` は Firefox 140 / Firefox for Android 142 で追加されたキーで、それ以前のバージョンでは解釈されないため（addons.mozilla.org の検証で警告として指摘される）。Chromium 系の下限（`minimum_chrome_version: 128`）は変更なし。
+- 上記に伴い README.md / README.ja.md の「対応環境」、CONTRIBUTING.md の前提条件を更新。
 
 ---
 
@@ -120,7 +123,7 @@
 
 ### 4. 関連ファイルの同期
 
-保存内容や使用権限に影響する変更をした場合は、同じコミットで [PRIVACY.md](PRIVACY.md) の本文と冒頭の「最終更新」日・「対象バージョン」も更新する。設定項目や既定値を変更した場合は、README.md / README.ja.md の設定一覧表と `_locales/` 配下の説明文の更新も必要。
+保存内容や使用権限に影響する変更をした場合は、同じコミットで [PRIVACY.md](PRIVACY.md) の本文と冒頭の「最終更新」日も更新する。設定項目や既定値を変更した場合は、README.md / README.ja.md の設定一覧表と `_locales/` 配下の説明文の更新も必要。
 
 制御モードの追加・削除やバッジ色の変更は次の4か所すべてに現れる。片方だけ直すと食い違うので、必ずまとめて更新すること。
 

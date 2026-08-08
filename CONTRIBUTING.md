@@ -27,7 +27,7 @@ These aren't preferences, they're hard constraints. A PR that breaks one of thes
 * **No network requests, period.** PRIVACY.md promises the extension never talks to a server. No `fetch`, no `XMLHttpRequest`, no remote fonts, no CDN links, no analytics, no telemetry.
 * **No dependencies, no build step.** The repo *is* the extension — clone it and load it unpacked, that's it. No npm, no bundler, no transpiler.
 * **No new permissions** beyond `storage` and `activeTab` without discussing it in an issue first.
-* **Manifest V3 only.** Chrome 128+ / Firefox 128.0+.
+* **Manifest V3 only.** Chrome 128+ / Firefox 140.0+ (Firefox for Android 142.0+).
 * **Live playback only.** VODs, clips, and ad breaks stay untouched.
 
 ## Before writing code
@@ -113,7 +113,7 @@ JSON ファイル（`manifest.json`、`_locales/*/messages.json`）は対象外�
 * **外部通信は一切なし。** PRIVACY.md で「どのサーバーとも通信しない」とはっきり書いています。`fetch`、`XMLHttpRequest`、外部フォント、CDN リンク、アクセス解析、テレメトリ、どれも禁止です。
 * **依存もビルド工程もなし。** リポジトリがそのまま拡張機能です。clone したものをそのまま「パッケージ化されていない拡張機能を読み込む」で使えます。npm・バンドラ・トランスパイラは入れません。
 * **`storage` と `activeTab` 以外の権限は追加しません。** 必要になったら、まず Issue で相談してください。
-* **Manifest V3 のみ。** Chrome 128 以降 / Firefox 128.0 以降。
+* **Manifest V3 のみ。** Chrome 128 以降 / Firefox 140.0 以降（Firefox for Android は 142.0 以降）。
 * **ライブ再生のみを制御。** VOD・クリップ・広告には触りません。
 
 ## コードを書く前に

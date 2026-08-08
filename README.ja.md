@@ -276,7 +276,8 @@ Twitch 公式の情報も参考にしてください。
 
 * **Manifest Version:** V3
 * **Google Chrome / Chromium 系ブラウザ:** v128 以降
-* **Mozilla Firefox:** v128.0 以降
+* **Mozilla Firefox:** v140.0 以降
+* **Firefox for Android:** v142.0 以降
 
 ---
 
