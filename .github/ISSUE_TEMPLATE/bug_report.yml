@@ -49,6 +49,7 @@ body:
         - Other Chromium-based / その他 Chromium 系
         - Firefox
         - Firefox Developer Edition / Nightly
+        - Firefox for Android / Android 版 Firefox
     validations:
       required: true
 
