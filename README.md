@@ -48,9 +48,12 @@ Slipstream Live does that watching for you, about 50 times per second.
 
 ## 🛠️ Installation
 
-Slipstream Live isn't on the web stores yet, so you'll load it from source.
-
 ### 🌐 Chrome / Edge / Brave / other Chromium browsers
+
+Install directly from the **[Chrome Web Store](https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf)**.
+
+<details>
+<summary>Installing from source (for developers / manual installation)</summary>
 
 1. Download this repository as a ZIP and extract it (or `git clone` it).
 2. Type `chrome://extensions` into the address bar and press Enter.
@@ -59,6 +62,8 @@ Slipstream Live isn't on the web stores yet, so you'll load it from source.
 
 > The extension stays installed until you remove it. You can pin its icon to the toolbar from
 > the puzzle-piece menu.
+
+</details>
 
 ### 🦊 Firefox
 
