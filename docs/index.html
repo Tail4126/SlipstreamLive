@@ -725,7 +725,7 @@ section{padding:88px 0;}
   <section class="hero" id="top">
     <div class="wrap hero-inner">
       <div class="hero-copy">
-        <span class="eyebrow">Chrome・Edge・Firefox 拡張機能</span>
+        <span class="eyebrow">Chrome・Edge・Brave・Firefox 対応</span>
         <h1>配信との数秒を、<br>黙って詰め続ける。</h1>
         <p class="lead">
           Slipstream Live は YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能です。
@@ -733,8 +733,9 @@ section{padding:88px 0;}
           入れてしまえば、あとは何もしなくて大丈夫です。
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="https://github.com/Tail4126/SlipstreamLive" target="_blank" rel="noopener">GitHubでソースを見る</a>
-          <a class="btn btn-ghost" href="#install">インストール方法へ</a>
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome に追加</a>
+          <a class="btn btn-ghost" href="https://github.com/Tail4126/SlipstreamLive" target="_blank" rel="noopener">GitHubでソースを見る</a>
+          <a class="btn btn-ghost" href="#install">他のブラウザ・手動読み込み</a>
         </div>
       </div>
 
@@ -911,7 +912,7 @@ section{padding:88px 0;}
       <div class="section-head">
         <span class="section-eyebrow">Install</span>
         <h2>インストール方法</h2>
-        <p>まだ Chrome ウェブストアや Firefox Add-ons には公開していないので、ソースから読み込みます。</p>
+        <p>Chrome ウェブストアからワンクリックで追加できます。手動読み込みや Firefox の場合の手順も用意しています。</p>
       </div>
 
       <div class="install-tabs" role="tablist" aria-label="ブラウザを選択">
@@ -924,34 +925,28 @@ section{padding:88px 0;}
           <div class="step">
             <span class="step-num"></span>
             <div class="step-body">
-              <h4>リポジトリをダウンロード</h4>
-              <p>GitHub からこのリポジトリを ZIP でダウンロードして解凍します。<code>git clone</code> でも構いません。</p>
+              <h4>Chrome ウェブストアを開く</h4>
+              <p><a href="https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome ウェブストアのページ</a>を開き、「Chrome に追加」ボタンをクリックします。</p>
             </div>
           </div>
           <div class="step">
             <span class="step-num"></span>
             <div class="step-body">
-              <h4>拡張機能ページを開く</h4>
-              <p>アドレスバーに <code>chrome://extensions</code> と入力して開きます。</p>
+              <h4>追加を確認する</h4>
+              <p>ダイアログが表示されたら「拡張機能を追加」を選択します。</p>
             </div>
           </div>
           <div class="step">
             <span class="step-num"></span>
             <div class="step-body">
-              <h4>デベロッパーモードをオン</h4>
-              <p>画面右上のトグルをオンにします。</p>
-            </div>
-          </div>
-          <div class="step">
-            <span class="step-num"></span>
-            <div class="step-body">
-              <h4>フォルダを読み込む</h4>
-              <p>「パッケージ化されていない拡張機能を読み込む」をクリックし、<code>manifest.json</code> が入っているフォルダを選びます。</p>
+              <h4>ツールバーにピン留め（任意）</h4>
+              <p>ブラウザ右上のパズルピースアイコンから Slipstream Live をピン留めしておくと、状態の確認や設定変更がスムーズになります。</p>
             </div>
           </div>
         </div>
         <div class="install-check">
-          一度読み込めば削除するまで有効なままです。パズルピースのアイコンからツールバーにピン留めできます。
+          <b>開発版・ソースからの手動読み込みを行う場合：</b><br>
+          GitHub から ZIP を取得・解凍し、<code>chrome://extensions</code> で「デベロッパーモード」をオンにした後、「パッケージ化されていない拡張機能を読み込む」からフォルダを選択してください。
         </div>
       </div>
 
@@ -1050,6 +1045,7 @@ section{padding:88px 0;}
         <div class="footer-col">
           <h5>プロダクト</h5>
           <ul>
+            <li><a href="https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome Web Store</a></li>
             <li><a href="#modes">仕組み</a></li>
             <li><a href="#features">機能</a></li>
             <li><a href="#install">インストール</a></li>

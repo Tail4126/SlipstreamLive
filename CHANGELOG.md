@@ -8,6 +8,12 @@
 
 ## [未リリース]
 
+## [1.0.2] - 2026-08-10
+
+### 追加
+
+- Chrome ウェブストア（Chrome Web Store）への公開に伴い、`README.md` および `README.ja.md` のインストール手順にストアページへの直接リンクを追加。
+
 ### 変更
 
 - Firefox の対応バージョン下限を 128.0 から **140.0** へ、Firefox for Android を **142.0** へ引き上げ。`manifest.json` で宣言している `browser_specific_settings.gecko.data_collection_permissions` は Firefox 140 / Firefox for Android 142 で追加されたキーで、それ以前のバージョンでは解釈されないため（addons.mozilla.org の検証で警告として指摘される）。Chromium 系の下限（`minimum_chrome_version: 128`）は変更なし。
@@ -134,6 +140,7 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.1...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Tail4126/SlipstreamLive/releases/tag/v1.0.0

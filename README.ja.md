@@ -44,9 +44,12 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 
 ## 🛠️ インストール方法
 
-まだストアには公開していないので、ソースから読み込みます。
-
 ### 🌐 Chrome / Edge / Brave など Chromium 系ブラウザ
+
+**[Chrome ウェブストア](https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf)** から直接インストールできます。
+
+<details>
+<summary>ソースからインストールする場合（開発者・手動インストール向け）</summary>
 
 1. このリポジトリを ZIP でダウンロードして解凍します（`git clone` でも構いません）。
 2. アドレスバーに `chrome://extensions` と入力して開きます。
@@ -54,6 +57,8 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 4. **「パッケージ化されていない拡張機能を読み込む」** をクリックし、解凍したフォルダ（`manifest.json` が入っている階層）を選びます。
 
 > 一度読み込めば、削除するまで有効なままです。パズルピースのアイコンからツールバーに固定できます。
+
+</details>
 
 ### 🦊 Firefox
 
