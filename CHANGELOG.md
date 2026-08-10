@@ -8,6 +8,16 @@
 
 ## [未リリース]
 
+## [1.0.3] - 2026-08-10
+
+### 追加
+
+- 設定ポップアップのヘッダーに、拡張機能アイコンからプロジェクトのホームページ（GitHub Pages）を新しいタブで開くリンクを追加。
+
+### 変更
+
+- 谷（trough）の履歴が `room` の算出に使われるまでに必要な最短時間（`TROUGH_MIN_MS`）を3秒から**1秒**に短縮。再生開始直後や配信の頭出し直後でも、より早くバッファ推定が有効になる。
+
 ## [1.0.2] - 2026-08-10
 
 ### 追加
@@ -140,7 +150,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.2...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Tail4126/SlipstreamLive/releases/tag/v1.0.0
