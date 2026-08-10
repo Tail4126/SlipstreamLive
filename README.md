@@ -238,7 +238,7 @@ and reduced by a safety factor `K` (5 at Standard, 3 at Aggressive) to get the u
 
 $$room = troughAvg - K \times troughSd$$
 
-`room` stays `NaN` until the trough history spans at least 3 seconds — a single sample would have
+`room` stays `NaN` until the trough history spans at least 1 seconds — a single sample would have
 a standard deviation of zero and pass through with no safety margin at all. Speeding up is allowed
 only while `room` stays above the buffer level you've asked Slipstream Live to protect (your maximum
 slowdown threshold, plus the level's added margin; just the margin if that mode is off). Because

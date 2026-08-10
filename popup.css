@@ -137,6 +137,18 @@ body
     user-select: none;
 }
 
+#icon-link
+{
+    display: flex;                                          /* img の余白（インライン特有の隙間）を消す */
+    align-self: center;                                     /* baseline 配置の兄弟から外れ、縦中央に揃える */
+}
+
+#icon
+{
+    width: 16px;
+    height: 16px;
+}
+
 #title
 {
     font-size: 15px;
