@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "Muestra el tiempo de búfer restante que puede mantener la reproducción sin pausar." },
     "reset": { "message": "Restablecer" },
     "resetDesc": { "message": "Restablece la configuración de esta sección a los valores predeterminados." },
+    "manual": { "message": "Manual de usuario" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Todos los sitios" },
     "scopeCommonDesc": { "message": "Esta configuración se aplica a todos los sitios compatibles." }
 }

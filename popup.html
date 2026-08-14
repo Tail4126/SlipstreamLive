@@ -200,6 +200,15 @@
             </div>
         </section>
     </div>
+
+    <!--
+        ページ下部の右端に置く、取扱説明書（GitHub Pages）への導線。
+        ラベルは data-msg、リンク先は data-href で _locales から流し込む。
+        日本語 UI のときだけ manual.ja.html へ向くよう、URL 自体を翻訳文字列として持たせている。
+    -->
+    <div id="page-footer">
+        <a id="manual-link" data-msg="manual" data-href="manualUrl" target="_blank" rel="noopener"></a>
+    </div>
 </body>
 
 </html>

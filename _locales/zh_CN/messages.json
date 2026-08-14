@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "显示可不卡顿维持播放的剩余时长（缓冲残量）。" },
     "reset": { "message": "重置" },
     "resetDesc": { "message": "将此栏目的设置恢复为默认值。" },
+    "manual": { "message": "使用手册" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "所有网站" },
     "scopeCommonDesc": { "message": "此设置适用于所有受支持的网站。" }
 }

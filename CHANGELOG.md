@@ -10,6 +10,11 @@
 
 ### 追加
 
+- **取扱説明書**を追加。`docs/manual.html`（英語）と `docs/manual.ja.html`（日本語）の2ページ構成で、インストール・設定項目の一覧・バッジの見かた・トラブルシューティングを画面写真つきで解説する。図版26枚は `docs/images/` に配置。
+- 設定ポップアップの右下に、取扱説明書へのリンクを追加。UI 言語が日本語のときは日本語版、それ以外の8言語では英語版が開く。
+- `_locales/*/messages.json`（9言語）にキー `manual`（リンクの文言）と `manualUrl`（リンク先 URL）を追加。
+- `docs/index.html` のヘッダーナビと、フッターの「ドキュメント」欄に取扱説明書へのリンクを追加。
+- `docs/style.css` を新設。GitHub Pages の4ページが共有する唯一のスタイルシート。
 - Firefox アドオン（addons.mozilla.org）での公開に伴い、`README.md` / `README.ja.md` の Firefox インストール手順にストアページへの直接リンクを追加。従来の一時的な読み込み・署名無効化の手順は、開発者向けとして `<details>` 内に移動。
 - Android 版 Firefox（142.0 以降）にも同じストアページから導入できる旨を README および GitHub Pages に明記。
 - `docs/index.html` のヒーローに「Firefox に追加」ボタン、フッターの「プロダクト」に Firefox アドオンへのリンクを追加。
@@ -19,6 +24,12 @@
 - Chrome ウェブストアへのリンクを、スラッグを含む URL から拡張機能 ID のみの正規 URL へ統一（計5箇所）。ストア掲載名を変更してもリンクが切れないようにするため。
 - ストアへのリンクはロケールを含まない形（`addons.mozilla.org/firefox/addon/...`）で統一。AMO が閲覧者の言語設定に応じて自動でリダイレクトするため、英語版・日本語版の双方から同じ URL を参照できる。
 - `docs/index.html` のインストール手順で、Firefox タブを一時的な読み込み手順からストア経由の手順へ差し替え。ソースからの手動読み込みは補足として残置。
+- `docs/` の4ページ（`index.html` / `manual.html` / `manual.ja.html` / `privacy-policy.html`）に個別に書かれていた CSS を `docs/style.css` へ統合。デザイン変数・ヘッダー・表・コード・図版・注記・フッターを共通化し、ページ固有のルールは `<body>` の `page-home` / `page-doc` / `page-manual` / `page-policy` クラスで切り分ける。ビルド工程は追加していない。
+- 上記の統合に伴う見た目の調整。本文幅をプライバシーポリシーだけ 840px だったものを 900px へ、本文行間を 1.75 と 1.8 の混在から 1.8 へ、ヘッダー高さを 68px と 64px の混在から 64px へ統一。プライバシーポリシーのヘッダーも他ページと同じ追従（sticky）表示にした。
+- リンク色の既定を全ページで `--floor` に統一。トップページのインストール手順にあったリンクが本文と同色で判別できなかった問題が解消される。
+- `popup.js` の翻訳適用処理に `data-href` 属性のサポートを追加。要素の `href` を `_locales` の文字列で差し替えられるようになり、言語ごとのリンク先の出し分けをコード側の分岐なしで表現できる。
+- `PRIVACY.md` と `docs/privacy-policy.html` に、設定画面から外部ページ（GitHub Pages）へのリンクがある旨を明記。クリックするまで何も読み込まないこと、リンクに識別子を付けないことを併せて記載し、最終更新日を 2026-08-14 に更新。
+- `README.md` / `README.ja.md` の冒頭と「使い方」、`CONTRIBUTING.md`、`SECURITY.md` に取扱説明書への導線と対象範囲の記述を追加。
 
 ## [1.0.3] - 2026-08-10
 
@@ -151,14 +162,17 @@
 
 ### 4. 関連ファイルの同期
 
-保存内容や使用権限に影響する変更をした場合は、同じコミットで [PRIVACY.md](PRIVACY.md) の本文と冒頭の「最終更新」日も更新する。設定項目や既定値を変更した場合は、README.md / README.ja.md の設定一覧表と `_locales/` 配下の説明文の更新も必要。
+保存内容や使用権限に影響する変更をした場合は、同じコミットで [PRIVACY.md](PRIVACY.md) の本文と冒頭の「最終更新」日、および `docs/privacy-policy.html` も更新する。設定項目や既定値を変更した場合は、README.md / README.ja.md の設定一覧表、`docs/manual.html` / `docs/manual.ja.html` の設定一覧表、`_locales/` 配下の説明文の更新も必要。
 
-制御モードの追加・削除やバッジ色の変更は次の4か所すべてに現れる。片方だけ直すと食い違うので、必ずまとめて更新すること。
+制御モードの追加・削除やバッジ色の変更は次の5か所すべてに現れる。片方だけ直すと食い違うので、必ずまとめて更新すること。
 
 1. `inject.js` の `COLOR` と制御状態
 2. `_locales/*/messages.json` の `showPlaybackRateDesc`
 3. README.md / README.ja.md の制御モード表
-4. この CHANGELOG
+4. `docs/manual.html` / `docs/manual.ja.html` の制御モード表（バッジ色の見本 `.dot` も含む）
+5. この CHANGELOG
+
+設定画面の見た目を変えた場合は、取扱説明書の図版も撮り直す。図版は `docs/images/Fig_<番号>[-<言語>].png` の命名で、英日それぞれ1枚ずつ用意する。番号は本文中の図番号と一致させ、差し替え時もファイル名は変えない。
 
 </details>
 

@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "영상 멈춤 없이 재생을 유지할 수 있는 시간(버퍼 잔량)을 표시합니다." },
     "reset": { "message": "초기화" },
     "resetDesc": { "message": "이 섹션의 설정을 기본값으로 복원합니다." },
+    "manual": { "message": "사용 설명서" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "모든 사이트" },
     "scopeCommonDesc": { "message": "이 설정은 지원되는 모든 사이트에 적용됩니다." }
 }

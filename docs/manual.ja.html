@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>取扱説明書 — Slipstream Live</title>
+<meta name="description" content="YouTube Live・Twitch・ツイキャス向けブラウザ拡張機能 Slipstream Live の取扱説明書。インストール方法、設定項目の一覧、バッジの見かた、困ったときの対処をまとめています。">
+<link rel="canonical" href="https://tail4126.github.io/SlipstreamLive/manual.ja.html">
+<link rel="alternate" hreflang="en" href="https://tail4126.github.io/SlipstreamLive/manual.html">
+<link rel="alternate" hreflang="ja" href="https://tail4126.github.io/SlipstreamLive/manual.ja.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="取扱説明書 — Slipstream Live">
+<meta property="og:description" content="YouTube Live・Twitch・ツイキャス向けブラウザ拡張機能 Slipstream Live の取扱説明書。インストール方法、設定項目の一覧、バッジの見かた、困ったときの対処をまとめています。">
+<meta property="og:image" content="https://tail4126.github.io/SlipstreamLive/images/slipstreamlive.jpg">
+<meta property="og:url" content="https://tail4126.github.io/SlipstreamLive/manual.ja.html">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="取扱説明書 — Slipstream Live">
+<meta name="twitter:description" content="YouTube Live・Twitch・ツイキャス向けブラウザ拡張機能 Slipstream Live の取扱説明書。インストール方法、設定項目の一覧、バッジの見かた、困ったときの対処をまとめています。">
+<meta name="twitter:image" content="https://tail4126.github.io/SlipstreamLive/images/slipstreamlive.jpg">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="page page-doc page-manual">
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M5 22 L13 22 L17 10 L21 22 L27 22" stroke="url(#logoGrad)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="logoGrad" x1="5" y1="10" x2="27" y2="22" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6fb6ff"/>
+            <stop offset="1" stop-color="#ff7a6b"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span>Slipstream Live</span>
+    </a>
+    <div class="header-right">
+      <a href="index.html" class="back-link">← トップページへ戻る</a>
+      <a href="manual.html" class="lang-switch" hreflang="en" lang="en">English</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <h1>取扱説明書</h1>
+    <p class="lede">Slipstream Live は、ブラウザがどれだけ先まで映像を読み込めているかを監視し、再生速度をほんの少しだけ上げ下げすることで、映像を止めずにライブ配信の「今」へ近づけ続けます。このページでは、インストール方法・すべての設定項目・うまく動かないときの対処をまとめています。</p>
+    <div class="page-meta">
+      <span>バージョン 1.0.3</span>
+      <span>YouTube Live ・ Twitch ・ ツイキャス</span>
+    </div>
+  </div>
+
+  <nav class="toc" aria-label="目次">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#intro"><span class="n">1</span>はじめに</a></li>
+      <li><a href="#requirements"><span class="n">2</span>動作環境</a></li>
+      <li><a href="#install"><span class="n">3</span>インストール方法</a></li>
+      <li><a href="#screen"><span class="n">4</span>各部の名称（設定画面）</a></li>
+      <li><a href="#badges"><span class="n">5</span>バッジの見かた</a></li>
+      <li><a href="#modes"><span class="n">6</span>3 つの制御モード</a></li>
+      <li><a href="#settings"><span class="n">7</span>設定項目一覧</a></li>
+      <li><a href="#how"><span class="n">8</span>動作の仕組み</a></li>
+      <li><a href="#troubleshooting"><span class="n">9</span>困ったときは</a></li>
+      <li><a href="#debug"><span class="n">10</span>デバッグログの取得方法</a></li>
+      <li><a href="#privacy"><span class="n">11</span>プライバシー</a></li>
+      <li><a href="#support"><span class="n">12</span>お問い合わせ</a></li>
+      <li><a href="#license"><span class="n">13</span>ライセンス</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============================================================ 1 -->
+  <section class="doc-section" id="intro">
+    <h2><span class="num">1</span> はじめに</h2>
+    <p>ライブ配信で見えている映像は、配信者が実際にしゃべっている瞬間より必ず数秒遅れています。この遅れは回線が乱れるたびに増えていき、放っておいても縮みません。</p>
+    <p>Slipstream Live は、どれだけ先まで映像を読み込めているか（<em>バッファ残量</em>）を 1 秒間に約 50 回測り、再生速度をほんの少しだけ上げ下げすることで、映像を止めずに配信の「今」へ近づけ続けます。</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>こんなとき</th><th>Slipstream Live の動き</th></tr></thead>
+        <tbody>
+          <tr><td>遅れているが、先の映像は十分読み込めている</td><td>少しだけ加速（1.25x）して追いつく</td></tr>
+          <tr><td>読み込み済みの映像がほぼ尽きた</td><td>0.15x まで落とし音量も下げて、完全停止を回避</td></tr>
+          <tr><td>問題なし</td><td>何もしない（通常の 1.00x）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>インストール後は、視聴中に何か操作する必要はありません。</p>
+  </section>
+
+  <!-- ============================================================ 2 -->
+  <section class="doc-section" id="requirements">
+    <h2><span class="num">2</span> 動作環境</h2>
+    <div class="table-scroll">
+      <table class="compact">
+        <tbody>
+          <tr><td>Manifest Version</td><td>V3</td></tr>
+          <tr><td>Chrome / Edge / Brave など Chromium 系</td><td>v128 以降</td></tr>
+          <tr><td>Mozilla Firefox</td><td>v140.0 以降</td></tr>
+          <tr><td>Firefox for Android</td><td>v142.0 以降</td></tr>
+          <tr><td>対応サイト</td><td>YouTube（<code>m.youtube.com</code>・<code>youtube-nocookie.com</code> を含む）、Twitch（<code>player.twitch.tv</code> を含む）、ツイキャス</td></tr>
+          <tr><td>UI 言語</td><td>日本語・English・한국어・Deutsch・Español・Français・Português (BR)・简体中文・繁體中文（ブラウザの言語設定に追従）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3 -->
+  <section class="doc-section" id="install">
+    <h2><span class="num">3</span> インストール方法</h2>
+
+    <h3>3.1 Chrome / Edge / Brave など Chromium 系ブラウザ</h3>
+    <p><a href="https://chromewebstore.google.com/detail/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome ウェブストア</a>からインストールします。</p>
+    <figure class="fig-wide">
+      <img src="images/Fig_1-chrome-ja.png" alt="Chrome ウェブストアの Slipstream Live のページ" loading="lazy" width="1280" height="770">
+      <figcaption><b>図 1a</b> <span class="ui">「Chrome に追加」</span>をクリックします。</figcaption>
+    </figure>
+    <p>インストール後、ツールバーのパズルピースのアイコンから Slipstream Live を固定しておくと、アイコンが常に表示されて便利です。</p>
+    <figure class="fig-crop">
+      <img src="images/Fig_2-chrome-ja.png" alt="Chrome のパズルピースメニューから拡張機能を固定する" loading="lazy" width="442" height="322">
+      <figcaption><b>図 2a</b> Slipstream Live の右にあるピンのアイコンをクリックします。</figcaption>
+    </figure>
+
+    <h3>3.2 Firefox</h3>
+    <p><a href="https://addons.mozilla.org/firefox/addon/slipstream-live/" target="_blank" rel="noopener">Firefox アドオン</a>からインストールします。</p>
+    <figure class="fig-wide">
+      <img src="images/Fig_1-firefox-ja.png" alt="Firefox アドオンの Slipstream Live のページ" loading="lazy" width="1280" height="630">
+      <figcaption><b>図 1b</b> <span class="ui">「Firefox へ追加」</span>をクリックします。Android 版 Firefox（142.0 以降）でも同じページから導入できます。</figcaption>
+    </figure>
+    <figure class="fig-crop">
+      <img src="images/Fig_2-firefox-ja.png" alt="Firefox でツールバーにピン留めする" loading="lazy" width="477" height="399">
+      <figcaption><b>図 2b</b> ••• メニューから<span class="ui">「ツールバーにピン留め」</span>を選びます。</figcaption>
+    </figure>
+
+    <h3>3.3 ソースからインストールする場合（開発者・手動インストール向け）</h3>
+    <h4>Chromium 系ブラウザ</h4>
+    <ol>
+      <li>リポジトリを ZIP でダウンロードして解凍します（<code>git clone</code> でも構いません）。</li>
+      <li>アドレスバーに <code>chrome://extensions</code> と入力して開きます。</li>
+      <li>画面右上の<span class="ui">「デベロッパー モード」</span>をオンにします。</li>
+      <li><span class="ui">「パッケージ化されていない拡張機能を読み込む」</span>をクリックし、解凍したフォルダ（<code>manifest.json</code> が入っている階層）を選びます。</li>
+    </ol>
+    <h4>Firefox — 一時的な読み込み（Firefox を閉じると消えます）</h4>
+    <ol>
+      <li>アドレスバーに <code>about:debugging#/runtime/this-firefox</code> と入力して開きます。</li>
+      <li><span class="ui">「一時的なアドオンを読み込む…」</span>をクリックします。</li>
+      <li>解凍したフォルダ内の <code>manifest.json</code> を選択します。</li>
+    </ol>
+    <h4>Firefox — 恒久的なインストール（Developer Edition / Nightly 限定）</h4>
+    <ol>
+      <li>フォルダの<em>中身</em>を ZIP 圧縮します。</li>
+      <li><code>about:config</code> で <code>xpinstall.signatures.required</code> を <code>false</code> に変更します。</li>
+      <li><code>about:addons</code> の右上の歯車から<span class="ui">「ファイルからアドオンをインストール…」</span>で ZIP を選びます。</li>
+    </ol>
+
+    <h3>3.4 動作確認</h3>
+    <ol>
+      <li>YouTube・Twitch・ツイキャスのいずれかで<strong>ライブ配信</strong>を開きます。アーカイブやクリップでは動作しません。</li>
+      <li>ツールバーの Slipstream Live アイコンをクリックします。</li>
+      <li><span class="ui">「全サイト共通」</span>パネルで<span class="ui">「再生速度倍率を表示」</span>をオンにします。</li>
+      <li>プレイヤーのコントロールバーに小さく <code>1.00x</code> と表示され、動作に応じて色が変われば成功です。</li>
+    </ol>
+    <figure class="fig-crop">
+      <img src="images/Fig_4-ja.png" alt="YouTube のコントロールバーに表示された 1.00x のバッジ" loading="lazy" width="220" height="80">
+      <figcaption><b>図 4</b> 通常状態の再生速度倍率バッジ。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================================ 4 -->
+  <section class="doc-section" id="screen">
+    <h2><span class="num">4</span> 各部の名称（設定画面）</h2>
+    <p>ツールバーのアイコンをクリックすると設定画面が開きます。同じ画面は、ブラウザの拡張機能管理画面から「オプション」として独立したタブで開くこともできます。</p>
+    <figure class="fig-wide">
+      <img src="images/Fig_5-ja.png" alt="Slipstream Live の設定画面" loading="lazy" width="740" height="536">
+      <figcaption><b>図 5</b> 既定値の状態の設定画面。以下の表の番号はこの図に対応します。</figcaption>
+    </figure>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th class="num">番号</th><th>名称</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>アイコン・タイトル</td><td>アイコンをクリックするとプロジェクトページが開きます。名前の右にバージョン番号が表示されます。</td></tr>
+          <tr><td class="num">2</td><td><span class="ui">再生速度を変更する</span></td><td>マスタースイッチ。オフにすると制御もバッジ表示もすべて停止します。<span class="ui">「全サイト共通」</span>の印が付いています。</td></tr>
+          <tr><td class="num">3</td><td>サイトタブ</td><td>YouTube / Twitch / TwitCasting。それぞれ別々に値を保存し、今開いているサイトのタブが自動で選ばれます。</td></tr>
+          <tr><td class="num">4</td><td><span class="ui">サイト別設定</span>パネル</td><td>選択中のサイトの、加速に関する設定と最低速度に関する設定。</td></tr>
+          <tr><td class="num">5</td><td><span class="ui">?</span> ボタン</td><td>その項目のわかりやすい説明が開きます。</td></tr>
+          <tr><td class="num">6</td><td><span class="ui">リセット · サイト名</span></td><td>選択中のサイトの設定だけを既定値に戻します。</td></tr>
+          <tr><td class="num">7</td><td><span class="ui">全サイト共通</span>パネル</td><td>プレイヤー上のバッジ 3 種類のスイッチ。</td></tr>
+          <tr><td class="num">8</td><td><span class="ui">リセット · 全サイト共通</span></td><td>全サイト共通の設定を既定値に戻します。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>変更は即時反映されます。保存ボタンはありません。</li>
+      <li>現在使われない項目はグレー表示になります。たとえば<span class="ui">「バッファ閾値を自動調整する」</span>が標準・積極的のとき、<span class="ui">「加速するバッファ閾値（秒）」</span>は操作できません。</li>
+      <li>Twitch タブを選んでいるときだけ、既定値が大きい理由の注釈がパネル下部に表示されます。</li>
+    </ul>
+    <figure class="fig-wide">
+      <img src="images/Fig_3-ja.png" alt="Twitch タブを選択した設定画面" loading="lazy" width="740" height="626">
+      <figcaption><b>図 3</b> サイトタブを切り替えるとパネル全体が入れ替わります。Twitch タブには既定値についての注釈が加わり、アクセントカラーもサイトごとに変化します。</figcaption>
+    </figure>
+    <figure class="fig-wide">
+      <img src="images/Fig_6-ja.png" alt="? ボタンから開いたヘルプの吹き出し" loading="lazy" width="740" height="536">
+      <figcaption><b>図 6</b> <span class="ui">?</span> をクリックすると、その項目の説明が表示されます。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================================ 5 -->
+  <section class="doc-section" id="badges">
+    <h2><span class="num">5</span> バッジの見かた</h2>
+    <p>3 種類のバッジはいずれも<strong>既定でオフ</strong>です。<span class="ui">「全サイト共通」</span>パネルでオンにしてください。表示位置はプレイヤーのコントロールバー内で、コントロールバーが見つからない場合はプレイヤー左上の小さな黒い帯に切り替わります。</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>バッジ</th><th>表示例</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td>再生速度倍率</td><td><code>1.25x</code></td><td>実際の再生速度。文字色で現在のモードがわかります。</td></tr>
+          <tr><td>遅延秒数</td><td><code>1.50s</code></td><td>配信の最先端からどれだけ遅れているか。巻き戻して視聴中（追っかけ再生）は遅延の数値に意味がないため、数値の代わりに <code>(DVR)</code> と表示されます。</td></tr>
+          <tr><td>バッファ残量</td><td><code>2.50s</code></td><td>何秒先まで読み込めているか。<code>+9s</code> が付く場合、隙間の向こうにさらに読み込み済みの映像があります。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="fig-crop">
+      <img src="images/Fig_7-ja.png" alt="3 種類のバッジを同時に表示した状態" loading="lazy" width="370" height="80">
+      <figcaption><b>図 7</b> 左から順に、再生速度倍率・遅延秒数・バッファ残量。</figcaption>
+    </figure>
+    <figure class="fig-crop">
+      <img src="images/Fig_7b-ja.png" alt="追っかけ再生中のバッジ表示" loading="lazy" width="370" height="80">
+      <figcaption><b>図 7b</b> 巻き戻して視聴中は遅延秒数が <code>(DVR)</code> になります。この例ではバッファを 62.41 秒、さらに隙間の先に 9 秒ぶん読み込んでいます。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================================ 6 -->
+  <section class="doc-section" id="modes">
+    <h2><span class="num">6</span> 3 つの制御モード</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>モード</th><th>優先度</th><th>バッジ色</th><th>速度</th><th>発動条件</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Floor（最減速）</strong></td><td>最高</td><td><span class="dot floor"></span>青 <code>#83c1ff</code></td><td><strong>0.15x</strong>（固定）</td><td>バッファ枯渇の直前。緊急ブレーキ＋音量ダッキング。</td></tr>
+          <tr><td><strong>Speedup（加速）</strong></td><td>低</td><td><span class="dot speedup"></span>赤 <code>#ff8983</code></td><td>1.25x（既定）</td><td>バッファに十分な余裕がある。最先端へ追いつく。</td></tr>
+          <tr><td><strong>Normal（通常）</strong></td><td>—</td><td><span class="dot normal"></span>白 <code>#eee</code></td><td>1.00x</td><td>何もしない。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>優先度の高いモードが常に優先されます。Floor の 0.15x は安全装置なので、意図的に変更できないようにしてあります。</p>
+    <figure class="fig-crop">
+      <img src="images/Fig_9-ja.png" alt="赤い 1.25x の再生速度倍率バッジ" loading="lazy" width="220" height="80">
+      <figcaption><b>図 9</b> 加速中。赤は Slipstream Live が遅れを詰めていることを示します。</figcaption>
+    </figure>
+    <figure class="fig-crop">
+      <img src="images/Fig_10-ja.png" alt="青い 0.15x の再生速度倍率バッジ" loading="lazy" width="220" height="80">
+      <figcaption><b>図 10</b> 最減速中。青はバッファが尽きかけ、最低速度まで落として耐えている状態です。</figcaption>
+    </figure>
+    <p>各しきい値には現在のモードへ留まる向きにヒステリシスが掛かっており、境界ちょうどで倍率と音量が細かく往復しません。幅は<span class="ui">「バッファ閾値を自動調整する」</span>の段階に連動し、<strong>オフ・標準では 0.1 秒、積極的では 0.05 秒</strong>です。</p>
+
+    <h3>制御しないもの</h3>
+    <ul>
+      <li><strong>アーカイブ（VOD）・クリップ・広告再生中</strong>には一切手を出しません。ライブ再生中のみが対象です。</li>
+      <li><strong>ツイキャスの低遅延配信</strong>は対象外です。低遅延モードは WebRTC で映像が届くため、測定できる先読みバッファがなく、再生速度を変えても仕様上無視されます。そもそもほぼリアルタイムなので、詰めるべき遅れがありません。</li>
+      <li><strong>YouTube とツイキャスでは</strong>、あなたがプレイヤーのメニューで 1.00x 以外の速度を選んだ場合、Slipstream Live は制御を譲って手を引きます。速度を通常に戻せば自動制御が再開します。Twitch には速度変更メニューがないため常に Slipstream Live が制御し、あわせて Twitch 自身の追いつき機能が競合しないよう抑え込みます。</li>
+    </ul>
+  </section>
+
+  <!-- ============================================================ 7 -->
+  <section class="doc-section" id="settings">
+    <h2><span class="num">7</span> 設定項目一覧</h2>
+
+    <h3>7.1 サイト別設定（サイトごとに別々に保存）</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>設定項目</th><th>範囲 / 刻み</th><th class="num">YouTube</th><th class="num">Twitch</th><th class="num">TwitCasting</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ui">遅延時に加速する</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>追いつき機能のスイッチ。</td></tr>
+          <tr><td><span class="ui">遅延時の再生速度</span></td><td>1.05x〜4.00x / 0.05</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td>加速時の倍率。大きいほど速く追いつけますが、バッファ消費も増えます。</td></tr>
+          <tr><td><span class="ui">加速するバッファ閾値（秒）</span></td><td>0.1〜100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>自動調整が<strong>オフのときだけ</strong>使われます。この秒数まで読み込めていたら加速します。</td></tr>
+          <tr><td><span class="ui">バッファ閾値を自動調整する</span></td><td>オフ / 標準 / 積極的</td><td class="num">標準</td><td class="num">標準</td><td class="num">標準</td><td>加速して安全かどうかを Slipstream Live に判断させます。<strong>推奨。</strong></td></tr>
+          <tr><td><span class="ui">バッファ枯渇時に最低速度する</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>0.15x の緊急ブレーキのスイッチ。</td></tr>
+          <tr><td><span class="ui">最低速度する閾値（秒）</span></td><td>0.0〜10.0 / 0.1</td><td class="num">0.80<br>(FF 1.00)</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.10<br>(FF 0.30)</td><td>バッファ残量がこれを下回っている間 0.15x にします。</td></tr>
+          <tr><td><span class="ui">最低速度中は音量を下げる</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>0.15x の間だけ音量を絞ります。</td></tr>
+          <tr><td><span class="ui">最低速度中の音量（%）</span></td><td>0〜100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td><em>今の音量に対する</em>割合。100 で変化なし、0 で無音。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>FF = Firefox での既定値。Firefox はバッファ残量の報告のされ方が異なるため、専用の値を持ちます。YouTube とツイキャスでは大きめ、Twitch では逆に小さめと、方向は一律ではありません。</p>
+    <div class="note">
+      <p><strong>Twitch の閾値だけ大きいのはなぜ？</strong> Twitch では映像データの到着が 10 秒ほど途切れることがあります。実際に止まる前に反応できるよう、既定値を大きめにしています。</p>
+    </div>
+
+    <h3>7.2 「バッファ閾値を自動調整する」の 3 段階</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>段階</th><th class="num">谷を貯める窓</th><th class="num">安全余裕係数</th><th class="num">下限への上乗せ</th><th class="num">ヒステリシス</th><th>性格</th></tr></thead>
+        <tbody>
+          <tr><td><strong>オフ</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.1s</td><td>自動調整せず<span class="ui">「加速するバッファ閾値」</span>をそのまま使います。</td></tr>
+          <tr><td><strong>標準</strong></td><td class="num">30s</td><td class="num">5</td><td class="num">0.3s</td><td class="num">0.1s</td><td>長い窓と大きな係数で慎重に判断します。既定値。</td></tr>
+          <tr><td><strong>積極的</strong></td><td class="num">5s</td><td class="num">3</td><td class="num">0.1s</td><td class="num">0.05s</td><td>短い窓で直近の余裕へ素早く反応し、遅れをより詰めます。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="fig-crop">
+      <img src="images/Fig_11-ja.png" alt="3 段階スライダーとツールチップ" loading="lazy" width="476" height="84">
+      <figcaption><b>図 11</b> スライダーをドラッグして段階を選びます。カーソルの近くに段階名が表示されます。</figcaption>
+    </figure>
+
+    <h3>7.3 全サイト共通設定</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>設定項目</th><th class="num">既定値</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ui">再生速度を変更する</span></td><td class="num">ON</td><td>マスタースイッチ。オフにすると Slipstream Live は完全に停止します。</td></tr>
+          <tr><td><span class="ui">再生速度倍率を表示</span></td><td class="num">OFF</td><td>現在の再生速度をプレイヤー内に表示。</td></tr>
+          <tr><td><span class="ui">遅延秒数を表示</span></td><td class="num">OFF</td><td>最先端からの遅れを表示。</td></tr>
+          <tr><td><span class="ui">バッファ残量を表示</span></td><td class="num">OFF</td><td>何秒先まで読み込めているかを表示。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 8 -->
+  <section class="doc-section" id="how">
+    <h2><span class="num">8</span> 動作の仕組み</h2>
+    <p>Slipstream Live は 20 ミリ秒ごとに<strong>バッファ残量</strong>（何秒先まで映像を読み込めているか）を測り、その値から 3 つのモードのどれかを選びます。</p>
+    <p>難しいのは「いつ加速して安全か」の判断です。バッファ残量は一定ではありません。映像は「セグメント」という数秒単位の塊で届くため、塊が届いた瞬間にドンと増え、再生とともにすーっと減っていきます。グラフにすると<strong>のこぎり波</strong>の形になります。たまたま山（ピーク）を見て「余裕たっぷり」と誤解して加速すると、直後の谷でバッファを使い切って映像が止まります。</p>
+    <p>そこで Slipstream Live は、1 回の測定値を信じる代わりに、配信ごとに自動調整される窓で<strong>谷の位置を統計的に推定</strong>し、その余裕が「確保したいバッファ量」を上回っている間だけ加速します。安全係数を大きく取っているため、谷が安定して同じ高さでないと余裕は生まれず、回線が不安定なときは自然と加速が抑制されます。データが足りない間は「わからないので何もしない」が自動的に成立します。</p>
+    <p>バッジの再描画は毎秒 10 回までに抑えられ、統計もすべて平滑化されているため、速度が目に見えてばたつくことはありません。制御対象が見つからない間は 1 秒周期の探索モードへ落ち、やがてタイマーを完全に停止してメディアイベント待ちへ移ります。タブが表に戻った瞬間にも一度だけ実行されます。</p>
+    <div class="note">
+      <p>セグメント長を知らずに谷を求める方法など、数式を含む詳細は <a href="https://github.com/Tail4126/SlipstreamLive/blob/main/README.ja.md" target="_blank" rel="noopener">README</a> にあります。</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 9 -->
+  <section class="doc-section" id="troubleshooting">
+    <h2><span class="num">9</span> 困ったときは</h2>
+
+    <div class="qa">
+      <h3>まったく加速しない</h3>
+      <p>自動調整はわざと慎重に作ってあります。回線が不安定だと「加速は危険」と判断するためです。まず<span class="ui">「バッファ閾値を自動調整する」</span>を<span class="ui">「積極的」</span>に変えてみてください。それでも足りなければ<span class="ui">「オフ」</span>にして<span class="ui">「加速するバッファ閾値（秒）」</span>を手動で設定します。15〜20 秒あたりから始めて、様子を見ながら下げるのがおすすめです。</p>
+    </div>
+
+    <div class="qa">
+      <h3>最低速度（0.15x）に入る頻度が高い</h3>
+      <p>手動閾値を大きめにするか、<span class="ui">「遅延時の再生速度」</span>を下げてバッファの消費を緩やかにしてください。<span class="ui">「最低速度する閾値（秒）」</span>を下げれば発動は遅くなりますが、実際に映像が止まるリスクは上がります。</p>
+    </div>
+
+    <div class="qa">
+      <h3>何も起こらない</h3>
+      <p><span class="ui">「再生速度を変更する」</span>がオンになっているか、VOD やクリップではなく<em>ライブ</em>配信を見ているか、プレイヤーのメニューで再生速度を手動変更していないかを確認してください。</p>
+    </div>
+
+    <div class="qa">
+      <h3>ツイキャスで何も起こらない</h3>
+      <p>低遅延配信を見ていないか確認してください。低遅延モードは WebRTC で配信されるため、Slipstream Live の制御対象外です。プレイヤー側の設定で低遅延をオフにすれば動きます。</p>
+    </div>
+
+    <div class="qa">
+      <h3>バッジが表示されない</h3>
+      <p>既定ではオフになっています。<span class="ui">「全サイト共通」</span>パネルでオンにしてください。サイトのコントロールバーが見つからない場合は、プレイヤー左上に小さな黒い帯として表示されます。</p>
+    </div>
+
+    <div class="qa">
+      <h3>Twitch の映像だけエラーで止まる・固まる（Slipstream Live とは無関係の場合）</h3>
+      <p>Slipstream Live は再生「速度」を調整するだけなので、映像が完全に止まったり「エラー #〇〇〇〇」が出たりするのは、たいてい Twitch やブラウザ側の問題です。次を上から順に試してください。</p>
+      <ol>
+        <li><a href="https://status.twitch.com/" target="_blank" rel="noopener">status.twitch.com</a> で Twitch 側の障害情報を確認する。</li>
+        <li><strong>シークレットウィンドウ</strong>（<code>Ctrl+Shift+N</code> / Mac は <code>Cmd+Shift+N</code>）で同じ配信を開く。直るなら原因は拡張機能かキャッシュです。</li>
+        <li>拡張機能、特に<strong>広告ブロッカー</strong>を一度すべてオフにする。Twitch は広告を映像そのものに埋め込んでいるため、広告ブロッカーが原因のことが非常に多いです。</li>
+        <li><code>chrome://settings/help</code> から Chrome を最新版に更新する。公式サポートは最新 2 バージョンのみです。</li>
+        <li><code>Ctrl+Shift+Delete</code>（Mac は <code>Cmd+Shift+Delete</code>）でキャッシュと Cookie を削除する。</li>
+      </ol>
+      <p>それでも画面が固まる・真っ黒になる場合は、<code>chrome://settings/system</code> の<span class="ui">「ハードウェア アクセラレーション」</span>を今と逆に切り替えて再起動してみてください。直らなければ元に戻してください（常時変更しておく設定ではありません）。</p>
+      <p>Twitch 公式の情報も参考になります：
+        <a href="https://help.twitch.tv/s/article/playback-issue-troubleshooting?language=ja" target="_blank" rel="noopener">再生に関する問題のトラブルシューティング</a>、
+        <a href="https://help.twitch.tv/s/article/supported-browsers?language=ja" target="_blank" rel="noopener">対応するブラウザ</a>、
+        <a href="https://help.twitch.tv/s/article/how-to-file-a-video-playback-issue?language=ja" target="_blank" rel="noopener">ビデオ再生の問題を報告する方法</a>。</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 10 -->
+  <section class="doc-section" id="debug">
+    <h2><span class="num">10</span> デバッグログの取得方法</h2>
+    <p>不具合を報告する際、デバッグログがあると原因の特定が容易になります。</p>
+    <ol>
+      <li><strong>配信ページ</strong>を開き、<code>F12</code> でブラウザのコンソールを開きます。拡張機能のコンソールでは<strong>ありません</strong>。</li>
+      <li>下の 1 行を実行します。</li>
+      <li>症状が出ている状態で 30 秒ほど待ち、出力をコピーします。</li>
+    </ol>
+    <div class="code-block">window.__slipstreamliveDebug = true;</div>
+    <p>1 秒ごとに、現在のモード・実再生速度・バッファ残量・短期統計・谷の統計・<code>room</code> の計算式・超過消費の累積 <code>drift</code>・定常判定 <code>calm</code> が出力されます。</p>
+    <ul>
+      <li>バッファ関連の数値が <code>----</code> の場合、値を取得できていない状態です。多くはバッファが空と報告されているためです。</li>
+      <li><code>calm=NO</code> が続く場合は定常でないと判定されており、谷の履歴が貯まらないため <code>room</code> も <code>----</code> になります。</li>
+      <li><code>timer stopped</code> は正常時も頻繁に出ます。全フレームに注入され、映像を持たないフレームは 5 秒で停止するためです。</li>
+    </ul>
+  </section>
+
+  <!-- ============================================================ 11 -->
+  <section class="doc-section" id="privacy">
+    <h2><span class="num">11</span> プライバシー</h2>
+    <p>Slipstream Live は<strong>外部との通信を一切行いません</strong>。要求する権限は次の 2 つだけです。</p>
+    <ul>
+      <li><code>storage</code> — 設定を端末に保存するため。</li>
+      <li><code>activeTab</code> — ポップアップを開いたとき、対応サイトかどうかを判定して適切なタブを選ぶため。</li>
+    </ul>
+    <p>解析・テレメトリ・識別子・広告は一切ありません。詳しくは<a href="privacy-policy.html">プライバシーポリシー</a>をご覧ください。</p>
+  </section>
+
+  <!-- ============================================================ 12 -->
+  <section class="doc-section" id="support">
+    <h2><span class="num">12</span> お問い合わせ</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>用途</th><th>窓口</th></tr></thead>
+        <tbody>
+          <tr><td>不具合の報告</td><td><a href="https://github.com/Tail4126/SlipstreamLive/issues/new/choose" target="_blank" rel="noopener">GitHub Issues</a>（バグ報告テンプレート）</td></tr>
+          <tr><td>質問・機能要望・対応サイトの追加要望・翻訳の指摘</td><td><a href="https://github.com/Tail4126/SlipstreamLive/discussions" target="_blank" rel="noopener">GitHub Discussions</a></td></tr>
+          <tr><td>脆弱性の報告</td><td><a href="https://github.com/Tail4126/SlipstreamLive/security/advisories/new" target="_blank" rel="noopener">GitHub Security Advisories</a>（非公開で報告）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note warn">
+      <p>脆弱性は非公開でご報告ください。公開 Issue は事実上エクスプロイトの公表になります。</p>
+    </div>
+    <p>不具合報告時は、サイト・ブラウザとバージョン・拡張機能のバージョン・OS・起きたこと・再現手順・既定値から変更した設定、可能であればデバッグログを添えてください。</p>
+  </section>
+
+  <!-- ============================================================ 13 -->
+  <section class="doc-section" id="license">
+    <h2><span class="num">13</span> ライセンス</h2>
+    <p><a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache License 2.0</a> または <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener">MIT License</a> のデュアルライセンスです。どちらか好きな方を選んで利用できます。</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>© 2026 Tail4126 — Apache-2.0 OR MIT license</span>
+    <span><a href="index.html">トップページ</a> ・ <a href="privacy-policy.html">プライバシーポリシー</a> ・ <a href="https://github.com/Tail4126/SlipstreamLive" target="_blank" rel="noopener">GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

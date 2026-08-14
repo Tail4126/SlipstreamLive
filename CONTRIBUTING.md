@@ -4,6 +4,8 @@
 
 Thanks for the interest. This is a one-person project, so reading this first will save us both some time.
 
+Looking for how to *use* the extension rather than change it? That's the [user manual](https://tail4126.github.io/SlipstreamLive/manual.html).
+
 ## Licensing of contributions
 
 **Unless you say otherwise, anything you submit for inclusion here — as defined under Apache-2.0 — gets dual licensed as Apache-2.0 OR MIT, no extra terms attached.**
@@ -61,15 +63,28 @@ Include the reasoning behind any site-specific defaults you pick, especially thr
 
 Start from `_locales/en/messages.json`. Translate only the `message` values, leave keys and any `__MSG_*__` placeholders alone. All nine locales need to carry the same key set.
 
+One key is not a phrase: **`manualUrl`** holds the URL the popup's bottom-right link opens. Leave it pointing at `https://tail4126.github.io/SlipstreamLive/manual.html` unless a manual actually exists in your language — a translated label on a link to a page that doesn't exist is worse than an English label. If you do translate the manual itself, add `docs/manual.<lang>.html` alongside the existing pages and point `manualUrl` at it.
+
+## Documentation
+
+The GitHub Pages site lives in `docs/` and is published by a workflow on every push to `main` that touches that folder. It holds the landing page, the privacy policy, and the user manual (`manual.html` / `manual.ja.html`).
+
+All four pages share one stylesheet, `docs/style.css`. There's still no build step — it's plain CSS linked from each page. Page-specific rules are scoped by a class on `<body>`: `page-home` for the landing page, `page-doc` for both manuals and the privacy policy, plus `page-manual` / `page-policy`. A rule written *without* one of those prefixes is a promise that it looks the same on all four pages, so scope anything that isn't. Figures go in `docs/images/` as `Fig_<number>[-<language>].png`, where the number matches the figure number in the text. When a screenshot is retaken, overwrite the file rather than renaming it, so the numbering in both language versions stays valid.
+
+If you change the settings screen, the manual's figures go stale. Retaking them in both languages is part of that change, not a follow-up. To capture a language you don't run, open the settings page with `popup.html?locale=xx`.
+
 ## Things that have to change together
 
 Some facts live in more than one file. Change only one and the project starts contradicting itself.
 
 | If you change… | Also update… |
 | :--- | :--- |
-| A control mode, or a badge colour | `inject.js` (`COLOR` and the control states) · `_locales/*/messages.json` (`showPlaybackRateDesc`) · the mode tables in `README.md` / `README.ja.md` · `CHANGELOG.md` |
-| A setting, its range, or a default | `shared/schema.js` · the settings tables in `README.md` / `README.ja.md` · the descriptions in `_locales/*/messages.json` |
-| What gets stored, or which permissions are used | `PRIVACY.md` — the body **and** the "Last updated" date, in the same commit |
+| A control mode, or a badge colour | `inject.js` (`COLOR` and the control states) · `_locales/*/messages.json` (`showPlaybackRateDesc`) · the mode tables in `README.md` / `README.ja.md` · the mode tables and `.dot` swatches in `docs/manual.html` / `docs/manual.ja.html` · `CHANGELOG.md` |
+| A setting, its range, or a default | `shared/schema.js` · the settings tables in `README.md` / `README.ja.md` · the settings tables in `docs/manual.html` / `docs/manual.ja.html` · the descriptions in `_locales/*/messages.json` |
+| A UI label | `_locales/*/messages.json` · every place the manual quotes that label — the two manual pages spell the labels out as they appear on screen |
+| The look of the settings screen | the screenshots in `docs/images/`, in both languages |
+| Anything in `docs/style.css` that isn't scoped to a `page-*` class | check all four pages — that rule reaches every one of them |
+| What gets stored, or which permissions are used | `PRIVACY.md` — the body **and** the "Last updated" date, in the same commit · `docs/privacy-policy.html`, which mirrors it |
 
 ## Pull requests
 
@@ -89,6 +104,8 @@ Don't open a public issue for a vulnerability — see [SECURITY.md](SECURITY.md)
 # 日本語
 
 興味を持ってもらえて嬉しいです。個人でひとりで回している小さなプロジェクトなので、お互い時間を無駄にしないためにも、まずこれを読んでおいてください。
+
+拡張機能を「改造する」ではなく「使う」ための情報をお探しなら、[取扱説明書](https://tail4126.github.io/SlipstreamLive/manual.ja.html)のほうです。
 
 ## 貢献のライセンス
 
@@ -147,15 +164,28 @@ window.__slipstreamliveDebug = true;
 
 起点は `_locales/en/messages.json` です。`message` の値だけ訳して、キーと `__MSG_*__` プレースホルダはそのままにしてください。9 言語すべて、キーの集合を揃える必要があります。
 
+1つだけ、文言ではないキーがあります。**`manualUrl`** はポップアップ右下のリンクが開く URL です。その言語の取扱説明書が実在しない限り、`https://tail4126.github.io/SlipstreamLive/manual.html` のままにしてください。存在しないページへのリンクだけ訳されている状態は、英語表記のままより悪いので。取扱説明書自体を訳す場合は、既存のページと並べて `docs/manual.<言語コード>.html` を追加し、`manualUrl` をそこへ向けてください。
+
+## ドキュメント
+
+GitHub Pages のサイトは `docs/` にあり、このフォルダを含む変更が `main` に入るたびにワークフローが公開します。中身はトップページ、プライバシーポリシー、取扱説明書（`manual.html` / `manual.ja.html`）です。
+
+4ページは `docs/style.css` 1枚を共有します。ビルド工程は相変わらず不要で、各ページから素の CSS を読み込むだけです。ページ固有のルールは `<body>` のクラスで切り分けます。トップページが `page-home`、取扱説明書2ページとプライバシーポリシーが `page-doc`、さらに `page-manual` / `page-policy` です。この前置が**無い**ルールは「4ページすべてで同じ見た目になる」という約束なので、ページ固有のものには必ず前置してください。図版は `docs/images/` に `Fig_<番号>[-<言語>].png` の名前で置き、番号は本文中の図番号と一致させます。撮り直したときはリネームせず上書きしてください。そうすれば英語版・日本語版の両方で番号の対応が崩れません。
+
+設定画面を変更すると、取扱説明書の図版は古くなります。英日両方を撮り直すところまでがその変更の一部で、後回しにする作業ではありません。自分が使っていない言語の画面は `popup.html?locale=xx` で開けます。
+
 ## まとめて直すべき箇所
 
 同じ事実が複数のファイルにまたがって書かれている箇所があります。片方だけ直すと、プロジェクトの中で話が食い違ってしまいます。
 
 | 変更する対象 | 一緒に更新するもの |
 | :--- | :--- |
-| 制御モード、バッジの色 | `inject.js` の `COLOR` と制御状態 ・ `_locales/*/messages.json` の `showPlaybackRateDesc` ・ README.md / README.ja.md の制御モード表 ・ `CHANGELOG.md` |
-| 設定項目、その範囲、既定値 | `shared/schema.js` ・ README.md / README.ja.md の設定一覧表 ・ `_locales/*/messages.json` の説明文 |
-| 保存内容、使用する権限 | `PRIVACY.md` の本文**および**「最終更新」日を、同じコミットで |
+| 制御モード、バッジの色 | `inject.js` の `COLOR` と制御状態 ・ `_locales/*/messages.json` の `showPlaybackRateDesc` ・ README.md / README.ja.md の制御モード表 ・ `docs/manual.html` / `docs/manual.ja.html` の制御モード表と色見本 `.dot` ・ `CHANGELOG.md` |
+| 設定項目、その範囲、既定値 | `shared/schema.js` ・ README.md / README.ja.md の設定一覧表 ・ `docs/manual.html` / `docs/manual.ja.html` の設定一覧表 ・ `_locales/*/messages.json` の説明文 |
+| UI の文言 | `_locales/*/messages.json` ・ 取扱説明書でその文言を引用している箇所すべて（2ページとも、画面に出る文言をそのまま書いています） |
+| 設定画面の見た目 | `docs/images/` のスクリーンショットを英日とも撮り直し |
+| `docs/style.css` の `page-*` を前置していないルール | 4ページすべてを確認する。そのルールは全ページに届く |
+| 保存内容、使用する権限 | `PRIVACY.md` の本文**および**「最終更新」日を、同じコミットで ・ 同じ内容を載せている `docs/privacy-policy.html` |
 
 ## プルリクエスト
 

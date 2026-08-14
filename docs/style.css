@@ -1,0 +1,1109 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+/* ================================================================================================
+   style.css — GitHub Pages（docs/）の共通スタイルシート
+   ------------------------------------------------------------------------------------------------
+   対象ページ:
+     index.html          … トップページ            <body class="page page-home">
+     manual.html         … 取扱説明書（英語）      <body class="page page-doc page-manual">
+     manual.ja.html      … 取扱説明書（日本語）    <body class="page page-doc page-manual">
+     privacy-policy.html … プライバシーポリシー    <body class="page page-doc page-policy">
+
+   構成:
+     1. トークン         … 色・角丸・書体・本文幅。ページ幅だけ page クラスで上書きする
+     2. リセットと素地   … 全ページ共通の下敷き
+     3. 共通パーツ       … ヘッダー / ボタン / 表 / 図版 / コード / 注記 / フッター
+     4. ページ固有       … .page-home / .page-doc 配下だけで使うもの
+     5. レスポンシブ
+
+   ページ固有のセレクタには必ず .page-home か .page-doc を前置する。
+   前置しないものは「4ページすべてで同じ見た目になる」という約束を表す。
+   ================================================================================================ */
+
+/* ================================================================================================
+   1. トークン
+   ================================================================================================ */
+
+:root{
+  --base:#0a0c10;
+  --surface:#12151b;
+  --surface-2:#1a1f28;
+  --border:#242a35;
+  --border-soft:#1c212b;
+  --ink:#edeff2;
+  --ink-muted:#8b93a3;
+  --ink-faint:#565e6c;
+  --speedup:#ff7a6b;
+  --speedup-soft:rgba(255,122,107,.12);
+  --floor:#6fb6ff;
+  --floor-soft:rgba(111,182,255,.12);
+  --radius:16px;
+  --radius-sm:9px;
+
+  /* 既定は読み物の幅。トップページだけ下で広げる */
+  --container:900px;
+
+  --font-ui:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic","Segoe UI",Meiryo,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono","Consolas",monospace;
+}
+
+.page-home{--container:1120px;}
+
+/* ================================================================================================
+   2. リセットと素地
+   ================================================================================================ */
+
+*,*::before,*::after{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+body{
+  margin:0;
+  background:var(--base);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+img,svg{display:block;max-width:100%;}
+
+/* 見出しと段落の既定マージンは持たせず、必要な場所で明示的に付ける。
+   h4 / h5 はトップページ側がブラウザ既定のマージンに依存しているため、ここでは触らない */
+h1,h2,h3,p{margin:0;}
+
+a{color:var(--floor);text-decoration:none;}
+a:hover{text-decoration:underline;}
+
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+
+:focus-visible{
+  outline:2px solid var(--floor);
+  outline-offset:3px;
+  border-radius:4px;
+}
+
+.wrap{
+  width:100%;
+  max-width:var(--container);
+  margin:0 auto;
+  padding:0 24px;
+}
+
+/* 背景の淡い光。長いドキュメントでは位置が破綻するのでトップページだけに使う */
+.page-home{
+  background-image:
+    radial-gradient(ellipse 900px 500px at 82% -8%, rgba(255,122,107,.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at -10% 15%, rgba(111,182,255,.08), transparent 60%);
+  background-repeat:no-repeat;
+}
+
+/* ================================================================================================
+   3. 共通パーツ
+   ================================================================================================ */
+
+/* ---------- header ---------- */
+.site-header{
+  position:sticky;
+  top:0;
+  z-index:40;
+  background:rgba(10,12,16,.84);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-soft);
+}
+.header-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  height:64px;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--ink);
+  font-weight:700;
+  font-size:15px;
+  letter-spacing:.01em;
+  flex-shrink:0;
+}
+.logo:hover{text-decoration:none;}
+.logo svg{width:22px;height:22px;flex-shrink:0;}
+
+.site-nav{
+  display:flex;
+  gap:28px;
+  flex:1;
+  justify-content:center;
+}
+.site-nav a{
+  font-size:14px;
+  color:var(--ink-muted);
+  transition:color .15s ease;
+  white-space:nowrap;
+}
+.site-nav a:hover{color:var(--ink);text-decoration:none;}
+
+/* ドキュメント側のヘッダー右手（戻るリンクと言語切り替え） */
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  font-size:13.5px;
+}
+.back-link{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:var(--ink-muted);
+  white-space:nowrap;
+}
+.back-link:hover{color:var(--ink);text-decoration:none;}
+.lang-switch{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:5px 12px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  color:var(--ink-muted);
+  font-size:12.5px;
+  white-space:nowrap;
+}
+.lang-switch:hover{color:var(--ink);border-color:var(--ink-faint);text-decoration:none;}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 18px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:600;
+  white-space:nowrap;
+  transition:transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.btn:hover{text-decoration:none;}
+.btn:active{transform:scale(.97);}
+.btn-primary{
+  background:var(--ink);
+  color:var(--base);
+}
+.btn-primary:hover{background:#fff;}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--ink);
+}
+.btn-ghost:hover{border-color:var(--ink-muted);}
+.btn-sm{padding:8px 14px;font-size:13px;}
+
+/* ---------- inline code ---------- */
+code{
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  color:var(--floor);
+  background:var(--floor-soft);
+  padding:2px 7px;
+  border-radius:5px;
+}
+
+.code-block,.host-list{
+  margin-top:16px;
+  padding:16px 18px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  color:var(--ink-muted);
+  line-height:1.9;
+  overflow-x:auto;
+  white-space:pre;
+}
+.host-list{line-height:2;}
+
+/* ---------- tables ---------- */
+.table-scroll{
+  margin-top:18px;
+  overflow-x:auto;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13.5px;
+}
+.data-table{margin-top:16px;}
+th,td{
+  text-align:left;
+  padding:10px 14px;
+  border:1px solid var(--border-soft);
+  color:var(--ink-muted);
+  line-height:1.7;
+  vertical-align:top;
+}
+th{
+  background:var(--surface);
+  color:var(--ink);
+  font-weight:700;
+  font-size:12.5px;
+  white-space:nowrap;
+}
+td:first-child{color:var(--ink);}
+.data-table td:first-child,table.compact td:first-child{white-space:nowrap;}
+td.num,th.num{text-align:center;white-space:nowrap;}
+
+/* ---------- figures ---------- */
+figure{
+  margin:26px 0 0;
+  padding:0;
+}
+figure img{
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+}
+.fig-wide img{width:100%;height:auto;}
+.fig-crop img{width:auto;image-rendering:-webkit-optimize-contrast;}
+figcaption{
+  margin-top:11px;
+  font-size:12.5px;
+  color:var(--ink-faint);
+  line-height:1.8;
+}
+figcaption b{
+  color:var(--ink-muted);
+  font-family:var(--font-mono);
+  font-weight:600;
+  margin-right:6px;
+}
+
+/* ---------- callouts ---------- */
+.note{
+  margin-top:18px;
+  padding:14px 18px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid var(--floor);
+  border-radius:var(--radius-sm);
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.9;
+}
+.note p{margin-top:0;font-size:13.5px;}
+.note p+p{margin-top:10px;}
+.note.warn{border-left-color:var(--speedup);}
+
+/* ---------- mode swatches（バッジ色の見本） ---------- */
+.dot{
+  display:inline-block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  margin-right:8px;
+  vertical-align:middle;
+}
+.dot.floor{background:#83c1ff;}
+.dot.speedup{background:#ff8983;}
+.dot.normal{background:#eee;}
+
+/* ---------- footer ---------- */
+.site-footer{
+  border-top:1px solid var(--border-soft);
+  padding:32px 0 48px;
+}
+.footer-inner{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+.footer-inner a{color:var(--ink-muted);}
+
+/* ================================================================================================
+   4a. トップページ固有
+   ================================================================================================ */
+
+.page-home .site-footer{padding:56px 0 40px;}
+
+/* 詳細度は元のまま bare にしておく。.hero / .doc-section / .policy-lang（いずれも 0,1,0）が
+   これを上書きできる必要があるため、.page-home を前置してはいけない */
+section{padding:88px 0;}
+.page-home .section-border{border-top:1px solid var(--border-soft);}
+.page-home .section-head{
+  max-width:700px;
+  margin:0 auto 52px;
+  text-align:center;
+}
+.page-home .section-eyebrow{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:12px;
+}
+.page-home .section-head h2{
+  font-size:clamp(24px,3vw,32px);
+  font-weight:800;
+  letter-spacing:-.01em;
+  line-height:1.5;
+}
+.page-home .section-head p{
+  margin-top:14px;
+  color:var(--ink-muted);
+  font-size:15.5px;
+  line-height:1.85;
+}
+
+/* ---------- header banner image ---------- */
+.hero-banner{padding:28px 0 0;}
+.hero-banner img{
+  width:100%;
+  height:auto;
+  aspect-ratio:2/1;
+  object-fit:cover;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  background:var(--surface);
+}
+
+/* ---------- hero ---------- */
+.hero{padding:76px 0 96px;}
+.hero-inner{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:56px;
+  align-items:center;
+}
+.eyebrow{
+  display:inline-block;
+  font-size:12.5px;
+  font-weight:700;
+  letter-spacing:.09em;
+  color:var(--speedup);
+  text-transform:uppercase;
+  margin-bottom:18px;
+}
+.hero h1{
+  font-size:clamp(32px,4.4vw,46px);
+  font-weight:800;
+  line-height:1.32;
+  letter-spacing:-.01em;
+}
+.hero .lead{
+  margin-top:22px;
+  font-size:16.5px;
+  color:var(--ink-muted);
+  max-width:46ch;
+  line-height:1.85;
+}
+.hero-actions{
+  display:flex;
+  gap:12px;
+  margin-top:32px;
+  flex-wrap:wrap;
+}
+
+/* ---------- gauge（signature visual） ---------- */
+.gauge{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px 22px 18px;
+  box-shadow:0 30px 60px -25px rgba(0,0,0,.6);
+}
+.gauge-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.gauge-mode-wrap{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.gauge-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--ink-muted);
+  transition:background .3s ease, box-shadow .3s ease;
+  flex-shrink:0;
+}
+.gauge-mode{
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:.06em;
+  color:var(--ink-muted);
+  transition:color .3s ease;
+}
+.gauge-rate{
+  font-family:var(--font-mono);
+  font-size:22px;
+  font-weight:600;
+  color:var(--ink);
+  transition:color .3s ease;
+  font-variant-numeric:tabular-nums;
+}
+.gauge-wave-box{
+  border-top:1px solid var(--border-soft);
+  border-bottom:1px solid var(--border-soft);
+  padding:14px 0;
+  margin:4px 0 14px;
+}
+.gauge-wave{width:100%;height:104px;overflow:visible;}
+.gauge-bottom{
+  display:flex;
+  justify-content:space-between;
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+.gauge-bottom b{
+  font-family:var(--font-mono);
+  color:var(--ink-muted);
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.gauge-caption{
+  margin-top:14px;
+  font-size:12px;
+  color:var(--ink-faint);
+  text-align:center;
+}
+
+/* ---------- problem ---------- */
+.problem-inner{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:56px;
+  align-items:center;
+}
+.problem h2{
+  font-size:clamp(22px,2.8vw,28px);
+  font-weight:800;
+  line-height:1.6;
+  letter-spacing:-.005em;
+}
+.problem p{
+  margin-top:20px;
+  color:var(--ink-muted);
+  font-size:15.5px;
+  line-height:1.9;
+}
+.problem p+p{margin-top:14px;}
+.problem strong{color:var(--ink);font-weight:700;}
+
+.gap-diagram{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px;
+}
+.gap-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:22px;
+}
+.gap-row:last-child{margin-bottom:0;}
+.gap-label{
+  width:64px;
+  flex-shrink:0;
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+.gap-track{
+  flex:1;
+  height:8px;
+  border-radius:99px;
+  background:var(--border-soft);
+  position:relative;
+  overflow:hidden;
+}
+.gap-fill{
+  position:absolute;
+  top:0;left:0;bottom:0;
+  border-radius:99px;
+}
+.gap-track.now .gap-fill{width:100%;background:linear-gradient(90deg,var(--floor),var(--speedup));}
+.gap-track.you .gap-fill{width:78%;background:var(--ink-muted);}
+.gap-note{
+  margin-top:18px;
+  padding-top:18px;
+  border-top:1px solid var(--border-soft);
+  font-size:13px;
+  color:var(--ink-faint);
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+}
+.gap-note b{
+  font-family:var(--font-mono);
+  color:var(--speedup);
+  font-size:15px;
+}
+
+/* ---------- modes ---------- */
+.modes-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+.mode-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:26px 24px;
+  position:relative;
+}
+.mode-card .mode-priority{
+  font-size:11.5px;
+  color:var(--ink-faint);
+  letter-spacing:.06em;
+}
+.mode-card .mode-name{
+  margin-top:10px;
+  font-size:18px;
+  font-weight:700;
+}
+.mode-card .mode-rate{
+  margin-top:14px;
+  font-family:var(--font-mono);
+  font-size:34px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.mode-card.is-normal .mode-rate{color:var(--ink);}
+.mode-card.is-speedup .mode-rate{color:var(--speedup);}
+.mode-card.is-floor .mode-rate{color:var(--floor);}
+.mode-card .mode-desc{
+  margin-top:14px;
+  font-size:14px;
+  color:var(--ink-muted);
+  line-height:1.8;
+}
+.mode-card .mode-swatch{
+  position:absolute;
+  top:26px;right:24px;
+  width:10px;height:10px;
+  border-radius:50%;
+}
+.mode-card.is-normal .mode-swatch{background:var(--ink-muted);}
+.mode-card.is-speedup .mode-swatch{background:var(--speedup);}
+.mode-card.is-floor .mode-swatch{background:var(--floor);}
+
+/* ---------- features ---------- */
+.features-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;
+  background:var(--border-soft);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.feature{
+  background:var(--surface);
+  padding:28px 24px;
+}
+.feature-icon{
+  width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:16px;
+  color:var(--ink);
+}
+.feature-icon svg{width:22px;height:22px;}
+.feature h3{
+  font-size:15px;
+  font-weight:700;
+}
+.feature p{
+  margin-top:9px;
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.8;
+}
+
+/* ---------- install ---------- */
+.install-tabs{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  margin-bottom:36px;
+}
+.tab-btn{
+  padding:9px 20px;
+  border-radius:999px;
+  font-size:13.5px;
+  font-weight:600;
+  border:1px solid var(--border);
+  color:var(--ink-muted);
+  transition:all .15s ease;
+}
+.tab-btn[aria-selected="true"]{
+  background:var(--ink);
+  color:var(--base);
+  border-color:var(--ink);
+}
+.tab-btn:hover:not([aria-selected="true"]){border-color:var(--ink-muted);color:var(--ink);}
+
+.install-panel{display:none;max-width:640px;margin:0 auto;}
+.install-panel.is-active{display:block;}
+
+.steps{counter-reset:step;}
+.step{
+  display:flex;
+  gap:18px;
+  padding:20px 0;
+  border-bottom:1px solid var(--border-soft);
+}
+.step:last-child{border-bottom:none;}
+.step-num{
+  counter-increment:step;
+  flex-shrink:0;
+  width:30px;height:30px;
+  border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink-muted);
+}
+.step-num::before{content:counter(step);}
+.step-body h4{
+  font-size:14.5px;
+  font-weight:700;
+}
+.step-body p{
+  margin-top:6px;
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.8;
+}
+.step-body code,.install-more code{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+}
+.install-check{
+  margin-top:28px;
+  padding:18px 20px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.8;
+}
+.install-check b{color:var(--ink);font-weight:700;}
+.install-more{
+  text-align:center;
+  margin-top:24px;
+  font-size:13.5px;
+  color:var(--ink-faint);
+}
+
+/* ---------- privacy（トップページ内の要約） ---------- */
+.privacy-inner{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:56px;
+  align-items:center;
+}
+.privacy h2{
+  font-size:clamp(22px,2.8vw,28px);
+  font-weight:800;
+  line-height:1.5;
+}
+.privacy p{
+  margin-top:18px;
+  color:var(--ink-muted);
+  font-size:15.5px;
+  line-height:1.9;
+}
+.perm-list{
+  margin-top:26px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.perm-item{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:13px 16px;
+}
+.perm-item code{
+  padding:3px 9px;
+  border-radius:6px;
+  flex-shrink:0;
+  margin-top:1px;
+}
+.perm-item span{
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.7;
+}
+.privacy-cta{margin-top:26px;}
+
+.privacy-panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:8px;
+}
+.privacy-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 16px;
+  border-radius:var(--radius-sm);
+}
+.privacy-row+.privacy-row{border-top:1px solid var(--border-soft);}
+.privacy-row span:first-child{font-size:13.5px;color:var(--ink-muted);}
+.privacy-row span:last-child{
+  font-size:12.5px;
+  font-weight:700;
+  padding:4px 10px;
+  border-radius:999px;
+  font-family:var(--font-mono);
+}
+.privacy-row .no{background:var(--floor-soft);color:var(--floor);}
+.privacy-row .yes-local{background:var(--speedup-soft);color:var(--speedup);}
+
+/* ---------- トップページのフッター（列組み） ---------- */
+.footer-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:40px;
+  flex-wrap:wrap;
+  padding-bottom:36px;
+  border-bottom:1px solid var(--border-soft);
+}
+.footer-brand{max-width:340px;}
+.footer-brand .logo{margin-bottom:12px;}
+.footer-brand p{
+  font-size:13.5px;
+  color:var(--ink-faint);
+  line-height:1.8;
+}
+.footer-links{
+  display:flex;
+  gap:56px;
+  flex-wrap:wrap;
+}
+.footer-col h5{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:14px;
+}
+.footer-col ul{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.footer-col a{
+  font-size:13.5px;
+  color:var(--ink-muted);
+}
+.footer-col a:hover{color:var(--ink);}
+.footer-bottom{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  padding-top:24px;
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+.footer-bottom .env{font-family:var(--font-mono);}
+
+/* ================================================================================================
+   4b. ドキュメントページ共通（取扱説明書 / プライバシーポリシー）
+   ================================================================================================ */
+
+.page-doc .page-head{
+  padding:56px 0 36px;
+}
+.page-doc .page-head h1{
+  font-size:clamp(26px,4vw,34px);
+  font-weight:800;
+  letter-spacing:-.01em;
+  line-height:1.35;
+}
+.page-doc .page-head .lede{
+  margin-top:16px;
+  font-size:15px;
+  color:var(--ink-muted);
+  line-height:1.9;
+}
+.page-doc .page-meta{
+  margin-top:18px;
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  font-size:13px;
+  color:var(--ink-faint);
+  font-family:var(--font-mono);
+}
+.page-doc .lang-note{
+  margin-top:22px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:13.5px;
+  color:var(--ink-muted);
+  line-height:1.85;
+}
+.page-doc .lang-note strong{color:var(--ink);}
+
+/* ================================================================================================
+   4c. 取扱説明書 固有
+   ================================================================================================ */
+
+/* ---------- 目次 ---------- */
+.toc{
+  margin:8px 0 0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px 26px;
+}
+.toc h2{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:16px;
+}
+.toc ol{
+  margin:0;
+  padding:0;
+  list-style:none;
+  columns:2;
+  column-gap:40px;
+}
+.toc li{
+  margin:0 0 9px;
+  font-size:13.5px;
+  break-inside:avoid;
+}
+.toc a{color:var(--ink-muted);}
+.toc a:hover{color:var(--ink);}
+.toc .n{
+  display:inline-block;
+  width:22px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:var(--ink-faint);
+}
+
+/* ---------- 本文セクション ---------- */
+.doc-section{
+  padding:46px 0;
+  border-top:1px solid var(--border-soft);
+  scroll-margin-top:80px;
+}
+.doc-section:first-of-type{border-top:none;}
+.doc-section h2{
+  font-size:19px;
+  font-weight:700;
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  letter-spacing:-.005em;
+}
+.doc-section h3{
+  margin-top:34px;
+  font-size:15px;
+  font-weight:700;
+  color:var(--ink);
+}
+.doc-section h4{
+  margin:24px 0 0;
+  font-size:13.5px;
+  font-weight:700;
+  color:var(--ink);
+}
+.doc-section p{
+  margin-top:14px;
+  font-size:14.5px;
+  color:var(--ink-muted);
+  line-height:1.95;
+}
+.doc-section ul,.doc-section ol{
+  margin:14px 0 0;
+  padding-left:22px;
+  font-size:14.5px;
+  color:var(--ink-muted);
+  line-height:1.95;
+}
+.doc-section li+li{margin-top:6px;}
+.doc-section strong{color:var(--ink);font-weight:700;}
+.doc-section em{color:var(--ink);font-style:italic;}
+
+/* 画面上の文言をそのまま引用する箇所 */
+.ui{
+  color:var(--ink);
+  font-weight:700;
+  white-space:nowrap;
+}
+
+/* ---------- 困ったときは（Q&A） ---------- */
+.qa{margin-top:26px;}
+.qa h3{
+  margin-top:0;
+  font-size:14.5px;
+}
+.qa+.qa{
+  margin-top:26px;
+  padding-top:24px;
+  border-top:1px solid var(--border-soft);
+}
+
+/* ================================================================================================
+   4d. プライバシーポリシー 固有
+   ================================================================================================ */
+
+.page-policy .page-head{
+  padding-bottom:40px;
+  border-bottom:1px solid var(--border-soft);
+}
+
+/* ---------- 概要表 ---------- */
+.glance{
+  margin:40px 0 56px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:6px;
+}
+.glance-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  padding:14px 16px;
+}
+.glance-row+.glance-row{border-top:1px solid var(--border-soft);}
+.glance-q{font-size:13.5px;color:var(--ink-muted);}
+.glance-a{
+  font-size:12px;
+  font-weight:700;
+  font-family:var(--font-mono);
+  padding:4px 11px;
+  border-radius:999px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.glance-a.no{background:var(--floor-soft);color:var(--floor);}
+.glance-a.local{background:var(--speedup-soft);color:var(--speedup);}
+
+/* ---------- 本文 ---------- */
+.policy-lang{padding:48px 0;}
+.policy-lang+.policy-lang{border-top:1px solid var(--border-soft);}
+.lang-title{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:36px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.lang-title::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:var(--border-soft);
+}
+.policy-section{margin-bottom:38px;}
+.policy-section:last-child{margin-bottom:0;}
+.policy-section h2{
+  font-size:16px;
+  font-weight:700;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+.policy-section p{
+  margin-top:12px;
+  font-size:14.5px;
+  color:var(--ink-muted);
+  line-height:1.9;
+}
+.policy-section p+p{margin-top:10px;}
+.policy-section ul{
+  margin:12px 0 0;
+  padding-left:20px;
+  font-size:14.5px;
+  color:var(--ink-muted);
+  line-height:1.9;
+}
+.policy-section li+li{margin-top:4px;}
+
+/* 章番号。取扱説明書とポリシーで同じ見た目 */
+.doc-section h2 .num,.policy-section h2 .num{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--ink-faint);
+  font-weight:600;
+}
+
+/* ================================================================================================
+   5. レスポンシブ
+   ================================================================================================ */
+
+@media (max-width:880px){
+  .site-nav{display:none;}
+  .hero-inner{grid-template-columns:1fr;gap:44px;}
+  .problem-inner{grid-template-columns:1fr;gap:36px;}
+  .modes-grid{grid-template-columns:1fr;}
+  .features-grid{grid-template-columns:repeat(2,1fr);}
+  .privacy-inner{grid-template-columns:1fr;gap:36px;}
+  section{padding:64px 0;}
+  .hero{padding:52px 0 64px;}
+}
+
+@media (max-width:640px){
+  .toc ol{columns:1;}
+  .header-right{gap:12px;}
+  .back-link{display:none;}
+  table{font-size:13px;}
+  .glance-row{flex-direction:column;align-items:flex-start;gap:6px;}
+  .data-table{display:block;overflow-x:auto;}
+}
+
+@media (max-width:520px){
+  .wrap{padding:0 20px;}
+  .features-grid{grid-template-columns:1fr;}
+  .hero-actions{flex-direction:column;align-items:stretch;}
+  .footer-top{flex-direction:column;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+}

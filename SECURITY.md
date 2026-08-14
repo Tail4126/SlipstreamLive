@@ -37,12 +37,13 @@ Haven't heard anything after two weeks? Feel free to nudge the advisory thread.
 
 ### Scope
 
-**In scope** — anything in this repository: the content scripts, the MAIN-world control loop, the site adapters, the settings page, and the manifest. Specifically:
+**In scope** — anything in this repository: the content scripts, the MAIN-world control loop, the site adapters, the settings page, the manifest, and the static site published from `docs/`. Specifically:
 
 * A page script escaping the MAIN/ISOLATED world boundary, or reaching the extension's internal helpers.
 * A page script sneaking out-of-range values through the `data-` attribute into the control loop.
 * Anything that makes the extension send network requests, load remote code, or transmit user data — [PRIVACY.md](PRIVACY.md) says it never does any of that.
 * A page reading or changing the extension's stored settings without the user doing anything.
+* Anything in `docs/` that could be turned against a reader — an injected script on the published pages, or a link in the settings popup or the manual that leads somewhere other than where it says.
 
 **Out of scope**
 
@@ -50,6 +51,7 @@ Haven't heard anything after two weeks? Feel free to nudge the advisory thread.
 * Breakage from one of those sites changing their DOM. That's a normal bug, not a security issue — use the [issue tracker](../../issues) for that.
 * Anything that already assumes arbitrary code execution on your machine, or a malicious extension running alongside this one.
 * Issues that only show up in a fork or a modified build.
+* Wording, screenshots, or factual mistakes in the [user manual](https://tail4126.github.io/SlipstreamLive/manual.html). Those are ordinary issues — please file them in the tracker.
 
 ### Disclosure
 
@@ -94,12 +96,13 @@ Give me a reasonable amount of time to ship a fix before you publish details. On
 
 ### 報告の範囲
 
-**対象** — このリポジトリに含まれるものすべて（コンテンツスクリプト、MAIN world の制御ループ、各サイトアダプタ、設定画面、マニフェスト）。特に次のようなものが対象です。
+**対象** — このリポジトリに含まれるものすべて（コンテンツスクリプト、MAIN world の制御ループ、各サイトアダプタ、設定画面、マニフェスト、`docs/` から公開している静的サイト）。特に次のようなものが対象です。
 
 * ページ側のスクリプトが MAIN / ISOLATED の境界を越えたり、拡張機能の内部ヘルパーに触れたりできてしまう経路
 * ページ側のスクリプトが `data-` 属性経由で範囲外の値を制御ループに流し込める経路
 * 拡張機能が外部と通信したり、外部コードを読み込んだり、ユーザーデータを送信したりしてしまうもの（[PRIVACY.md](PRIVACY.md) では「一切やらない」と明言している部分です）
 * ユーザーが何もしていないのに、ページ側が保存済みの設定を読み書きできてしまうもの
+* `docs/` 配下で読者に害が及びうるもの。公開ページへのスクリプト混入や、設定画面・取扱説明書のリンクが表示と違う場所へ飛ぶ、といった経路
 
 **対象外**
 
@@ -107,6 +110,7 @@ Give me a reasonable amount of time to ship a fix before you publish details. On
 * サイト側の DOM 変更で動かなくなる不具合。これは普通のバグなので [Issue](../../issues) にお願いします
 * 端末上ですでに任意コード実行が成立している、または悪意のある別の拡張機能が同居していることが前提のもの
 * フォークや改変版でしか起きないもの
+* [取扱説明書](https://tail4126.github.io/SlipstreamLive/manual.ja.html)の文言・画面写真・記述の誤り。これらは普通の Issue でお願いします
 
 ### 公表について
 

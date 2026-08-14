@@ -1,6 +1,6 @@
 # Privacy Policy / プライバシーポリシー
 
-**Last updated / 最終更新:** 2026-08-08
+**Last updated / 最終更新:** 2026-08-14
 
 > **Note on Language / 言語に関する注記**
 > このポリシーは英語で書いたものが正式版で、日本語訳は参考用です。両者の内容にズレがあった場合は英語版を優先します。
@@ -19,6 +19,7 @@
 | Where are settings stored? / 設定の保存先は？ | Locally, on your device only / お使いの端末内のみ |
 | Are settings synced across devices? / 端末間で同期されますか？ | **No / されません** |
 | Does it load remote code? / 外部コードを読み込みますか？ | **No / いいえ** |
+| Does the settings popup link out? / 設定画面から外部ページを開きますか？ | Only when you click a link / クリックしたときだけ |
 | Can I delete everything? / 完全に削除できますか？ | Yes — uninstalling removes all data / はい。アンインストールで全て消えます |
 | Firefox data collection declaration / Firefox のデータ収集宣言 | `none` — nothing is collected / 収集なし |
 
@@ -86,6 +87,12 @@ Live-chat frames are excluded on purpose. On these pages, the Extension only loo
 * **No remote code** — everything that runs ships inside the package. Nothing gets downloaded or evaluated at runtime.
 * **No tracking** — no analytics, no telemetry, no unique IDs, no fingerprinting, no tracking cookies, no ads.
 
+#### Links in the settings popup
+
+The popup holds two links to the project's documentation site on GitHub Pages: the extension icon opens the home page, and the link in the bottom-right corner opens the user manual. Both open in a new tab.
+
+Nothing is loaded until you click one. Clicking one is an ordinary navigation your browser performs, exactly as if you had typed the address in yourself — the Extension attaches no identifier, no settings, and nothing about what you were watching. Once a page from `github.io` is open, GitHub's own privacy policy applies to it, as it would for any other site you visit.
+
 ---
 
 ### 4. Third parties
@@ -122,6 +129,8 @@ This may get updated as the Extension changes or as store requirements change. T
 ### 8. Contact
 
 Questions, privacy concerns, bug reports — open a GitHub issue, or reach out through the Chrome Web Store / Firefox Add-ons support section.
+
+For how the Extension actually works, see the [user manual](https://tail4126.github.io/SlipstreamLive/manual.html).
 
 ---
 ---
@@ -188,6 +197,12 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*
 * **外部コードなし** — 動くコードは全部パッケージ内にあります。実行時に何かをダウンロードしたり評価したりはしません。
 * **トラッキングなし** — 解析、テレメトリ、識別子、フィンガープリンティング、トラッキングCookie、広告、どれも使いません。
 
+#### 設定画面内のリンクについて
+
+設定画面には、GitHub Pages 上のドキュメントサイトへのリンクが2つあります。拡張機能のアイコンがトップページ、右下のリンクが取扱説明書です。どちらも新しいタブで開きます。
+
+クリックするまで、何も読み込みません。クリックしたあとの動作は、そのアドレスを自分で入力したときとまったく同じ、ブラウザによる通常のページ遷移です。本拡張機能が識別子や設定内容、視聴していた配信の情報をリンクに付け足すことはありません。`github.io` のページを開いた後は、他のサイトを訪れたときと同様に GitHub 側のプライバシーポリシーが適用されます。
+
 ---
 
 ### 4. 第三者への提供
@@ -224,3 +239,5 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*
 ### 8. お問い合わせ
 
 質問、プライバシーに関する懸念、不具合報告はGitHubのIssue、またはChrome Web Store / Firefox Add-onsのサポート欄からどうぞ。
+
+本拡張機能の動作そのものについては[取扱説明書](https://tail4126.github.io/SlipstreamLive/manual.ja.html)をご覧ください。
