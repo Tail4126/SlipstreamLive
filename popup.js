@@ -106,6 +106,10 @@
         for (const node of document.querySelectorAll('[data-msg]')) node.textContent = t(node.dataset.msg);
         for (const node of document.querySelectorAll('[data-title]')) node.title = t(node.dataset.title);
 
+        // data-href は「リンク先そのものを翻訳する」ための属性。
+        // 取扱説明書のように言語別のページがある場合、URL を _locales に持たせておけば分岐が要らない
+        for (const node of document.querySelectorAll('[data-href]')) node.href = t(node.dataset.href);
+
         // 入力できる範囲の目安（例: 「1.05 ~ 4.00」）を生成する。
         // 刻み幅が 1 以上（duckVolume の 5 など）なら整数表示のほうが読みやすいので小数桁を 0 にする
         for (const node of document.querySelectorAll('[data-hint]')) {

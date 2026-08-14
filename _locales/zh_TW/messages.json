@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "顯示可不卡頓維持播放的剩餘時長（緩衝殘量）。" },
     "reset": { "message": "重設" },
     "resetDesc": { "message": "將此區塊的設定還原為預設值。" },
+    "manual": { "message": "使用手冊" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "所有網站" },
     "scopeCommonDesc": { "message": "此設定套用於所有受支援的網站。" }
 }

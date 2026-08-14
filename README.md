@@ -2,6 +2,8 @@
 
 🌐 English | [日本語](README.ja.md)
 
+📘 **[User manual](https://tail4126.github.io/SlipstreamLive/manual.html)** — installation, every setting, and troubleshooting, with screenshots.
+
 > **Live streams always run a few seconds behind. Slipstream Live quietly closes that gap for you.**
 
 **Slipstream Live** is a browser extension for **YouTube Live**, **Twitch**, and **TwitCasting**.
@@ -107,7 +109,8 @@ Click the toolbar icon to open the settings popup. It has two panels:
 * **All sites** — the master switch and the on-screen badges.
 
 Every row has a **?** button with a plain-language explanation, and each section has a
-**Reset** button that puts that section back to its defaults.
+**Reset** button that puts that section back to its defaults. The link in the bottom-right corner
+opens the [user manual](https://tail4126.github.io/SlipstreamLive/manual.html), which walks through the same screen with figures.
 
 ### The badges (off by default)
 
@@ -358,6 +361,7 @@ adapters/              Per-site glue: youtube.js, twitch.js, twitcasting.js
 shared/schema.js       Single source of truth for settings (types, ranges, defaults)
 shared/util.js         Small time-series, statistics and DOM helpers
 _locales/              UI translations for 9 languages
+docs/                  GitHub Pages: landing page, privacy policy, user manual (en/ja) + images/
 ```
 
 MAIN-world scripts can't reach `chrome.storage`, so settings cross the world boundary as a JSON

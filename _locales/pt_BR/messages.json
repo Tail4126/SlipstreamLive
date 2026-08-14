@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "Exibe o tempo de reprodução restante que pode ser mantido sem travar o vídeo." },
     "reset": { "message": "Redefinir" },
     "resetDesc": { "message": "Restaura as configurações desta seção para os valores padrão." },
+    "manual": { "message": "Manual do usuário" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Todos os sites" },
     "scopeCommonDesc": { "message": "Esta configuração se aplica a todos os sites suportados." }
 }

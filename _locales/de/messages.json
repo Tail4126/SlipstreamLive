@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "Zeigt die verbleibende Pufferzeit an, die die Wiedergabe ohne Unterbrechung aufrechterhalten kann." },
     "reset": { "message": "Zurücksetzen" },
     "resetDesc": { "message": "Setzt die Einstellungen in diesem Abschnitt auf die Standardwerte zurück." },
+    "manual": { "message": "Handbuch" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Alle Websites" },
     "scopeCommonDesc": { "message": "Diese Einstellung gilt für alle unterstützten Websites." }
 }

@@ -699,3 +699,49 @@ body
         transition: none !important;
     }
 }
+
+/* ================================================================================================
+   ページフッター（取扱説明書へのリンク）
+   ------------------------------------------------------------------------------------------------
+   2 枚のパネルの下、ポップアップの右下隅に小さく置く。
+   視線を奪わないよう既定は補助色で、マウスを乗せたときだけ通常の文字色へ上げる。
+   ================================================================================================ */
+
+#page-footer
+{
+    display: flex;
+    justify-content: flex-end;                              /* 右端へ寄せる */
+    padding: 0 10px 8px;
+}
+
+#manual-link
+{
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 11px;
+    text-decoration: none;
+    transition: color 120ms ease, background-color 120ms ease;
+}
+
+/* 外部サイトへ開くことを示す小さな矢印。文言の翻訳とは無関係なので CSS で付ける */
+#manual-link::after
+{
+    content: "\2197";                                       /* ↗ */
+    font-size: 10px;
+}
+
+#manual-link:hover
+{
+    background-color: var(--hover);
+    color: var(--fg);
+}
+
+#manual-link:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
+}

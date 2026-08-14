@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "Affiche le temps de tampon restant capable de maintenir la lecture sans interruption." },
     "reset": { "message": "Réinitialiser" },
     "resetDesc": { "message": "Réinitialise les paramètres de cette section aux valeurs par défaut." },
+    "manual": { "message": "Manuel d'utilisation" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Tous les sites" },
     "scopeCommonDesc": { "message": "Ce paramètre s'applique à tous les sites pris en charge." }
 }

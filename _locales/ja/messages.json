@@ -31,6 +31,8 @@
     "showHealthDesc": { "message": "映像を止めずに再生を維持できる時間（バッファ残量）を表示します。" },
     "reset": { "message": "リセット" },
     "resetDesc": { "message": "このセクションの設定を既定値に戻します。" },
+    "manual": { "message": "取扱説明書" },
+    "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.ja.html" },
     "scopeCommon": { "message": "全サイト共通" },
     "scopeCommonDesc": { "message": "この設定はすべての対応サイトに適用されます。" }
 }

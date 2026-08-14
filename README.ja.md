@@ -2,6 +2,8 @@
 
 🌐 [English](README.md) | 日本語
 
+📘 **[取扱説明書](https://tail4126.github.io/SlipstreamLive/manual.ja.html)** — インストールから設定項目、困ったときの対処まで、画面写真つきでまとめています。
+
 > **ライブ配信は必ず数秒遅れている。その遅れを、見ている間ずっと自動で詰め続けます。**
 
 **Slipstream Live** は、**YouTube Live**・**Twitch**・**ツイキャス（TwitCasting）** 向けのブラウザ拡張機能です。
@@ -102,6 +104,7 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 
 各項目には **?** ボタンがあり、わかりやすい説明が読めます。
 セクションごとに **リセット** ボタンもあり、そのセクションだけを既定値に戻せます。
+右下のリンクからは[取扱説明書](https://tail4126.github.io/SlipstreamLive/manual.ja.html)が開きます。同じ画面を図つきで解説しています。
 
 ### バッジの見かた（既定はオフ）
 
@@ -321,6 +324,7 @@ adapters/              サイト別の橋渡し: youtube.js / twitch.js / twitca
 shared/schema.js       設定の唯一の定義元（型・範囲・既定値）
 shared/util.js         時系列窓・統計・DOM の小さなヘルパー
 _locales/              9 言語分の UI 翻訳
+docs/                  GitHub Pages: トップページ・プライバシーポリシー・取扱説明書（英日）と images/
 ```
 
 MAIN world のスクリプトからは `chrome.storage` を触れないため、設定は `data-` 属性上の JSON 文字列として world 境界を越えます。
