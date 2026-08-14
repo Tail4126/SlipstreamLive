@@ -259,6 +259,15 @@ slowdown threshold, plus the level's added margin; just the margin if that mode 
 naturally suppresses speed-ups. And while there isn't enough data yet, `room` is `NaN`, every
 comparison against it is false, and Slipstream Live falls back to doing nothing.
 
+One shortcut sits above all of this. Once buffer health passes 20 seconds — or your maximum
+slowdown threshold plus 10 seconds, whichever is higher — the trough estimate is no longer what
+limits the decision, and Slipstream Live speeds up without waiting for it, falling back to the
+statistical test once health drops below 15 seconds. This matters after a manual seek: refilling
+the buffer drives the fetch rate far above 1.0, the stationarity gate correctly refuses to record
+troughs, and without the shortcut the extension would sit at 1.00x with a minute of video already
+loaded. The shortcut applies to the automatic levels only — with auto-adjust **Off**, your manual
+threshold is used exactly as set.
+
 </details>
 
 Badges are redrawn at most 10 times per second, and all statistics are smoothed, so the speed
@@ -277,6 +286,11 @@ Auto-adjust is deliberately cautious: on an unstable connection it will decide t
 isn't safe. Try switching **Auto-adjust buffer threshold** to **Aggressive** first. If that still
 isn't enough, set it to **Off** and configure **Speed-up buffer threshold** manually (try 15–20
 seconds and work down).
+
+**It sits at 1.00x right after seeking, even with plenty of video buffered.**
+Make sure you're on 1.1.0 or later. From that version, buffer health above 20 seconds allows a
+speed-up on its own, without waiting for the trough statistics — which the burst of fast loading
+that follows a seek would otherwise keep unusable for a while.
 
 **It drops to 0.15x too often.**
 Raise the manual threshold, or lower **Speed-up playback rate** so the buffer drains more slowly.
@@ -389,10 +403,11 @@ window.__slipstreamliveDebug = true;
 ```
 
 Once per second you'll get the current mode, the real playback rate, buffer health, the short-term
-statistics, the trough statistics, the `room` formula, the accumulated excess consumption `drift`,
-and the stationarity verdict `calm`. Buffer figures shown as `----` mean `health` is `NaN`, usually
-because `video.buffered` is empty. A persistent `calm=NO` means the stationarity gate is rejecting
-samples, so no trough history builds up and `room` stays `----` as well.
+statistics, the trough statistics, the `room` formula, the shortcut level `ample`, the accumulated
+excess consumption `drift`, and the stationarity verdict `calm`. Buffer figures shown as `----`
+mean `health` is `NaN`, usually because `video.buffered` is empty. A persistent `calm=NO` means the
+stationarity gate is rejecting samples, so no trough history builds up and `room` stays `----` as
+well — but a speed-up can still happen while buffer health is above `ample`.
 
 To preview any UI language without changing your browser settings, open the settings page with a
 query string, e.g. `popup.html?locale=de`.
