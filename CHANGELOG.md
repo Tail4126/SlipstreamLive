@@ -8,6 +8,12 @@
 
 ## [未リリース]
 
+## [1.1.1] - 2026-08-14
+
+### 修正
+
+- YouTube で広告再生中に加速と最低速度のあいだで速度が激しく往復する不具合を修正。`getVideoData()` は広告中も本編の `video_id` と `isLive` を返し続けるため `media()` が広告を検知できず、広告のバッファ（尺のぶん丸ごと読み込み済み → 末尾で枯渇）を本編の指標として読んでしまっていた。プレイヤーの `ad-showing` クラスで広告区間を判定し、広告中は `id: 'ad'` / `live: false` を返すことで `inject.js` 側が動画の切り替わりとして扱うよう修正（`ad-created` は広告終了後も残り続けるため未使用）。
+
 ## [1.1.0] - 2026-08-14
 
 ### 追加
@@ -185,7 +191,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.1.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Tail4126/SlipstreamLive/compare/v1.0.1...v1.0.2
