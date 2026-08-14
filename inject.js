@@ -59,6 +59,19 @@
     const DVR        = '(DVR)';         // 追っかけ再生中にレイテンシバッジへ出す表記。MAIN world では i18n API を使えないため直書きする
 
     /*
+       谷の統計を待たずに加速してよいと判断するバッファ残量。
+
+       Auto の推定は「のこぎり波の谷が floor の下限を割らないか」を精密に見極めるための仕組みであり、
+       残量がその下限より桁違いに多い場面では、そもそも判断材料として不要になる。
+       手動シークで急速に先読みが進むと取り込み速度が跳ね上がって calm が false へ張り付き、
+       谷の履歴が貯まらないまま room が NaN になるため、60 秒あっても等倍のまま止まってしまう。
+       この近道はその状態を埋めるためだけのもので、通常の低遅延配信では発動しない高さに置く。
+    */
+    const AMPLE      = 20;              // 統計を待たずに加速してよい残量（秒）
+    const AMPLE_KEEP = 5;               // 近道から降りるときの緩衝（秒）。のこぎり波の振幅で往復しない幅を取る
+    const AMPLE_OVER = 10;              // margin からの最低上乗せ（秒）。floorThreshold を大きくした場合の保険
+
+    /*
        speedupAuto（0 / 1 / 2）の段階ごとの制御パラメータ。
          hysteresis   … 今の状態に留まる側へしきい値をずらす量（秒）。境界での往復を防ぐ
          troughK      … 谷のばらつきに対する安全余裕係数。大きいほど慎重（加速しにくくなる）
@@ -947,15 +960,15 @@
 
         const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : '----'); // NaN を '----' として見やすく整える
         const { n, avg, sd, windowMs, troughMs, calm, troughN, troughSpan, troughAvg, troughSd, drift } = Auto.snapshot();
-        const { auto, troughK, margin } = tune;
+        const { auto, troughK, margin, ample } = tune;
         const room = Auto.room(troughK);
 
         log(`${state.padEnd(8)} rate=${fmt(Rate.actual(video))} now=${fmt(health)}+${fmt(ahead)}`
             + ` health${(windowMs / 1000).toFixed(1)}s(avg=${fmt(avg)} sd=${fmt(sd)} n=${String(n).padStart(4)})`
             + ` trough${(troughMs / 1000).toFixed(1)}s(avg=${fmt(troughAvg)}s sd=${fmt(troughSd)}s n=${String(troughN).padStart(4)}`
             + ` span=${(troughSpan / 1000).toFixed(1)}s)`
-            + ` room=${fmt(troughAvg)}-${troughK}*${fmt(troughSd)}=${fmt(room)}s/${fmt(margin)}s auto=${auto}`
-            + ` drift=${fmt(drift)}s calm=${calm ? 'yes' : 'NO'}`);
+            + ` room=${fmt(troughAvg)}-${troughK}*${fmt(troughSd)}=${fmt(room)}s/${fmt(margin)}s`
+            + ` ample=${fmt(ample)}s auto=${auto} drift=${fmt(drift)}s calm=${calm ? 'yes' : 'NO'}`);
     }
 
     /* ============================================================================================
@@ -1019,20 +1032,26 @@
      * floorThreshold は sanitize() が 0 以上を保証しているため、floor が OFF のときを 0 と
      * 読み替えて足すだけでよく、下限を取り直す必要はない
      * （floor ON なら floorThreshold + troughMargin、OFF なら troughMargin になる）。
+     * ample は「谷の推定を待たずに加速してよい」と判断する残量（秒）。margin より必ず高くなるよう取る。
      *
-     * @returns {{auto: number, hysteresis: number, troughK: number, troughMs: number, margin: number}}
+     * @returns {{auto: number, hysteresis: number, troughK: number, troughMs: number, margin: number, ample: number}}
      */
     function tuning() {
-        const auto = clamp(Math.round(settings.speedupAuto), 0, AUTO_TUNING.length - 1);
-        const spec = AUTO_TUNING[auto];
-        return { auto, ...spec, margin: (settings.floor ? settings.floorThreshold : 0) + spec.troughMargin };
+        const auto   = clamp(Math.round(settings.speedupAuto), 0, AUTO_TUNING.length - 1);
+        const spec   = AUTO_TUNING[auto];
+        const margin = (settings.floor ? settings.floorThreshold : 0) + spec.troughMargin;
+
+        // ample は margin より必ず AMPLE_OVER 秒以上高くする。
+        // floorThreshold を上限の 10 秒まで上げた場合でも、近道が margin に近づきすぎないようにするため
+        return { auto, ...spec, margin, ample: Math.max(AMPLE, margin + AMPLE_OVER) };
     }
 
     /**
      * バッファ残量から、次に取るべき制御状態を判定する。
      * 上から順に「緊急度の高いもの」を先に判定し、当てはまった時点で確定させる。
      *
-     * 早送りの判定だけは 2 通りある。
+     * 早送りの判定は 3 通りある。
+     *   近道（段階 1 以上）              … 残量 health が ample を上回るなら、谷の統計を待たずに加速する
      *   自動しきい値モード（段階 1 以上）… Auto が推定した実効余裕 room が、確保したい下限 margin を上回るか
      *   手動モード（段階 0）             … 今この瞬間の残量 health が、ユーザーが設定したしきい値を上回るか
      *
@@ -1043,7 +1062,7 @@
     function decide(health, tune) {
         if (!Number.isFinite(health)) return 'normal';      // 測れないなら何もしないのが最も安全
 
-        const { auto, hysteresis, troughK, margin } = tune;
+        const { auto, hysteresis, troughK, margin, ample } = tune;
 
         // 今の状態に「留まる側」へしきい値を hysteresis だけずらす。
         // 境界ちょうどで状態が往復すると、倍率と音量が細かく揺れて映像も音も荒れる
@@ -1051,6 +1070,12 @@
 
         if (settings.floor && health <= settings.floorThreshold + stay('floor')) return 'floor';
         if (!settings.speedup)                                                   return 'normal';
+
+        // 自動しきい値モードだけの近道。残量そのものが ample を超えていれば、
+        // 谷の推定がまだ／もう使えなくても加速して構わない。
+        // 降りる側は AMPLE_KEEP ぶん低く取る。ヒステリシス（0.05〜0.1 秒）はのこぎり波の
+        // 振幅より桁が小さく、境界上で 1 セグメント周期ごとに往復してしまうため専用の幅を使う
+        if (auto && health >= ample - (state === 'speedup' ? AMPLE_KEEP : 0)) return 'speedup';
 
         const room = auto ? Auto.room(troughK) : health;            // 比較する余裕の値
         const line = auto ? margin : settings.speedupThreshold;     // 比較するしきい値
@@ -1169,6 +1194,16 @@
     }
 
     /**
+     * シーク完了時に統計を作り直す。
+     *
+     * シークは health を不連続に飛ばすため、窓に古い標本と新しい標本が混在すると
+     * 平均も標準偏差も傾きも意味を失う。捨ててやり直すほうが復帰が速い。
+     *
+     * @returns {void}
+     */
+    function jump() { Auto.reset(); run(false); }
+
+    /**
      * メディアイベント用のリスナー。発火のタイミングが偏っているため統計には使わない。
      *
      * @returns {void}
@@ -1179,10 +1214,12 @@
        <video> へ張るリスナーの一覧（イベント種別 → ハンドラ）。
        裏タブではタイマーが大きく間引かれるため、これらのイベントでも tick を蹴って
        制御が完全に止まるのを防ぐ。waiting だけは pump と stalled の 2 つを張る。
+       seeked だけは pump ではなく jump を張り、統計を作り直させる。
     */
     const MEDIA_HOOKS = [
         ['timeupdate', pump],
         ['progress',   pump],
+        ['seeked',     jump],
         ['waiting',    pump],
         ['waiting',    stalled],
     ];
