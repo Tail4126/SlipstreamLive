@@ -49,7 +49,7 @@
     <h1>User manual</h1>
     <p class="lede">Slipstream Live watches how much video your browser has loaded ahead and nudges the playback speed so you stay close to the live edge — without the video stopping to buffer. This manual covers installation, every setting, and what to do when something looks wrong.</p>
     <div class="page-meta">
-      <span>Version 1.0.3</span>
+      <span>Version 1.1.0</span>
       <span>YouTube Live ・ Twitch ・ TwitCasting</span>
     </div>
   </div>
@@ -324,6 +324,7 @@
     <p>Every 20 milliseconds Slipstream Live measures <strong>buffer health</strong> — how many seconds of video are loaded and ready to play — and picks one of the three modes from that number.</p>
     <p>The hard part is knowing when speeding up is <em>safe</em>. Buffer health is never steady: video arrives in chunks ("segments"), so the buffer jumps when a chunk lands and then drains until the next one. Plotted over time it looks like a sawtooth. A single reading taken at a peak would suggest plenty of room, leading to a speed-up that hits the very next trough with nothing left.</p>
     <p>So instead of trusting one reading, Slipstream Live estimates statistically where the <em>troughs</em> are, over a window that adapts to each stream, and only allows a speed-up while that estimated headroom stays above the buffer level you have asked it to protect. Because the safety factor is large, headroom only opens up when the troughs are <em>consistent</em> — an unstable connection naturally suppresses speed-ups, and while there isn't enough data yet, Slipstream Live simply does nothing.</p>
+    <p>One shortcut sits above that test. Once buffer health passes 20 seconds — or your maximum slowdown threshold plus 10 seconds, whichever is higher — the trough estimate is no longer what limits the decision, so Slipstream Live speeds up without waiting for it, and returns to the statistical test below 15 seconds. This is what keeps it responsive right after you seek, when the buffer refills so quickly that the statistics are temporarily unusable. The shortcut applies to the automatic levels only.</p>
     <p>Badges are redrawn at most 10 times per second and all statistics are smoothed, so the speed does not visibly oscillate. When there is nothing to control, the loop drops to a 1-second search mode and then stops entirely, waking on media events or when the tab becomes visible again.</p>
     <div class="note">
       <p>The full derivation — including how the trough is located without knowing the segment length — is in the <a href="https://github.com/Tail4126/SlipstreamLive#-how-it-works" target="_blank" rel="noopener">project README</a>.</p>
@@ -337,6 +338,11 @@
     <div class="qa">
       <h3>It never speeds up.</h3>
       <p>Auto-adjust is deliberately cautious: on an unstable connection it decides that speeding up isn't safe. Try <span class="ui">Auto-adjust buffer threshold</span> → <span class="ui">Aggressive</span> first. If that still isn't enough, set it to <span class="ui">Off</span> and configure <span class="ui">Speed-up buffer threshold (sec)</span> manually — start around 15–20 seconds and work down.</p>
+    </div>
+
+    <div class="qa">
+      <h3>It sits at 1.00x right after seeking, even with plenty of video buffered.</h3>
+      <p>Make sure you are on version 1.1.0 or later. From that version, buffer health above 20 seconds allows a speed-up on its own, without waiting for the trough statistics — which the burst of fast loading that follows a seek would otherwise keep unusable for a while.</p>
     </div>
 
     <div class="qa">
@@ -387,10 +393,10 @@
       <li>Wait about 30 seconds while the problem is happening, then copy the output.</li>
     </ol>
     <div class="code-block">window.__slipstreamliveDebug = true;</div>
-    <p>Once per second you will see the current mode, the real playback rate, buffer health, the short-term and trough statistics, the <code>room</code> calculation, the accumulated excess consumption <code>drift</code>, and the stationarity verdict <code>calm</code>.</p>
+    <p>Once per second you will see the current mode, the real playback rate, buffer health, the short-term and trough statistics, the <code>room</code> calculation, the shortcut level <code>ample</code>, the accumulated excess consumption <code>drift</code>, and the stationarity verdict <code>calm</code>.</p>
     <ul>
       <li>Buffer figures shown as <code>----</code> mean the value is unavailable, usually because the browser reports an empty buffer.</li>
-      <li>A persistent <code>calm=NO</code> means the stationarity gate is rejecting samples, so <code>room</code> stays <code>----</code> as well.</li>
+      <li>A persistent <code>calm=NO</code> means the stationarity gate is rejecting samples, so <code>room</code> stays <code>----</code> as well. A speed-up can still happen while buffer health is above <code>ample</code>.</li>
       <li><code>timer stopped</code> appears often even when everything is working — content scripts run in every frame, and frames without a video element shut down after 5 seconds.</li>
     </ul>
   </section>
