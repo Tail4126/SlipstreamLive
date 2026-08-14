@@ -50,7 +50,7 @@ Slipstream Live does that watching for you, about 50 times per second.
 
 ### 🌐 Chrome / Edge / Brave / other Chromium browsers
 
-Install directly from the **[Chrome Web Store](https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf)**.
+Install directly from the **[Chrome Web Store](https://chromewebstore.google.com/detail/ecbonmgnfkfkfempebmojjpkgbekkjdf)**.
 
 <details>
 <summary>Installing from source (for developers / manual installation)</summary>
@@ -67,6 +67,14 @@ Install directly from the **[Chrome Web Store](https://chromewebstore.google.com
 
 ### 🦊 Firefox
 
+Install directly from **[Firefox Add-ons](https://addons.mozilla.org/firefox/addon/slipstream-live/)**.
+
+Also available on **Firefox for Android** (v142.0 or later) — open the same page in
+Firefox for Android and tap **Add to Firefox**.
+
+<details>
+<summary>Installing from source (for developers / manual installation)</summary>
+
 **A. Temporary install (easiest, but disappears when you close Firefox)**
 
 1. Type `about:debugging#/runtime/this-firefox` into the address bar.
@@ -78,6 +86,8 @@ Install directly from the **[Chrome Web Store](https://chromewebstore.google.com
 1. ZIP up the contents of the folder.
 2. Open `about:config` and set `xpinstall.signatures.required` to **`false`**.
 3. Open `about:addons` → ⚙️ gear icon → **Install Add-on From File…** → choose your ZIP.
+
+</details>
 
 ### ✅ Check that it works
 

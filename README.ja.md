@@ -46,7 +46,7 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 
 ### 🌐 Chrome / Edge / Brave など Chromium 系ブラウザ
 
-**[Chrome ウェブストア](https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf)** から直接インストールできます。
+**[Chrome ウェブストア](https://chromewebstore.google.com/detail/ecbonmgnfkfkfempebmojjpkgbekkjdf)** から直接インストールできます。
 
 <details>
 <summary>ソースからインストールする場合（開発者・手動インストール向け）</summary>
@@ -62,6 +62,14 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 
 ### 🦊 Firefox
 
+**[Firefox アドオン](https://addons.mozilla.org/firefox/addon/slipstream-live/)** から直接インストールできます。
+
+**Android 版 Firefox（142.0 以降）** にも対応しています。Android 版 Firefox で同じページを開き、
+「Firefox へ追加」をタップしてください。
+
+<details>
+<summary>ソースからインストールする場合（開発者・手動インストール向け）</summary>
+
 **A. 一時的な読み込み（手軽ですが、Firefox を閉じると消えます）**
 
 1. アドレスバーに `about:debugging#/runtime/this-firefox` と入力して開きます。
@@ -73,6 +81,8 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 1. フォルダの中身を ZIP 圧縮します。
 2. `about:config` を開き、`xpinstall.signatures.required` を **`false`** に変更します。
 3. `about:addons` を開き、右上の ⚙️ から **「ファイルからアドオンをインストール…」** で ZIP を選びます。
+
+</details>
 
 ### ✅ 動作確認
 

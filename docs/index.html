@@ -733,9 +733,10 @@ section{padding:88px 0;}
           入れてしまえば、あとは何もしなくて大丈夫です。
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome に追加</a>
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome に追加</a>
+          <a class="btn btn-primary" href="https://addons.mozilla.org/firefox/addon/slipstream-live/" target="_blank" rel="noopener">Firefox に追加</a>
           <a class="btn btn-ghost" href="https://github.com/Tail4126/SlipstreamLive" target="_blank" rel="noopener">GitHubでソースを見る</a>
-          <a class="btn btn-ghost" href="#install">他のブラウザ・手動読み込み</a>
+          <a class="btn btn-ghost" href="#install">手動で読み込む</a>
         </div>
       </div>
 
@@ -912,7 +913,7 @@ section{padding:88px 0;}
       <div class="section-head">
         <span class="section-eyebrow">Install</span>
         <h2>インストール方法</h2>
-        <p>Chrome ウェブストアからワンクリックで追加できます。手動読み込みや Firefox の場合の手順も用意しています。</p>
+        <p>Chrome ウェブストア／Firefox アドオンから、それぞれワンクリックで追加できます。ソースから手動で読み込む手順も用意しています。</p>
       </div>
 
       <div class="install-tabs" role="tablist" aria-label="ブラウザを選択">
@@ -926,7 +927,7 @@ section{padding:88px 0;}
             <span class="step-num"></span>
             <div class="step-body">
               <h4>Chrome ウェブストアを開く</h4>
-              <p><a href="https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome ウェブストアのページ</a>を開き、「Chrome に追加」ボタンをクリックします。</p>
+              <p><a href="https://chromewebstore.google.com/detail/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome ウェブストアのページ</a>を開き、「Chrome に追加」ボタンをクリックします。</p>
             </div>
           </div>
           <div class="step">
@@ -955,27 +956,28 @@ section{padding:88px 0;}
           <div class="step">
             <span class="step-num"></span>
             <div class="step-body">
-              <h4>デバッグ画面を開く</h4>
-              <p>アドレスバーに <code>about:debugging#/runtime/this-firefox</code> と入力します。</p>
+              <h4>Firefox アドオンを開く</h4>
+              <p><a href="https://addons.mozilla.org/firefox/addon/slipstream-live/" target="_blank" rel="noopener">Firefox アドオンのページ</a>を開き、「Firefox へ追加」ボタンをクリックします。</p>
             </div>
           </div>
           <div class="step">
             <span class="step-num"></span>
             <div class="step-body">
-              <h4>一時的なアドオンを読み込む</h4>
-              <p>「一時的なアドオンを読み込む…」をクリックします。</p>
+              <h4>追加を許可する</h4>
+              <p>権限の確認ダイアログが表示されたら「追加」を選択します。求められるのは YouTube・Twitch・ツイキャスへのサイトアクセスと設定の保存だけで、データ収集はありません。</p>
             </div>
           </div>
           <div class="step">
             <span class="step-num"></span>
             <div class="step-body">
-              <h4>manifest.json を選択</h4>
-              <p>解凍したフォルダの中から <code>manifest.json</code> を選びます。</p>
+              <h4>ツールバーにピン留め（任意）</h4>
+              <p>拡張機能アイコンから Slipstream Live をピン留めしておくと、状態の確認や設定変更がスムーズになります。</p>
             </div>
           </div>
         </div>
         <div class="install-check">
-          この方法は手軽ですが、Firefox を閉じると読み込みが消えます。恒久的にインストールしたい場合の手順は GitHub の README に載せています。
+          <b>Android 版 Firefox（142.0 以降）にも対応しています。</b>同じページをモバイル版 Firefox で開けば、そのまま追加できます。<br>
+          開発版・ソースからの手動読み込みを行う場合は、<code>about:debugging#/runtime/this-firefox</code> で「一時的なアドオンを読み込む…」から <code>manifest.json</code> を選択してください（Firefox を閉じると消えます）。
         </div>
       </div>
 
@@ -1045,7 +1047,8 @@ section{padding:88px 0;}
         <div class="footer-col">
           <h5>プロダクト</h5>
           <ul>
-            <li><a href="https://chromewebstore.google.com/detail/slipstream-live-%E2%80%94-detect/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome Web Store</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/ecbonmgnfkfkfempebmojjpkgbekkjdf" target="_blank" rel="noopener">Chrome Web Store</a></li>
+            <li><a href="https://addons.mozilla.org/firefox/addon/slipstream-live/" target="_blank" rel="noopener">Firefox Add-ons</a></li>
             <li><a href="#modes">仕組み</a></li>
             <li><a href="#features">機能</a></li>
             <li><a href="#install">インストール</a></li>
