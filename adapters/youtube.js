@@ -115,15 +115,22 @@
 
             /**
              * 再生中のコンテンツの識別 ID とライブ配信かどうかを返す。
-             * ID が前回と変わったら、inject.js 側は「別の動画になった」と判断して状態を初期化する。
              *
-             * @returns {{ id: string|null, live: boolean }}
+             * 【広告を弾く理由】
+             *   YouTube は広告を本編と同じ <video> で再生するが、getVideoData() は
+             *   広告中も本編の video_id と isLive をそのまま返し続ける。そのため API だけでは
+             *   広告を見分けられず、広告のバッファ（尺のぶん丸ごと読み込み済み → 末尾で枯渇）を
+             *   本編の指標として読んでしまい、加速と最低速を往復することになる。
+             *   プレイヤーの ad-showing クラスだけが広告区間と正確に一致するので、これを使う。
+             *   ad-created は一度広告が入ると残り続けるため使ってはいけない。
              */
             media() {
-                const data = call('getVideoData');  // { video_id, isLive, title, ... }
+                const data = call('getVideoData');
+                const ad   = player?.classList.contains('ad-showing') === true;
+
                 return {
-                    id: data?.video_id ?? null,
-                    live: data?.isLive === true,    // 厳密比較にして、値が取れないときは false へ倒す
+                    id:   ad ? 'ad' : (data?.video_id ?? null),
+                    live: !ad && data?.isLive === true,
                 };
             },
 
