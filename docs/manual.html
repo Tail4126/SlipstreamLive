@@ -239,7 +239,7 @@
         <thead><tr><th>Mode</th><th>Priority</th><th>Badge colour</th><th>Speed</th><th>When it applies</th></tr></thead>
         <tbody>
           <tr><td><strong>Floor</strong></td><td>Highest</td><td><span class="dot floor"></span>Blue <code>#83c1ff</code></td><td><strong>0.15x</strong> (fixed)</td><td>The buffer is about to run out. Emergency brake, plus volume ducking.</td></tr>
-          <tr><td><strong>Speedup</strong></td><td>Low</td><td><span class="dot speedup"></span>Red <code>#ff8983</code></td><td>1.25x (default)</td><td>The buffer is comfortably deep. Catches up to the live edge.</td></tr>
+          <tr><td><strong>Speedup</strong></td><td>Low</td><td><span class="dot speedup"></span>Red <code>#ff8983</code></td><td>1.25x (default)</td><td>The buffer is comfortably deep <em>and</em> speeding up is actually gaining ground. Catches up to the live edge.</td></tr>
           <tr><td><strong>Normal</strong></td><td>—</td><td><span class="dot normal"></span>White <code>#eee</code></td><td>1.00x</td><td>Nothing to do.</td></tr>
         </tbody>
       </table>
@@ -253,7 +253,10 @@
       <img src="images/Fig_10-en.png" alt="The playback rate badge in blue at 0.15x" loading="lazy" width="220" height="80">
       <figcaption><b>Fig. 10</b> Floor mode. Blue means the buffer is nearly empty and playback has been slowed to the minimum.</figcaption>
     </figure>
-    <p>Each threshold carries hysteresis in the direction of the current mode, so speed and volume don't chatter when the buffer sits exactly on a boundary. The width follows the <span class="ui">Auto-adjust buffer threshold</span> level: <strong>0.1 s</strong> at Off and Standard, <strong>0.05 s</strong> at Aggressive.</p>
+    <p>Each threshold carries hysteresis in the direction of the current mode, so speed and volume don't chatter when the buffer sits exactly on a boundary. The width is <strong>0.2 s</strong> at every level. On top of that, <strong>starting</strong> a speed-up is rate-limited to once every 2 seconds. Nothing else is delayed — not leaving a speed-up, not entering Floor, not leaving it. Only the direction that <em>increases</em> intervention is treated cautiously; backing off and falling back to safety always take effect at once. Widening a threshold alone can't stop the chatter, because the value being compared against it moves as well.</p>
+    <div class="note">
+      <p><b>When speeding up stops helping, it stops speeding up.</b> Live video is only ever produced in real time, so once you reach the live edge there is no gap left to close. Holding a higher rate there just makes playback outrun each arriving segment and stall briefly, over and over, which lowers the effective speed rather than raising it. Slipstream Live compares the seconds the speed-up <em>should</em> have gained against the seconds it <em>actually</em> gained, and stands down when the latter falls below half the former. If you drift behind again, it goes straight back to catching up.</p>
+    </div>
 
     <h3>What Slipstream Live leaves alone</h3>
     <ul>
@@ -293,9 +296,9 @@
       <table>
         <thead><tr><th>Level</th><th class="num">Trough window</th><th class="num">Safety factor</th><th class="num">Added margin</th><th class="num">Hysteresis</th><th>Character</th></tr></thead>
         <tbody>
-          <tr><td><strong>Off</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.1 s</td><td>No estimation; uses <span class="ui">Speed-up buffer threshold</span> as-is.</td></tr>
-          <tr><td><strong>Standard</strong></td><td class="num">30 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.1 s</td><td>Long window, large factor — cautious. The default.</td></tr>
-          <tr><td><strong>Aggressive</strong></td><td class="num">5 s</td><td class="num">3</td><td class="num">0.1 s</td><td class="num">0.05 s</td><td>Short window; reacts quickly to recent headroom and closes the gap harder.</td></tr>
+          <tr><td><strong>Off</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.2 s</td><td>No estimation; uses <span class="ui">Speed-up buffer threshold</span> as-is.</td></tr>
+          <tr><td><strong>Standard</strong></td><td class="num">30 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.2 s</td><td>Long window, large factor — cautious. The default.</td></tr>
+          <tr><td><strong>Aggressive</strong></td><td class="num">5 s</td><td class="num">3</td><td class="num">0.1 s</td><td class="num">0.2 s</td><td>Short window; reacts quickly to recent headroom and closes the gap harder.</td></tr>
         </tbody>
       </table>
     </div>
@@ -325,6 +328,7 @@
     <p>The hard part is knowing when speeding up is <em>safe</em>. Buffer health is never steady: video arrives in chunks ("segments"), so the buffer jumps when a chunk lands and then drains until the next one. Plotted over time it looks like a sawtooth. A single reading taken at a peak would suggest plenty of room, leading to a speed-up that hits the very next trough with nothing left.</p>
     <p>So instead of trusting one reading, Slipstream Live estimates statistically where the <em>troughs</em> are, over a window that adapts to each stream, and only allows a speed-up while that estimated headroom stays above the buffer level you have asked it to protect. Because the safety factor is large, headroom only opens up when the troughs are <em>consistent</em> — an unstable connection naturally suppresses speed-ups, and while there isn't enough data yet, Slipstream Live simply does nothing.</p>
     <p>One shortcut sits above that test. Once buffer health passes 20 seconds — or your maximum slowdown threshold plus 10 seconds, whichever is higher — the trough estimate is no longer what limits the decision, so Slipstream Live speeds up without waiting for it, and returns to the statistical test below 15 seconds. This is what keeps it responsive right after you seek, when the buffer refills so quickly that the statistics are temporarily unusable. The shortcut applies to the automatic levels only.</p>
+    <p>All of that answers "is there enough buffer to speed up safely?" — a different question from "is there any point in speeding up?" Live video is produced in real time, so the buffer refills at 1.0x no matter how fast you play it. Once the cushion is spent you are at the live edge, and holding a higher rate there makes playback outrun each arriving segment and stall for a fraction of a second, over and over. Buffer health can't see this, because every stall lets the buffer refill. So Slipstream Live compares the gain the speed-up should have produced against the gain the playhead actually made, over a 12-second window, and stands down when the latter falls below half the former. It re-arms once latency grows past a threshold — one that scales with the site's segment length, so it means the same thing on sites whose baseline latency differs by more than tenfold — or after 30 seconds.</p>
     <p>Badges are redrawn at most 10 times per second and all statistics are smoothed, so the speed does not visibly oscillate. When there is nothing to control, the loop drops to a 1-second search mode and then stops entirely, waking on media events or when the tab becomes visible again.</p>
     <div class="note">
       <p>The full derivation — including how the trough is located without knowing the segment length — is in the <a href="https://github.com/Tail4126/SlipstreamLive#-how-it-works" target="_blank" rel="noopener">project README</a>.</p>
@@ -343,6 +347,11 @@
     <div class="qa">
       <h3>It sits at 1.00x right after seeking, even with plenty of video buffered.</h3>
       <p>Make sure you are on version 1.1.0 or later. From that version, buffer health above 20 seconds allows a speed-up on its own, without waiting for the trough statistics — which the burst of fast loading that follows a seek would otherwise keep unusable for a while.</p>
+    </div>
+
+    <div class="qa">
+      <h3>The badge says 1.25x but nothing feels faster, and the picture hitches every few seconds.</h3>
+      <p>You've reached the live edge. Live video only arrives in real time, so beyond that point a higher rate adds stalls without adding speed. Version 1.1.2 and later detects this and stands down automatically — check your version first. If it persists, look at <code>gain=</code> in the debug log; <code>FUTILE</code> means the detection is working.</p>
     </div>
 
     <div class="qa">
@@ -393,10 +402,12 @@
       <li>Wait about 30 seconds while the problem is happening, then copy the output.</li>
     </ol>
     <div class="code-block">window.__slipstreamliveDebug = true;</div>
-    <p>Once per second you will see the current mode, the real playback rate, buffer health, the short-term and trough statistics, the <code>room</code> calculation, the shortcut level <code>ample</code>, the accumulated excess consumption <code>drift</code>, and the stationarity verdict <code>calm</code>.</p>
+    <p>Once per second you will see the current mode, the real playback rate, buffer health, the short-term and trough statistics, the <code>room</code> calculation, the shortcut level <code>ample</code>, the accumulated excess consumption <code>drift</code>, the stationarity verdict <code>calm</code>, and the speed-up effectiveness <code>gain</code>.</p>
     <ul>
       <li>Buffer figures shown as <code>----</code> mean the value is unavailable, usually because the browser reports an empty buffer.</li>
       <li>A persistent <code>calm=NO</code> means the stationarity gate is rejecting samples, so <code>room</code> stays <code>----</code> as well. A speed-up can still happen while buffer health is above <code>ample</code>.</li>
+      <li><code>lat=</code> is the latency the site reports. <code>sd</code> is the standard deviation over a 5-second window and <code>jump</code> is the largest change seen in the last second. In practice <code>sd</code> stays at or below 0.11 and <code>jump</code> below 0.2 while latency is steady. A <code>jump</code> that stays well above that means the latency reading is noisy enough to re-arm speed-ups that were correctly stood down.</li>
+      <li><code>gain=</code> reads "seconds actually gained / seconds the speed-up asked for". When the right-hand figure passes 1 second and the left-hand one is under half of it, <code>FUTILE</code> is appended and speed-ups are being skipped.</li>
       <li><code>timer stopped</code> appears often even when everything is working — content scripts run in every frame, and frames without a video element shut down after 5 seconds.</li>
     </ul>
   </section>

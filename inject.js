@@ -26,6 +26,11 @@
  *     speedup    低      余裕あり。加速して配信の最先端へ追いつく
  *     normal     ―       通常の 1.0 倍速
  *
+ *   ただし配信の最先端に追いついてしまえば、それ以上詰められる遅れは存在しない。
+ *   ライブ映像は実時間でしか作られないため、そこから先は倍率を上げても再生が
+ *   セグメントの到着を追い越して止まるだけで、実効速度はかえって落ちる。
+ *   Gain はこの「効かない加速」を実測から検出し、speedup を見送らせる。
+ *
  * 【ファイルの構成】
  *   1. 定数
  *   2. 共通ユーティリティの取り込みとデバッグ
@@ -35,9 +40,11 @@
  *   6. sanitize … 設定値のフェイルセーフ検証
  *   7. 内部状態
  *   8. Auto     … バッファの谷を統計的に推定する自動しきい値モジュール（最重要）
- *   9. report   … デバッグログ出力
- *  10. 制御ロジック … buffer / tuning / decide / repaint / tick
- *  11. タイマー制御 … schedule / sleep / wake と起動時のイベント登録
+ *   9. Gain     … 加速が実際に効いているかを検証するモジュール（最重要）
+ *  10. Noise    … サイトが報告する遅延のばらつきを測るモジュール（デバッグ表示用）
+ *  11. report   … デバッグログ出力
+ *  12. 制御ロジック … buffer / tuning / purge / restart / settle / decide / repaint / tick
+ *  13. タイマー制御 … schedule / sleep / wake と起動時のイベント登録
  * ================================================================================================ */
 (() => {
     'use strict';
@@ -52,7 +59,7 @@
        ============================================================================================ */
 
     const TICK_MS    = 20;              // メイン制御ループの周期（ミリ秒）。裏に回ったタブではブラウザに間引かれて実際はもっと遅くなる
-    const PAINT_MS   = 100;             // バッジの再描画とレイテンシ取得の最小間隔（ミリ秒）。毎 tick 描画すると重いうえ数字がちらつく
+    const PAINT_MS   = 100;             // バッジ再描画の最小間隔（ミリ秒）。毎 tick 描画すると重いうえ数字がちらつく
     const SLACK      = 0.1;             // 再生位置がバッファ区間の先頭より僅かに手前でも「その区間を再生中」とみなす許容誤差（秒）
     const FLOOR_RATE = 0.15;            // floor 状態の再生倍率。_locales の floorDesc に書いてある説明文と必ず一致させること
     const NEAR_ONE   = 0.001;           // 再生速度を「実質 1.0 倍」とみなす許容誤差。浮動小数点の比較を安全に行うため
@@ -72,22 +79,51 @@
     const AMPLE_OVER = 10;              // margin からの最低上乗せ（秒）。floorThreshold を大きくした場合の保険
 
     /*
+       境界での往復（チャタリング）を抑える 2 つの仕掛け。
+
+       HYSTERESIS … 今の状態に留まる側へしきい値をずらす量（秒）。
+       DWELL_MS   … 状態を切り替えてから、次の切り替えを許すまでの最小時間（ミリ秒）。
+
+       ヒステリシスだけでは足りない。判定に使う room は実測で 1 秒あたり 0.5 秒ほどの幅で
+       揺れており、しきい値のすぐ近くにいる限り、幅をどれだけ広げても境界はいつか踏まれる。
+       値の側の対策には原理的な限界があるので、「一度決めたらしばらく動かさない」という
+       時間軸の制約を併用する。0.5〜1 Hz の振動はこれで確実に潰れる。
+
+       DWELL_MS を課すのは normal → speedup、すなわち「加速を始める」遷移だけである。
+       介入を強める方向だけを慎重にし、弱める方向・安全側へ戻る方向は一切待たせない。
+
+         normal → speedup … 待つ。往復が実測で問題になったのはこの入口だけ
+         speedup → normal … 待たない。危ないと判断した後も 2 秒 1.25 倍を続けると
+                             0.5 秒ぶん余計にバッファを食い、枯渇を自分で招く
+         → floor          … 待たない。枯渇は目前であり、遅らせてよい判断ではない
+         floor →          … 待たない。0.15 倍と音量ダッキングは強い介入なので、
+                             1 ミリ秒でも短くしたい。既定値では floor 進入から
+                             およそ 0.25 秒で脱出条件を満たすため、2 秒縛ると
+                             1.5 秒ぶん余計に遅れる（追いつく機能が遅れを増やす）
+
+       待たせない遷移を往復から守るのはヒステリシスだけになるが、これで足りる。実測で
+       揺れが問題になったのは room（谷の統計から作る推定値）と margin の比較であって、
+       floor が見ている health は生の観測値そのものであり、揺れの性質がまるで違う。
+    */
+    const HYSTERESIS = 0.2;
+    const DWELL_MS   = 2000;
+
+    /*
        speedupAuto（0 / 1 / 2）の段階ごとの制御パラメータ。
-         hysteresis   … 今の状態に留まる側へしきい値をずらす量（秒）。境界での往復を防ぐ
          troughK      … 谷のばらつきに対する安全余裕係数。大きいほど慎重（加速しにくくなる）
          troughMs     … 推定した谷を貯める長期窓の長さ（ミリ秒）。短いほど直近の状況に素早く追従するが、
                         標本数が減るぶん推定はばらつきやすくなる
          troughMargin … 確保したいバッファ下限へ上乗せする余裕（秒）。tuning() の margin に使う
 
-       段階 0 は自動しきい値そのものを使わないため troughK / troughMs / troughMargin は制御に
-       影響しないが、hysteresis だけは floor の境界判定でも使うので段階 1 と同じ値を置いてある。
+       段階 0 は自動しきい値そのものを使わないため、ここの値は制御に影響しない
+       （それでも段階 1 と同じ値を並べておくのは、表の欠けを避けて参照を単純に保つため）。
        段階 1 は「長い窓 × 大きい k」で慎重に、段階 2 は「短い窓 × 小さい k」で
        直近の余裕に素早く反応させる、という対比になっている。
     */
     const AUTO_TUNING = [
-        { hysteresis: 0.1,  troughK: 5, troughMs: 30000, troughMargin: 0.5 }, // 0: 自動調整なし（手動しきい値）
-        { hysteresis: 0.1,  troughK: 5, troughMs: 30000, troughMargin: 0.3 }, // 1: 標準
-        { hysteresis: 0.05, troughK: 3, troughMs:  5000, troughMargin: 0.1 }, // 2: 積極的
+        { troughK: 5, troughMs: 30000, troughMargin: 0.5 }, // 0: 自動調整なし（手動しきい値）
+        { troughK: 5, troughMs: 30000, troughMargin: 0.3 }, // 1: 標準
+        { troughK: 3, troughMs:  5000, troughMargin: 0.1 }, // 2: 積極的
     ];
 
     // バッジの状態別カラー（normal=白 / speedup=赤 / floor=青）。
@@ -571,6 +607,7 @@
     let mediaId  = null;     // 現在再生中のメディアの識別 ID。変化したら「別の動画になった」と判断する
     let live     = false;    // 直近の tick で判定した「ライブ配信中かどうか」。stalled() のログ条件に使う
     let state    = 'normal'; // 現在の制御状態。'normal' | 'speedup' | 'floor' のいずれか
+    let stateAt  = -Infinity; // 現在の制御状態へ移った時刻（ミリ秒）。DWELL_MS の起点
     let paintAt  = 0;        // 次にバッジを描画してよい時刻（ミリ秒）
     let idling   = true;     // 制御を休止中かどうか。休止へ入った瞬間に一度だけ後始末をするためのフラグ
 
@@ -703,6 +740,7 @@
         let windowMs  = MIN_MS;                  // 現在の短期窓の長さ（ミリ秒）
         let troughMs  = AUTO_TUNING[0].troughMs; // 現在の長期窓の長さ（ミリ秒）。update() が段階に応じて差し替える
         let needsAt   = -Infinity;               // 前回 adapter.needs() を呼んだ時刻（ミリ秒）
+        let needsSec  = NaN;                     // 直近に取得したアダプタ固有の目安バッファ秒数（秒）
         let view      = EMPTY;                   // 直近の統計結果のキャッシュ
         let drift     = 0;                       // 1.0 倍からの超過消費の累積 D(t)（秒）。加速中は増え、減速中は減る
         let driftAt   = NaN;                     // 前回 drift を積算した時刻（ミリ秒）。NaN なら今回の積算は見送る
@@ -794,7 +832,10 @@
             if (now - needsAt >= NEEDS_MS) {
                 needsAt = now;
                 const needs = toNum(adapter.needs()); // アダプタ固有の目安バッファ秒数
-                if (needs > 0) windowMs = clamp(needs * 1000, MIN_MS, MAX_MS);
+                if (needs > 0) {
+                    needsSec = needs;            // Gain がサイトの時間尺度として参照する
+                    windowMs = clamp(needs * 1000, MIN_MS, MAX_MS);
+                }
             }
             return windowMs;
         }
@@ -931,11 +972,386 @@
             room: (k) => (view.troughSpan >= TROUGH_MIN_MS ? view.troughAvg - view.troughSd * k : NaN),
 
             /**
+             * アダプタが返した目安バッファ秒数（セグメント長の目安）。
+             *
+             * この値の取得は windowFor() が NEEDS_MS 間隔で行っており、ここはその結果を
+             * 見せているだけである。Gain もサイトごとの時間尺度としてこの値を参照する。
+             * 同じ値を 2 か所から別々に取りに行くと、片方だけ間隔が違うといった食い違いが
+             * 起きうるので、取得箇所は 1 つに寄せておく。
+             *
+             * reset() で捨てないのは、これが配信ではなくサイトの性質だからである
+             * （配信が変われば次の tick で取り直される）。
+             *
+             * @returns {number} 目安バッファ秒数（秒）。まだ取得できていなければ NaN
+             */
+            get needs() { return needsSec; },
+
+            /**
+             * 谷の履歴だけを捨てる（短期窓と水準履歴はそのまま残す）。
+             *
+             * 制御状態が切り替わるとバッファの水準そのものが動き出すため、遷移をまたいだ
+             * 谷の履歴は 1 本の系列として扱えない。長期窓（最大 30 秒）の中に遷移前後の
+             * 2 つの水準が同居すると、troughSd が本来のばらつきではなく水準の移動量を
+             * 測ってしまい、room = troughAvg - troughSd * k が大きく沈む。これが
+             * 「加速 → room 枯渇 → 通常速度 → 窓が入れ替わる → また加速」という
+             * troughMs と同じ周期の自励振動を生んでいた。
+             *
+             * @returns {void}
+             */
+            shift() { troughs.clear(); },
+
+            /**
              * デバッグログ用に、内部の統計値をまとめて取り出す。
              *
              * @returns {Object} 統計値と、現在の短期窓長・長期窓長・超過消費
              */
             snapshot: () => ({ ...view, windowMs, troughMs, drift }),
+        };
+    })();
+
+    /* ============================================================================================
+       【最重要】加速の実効性の検証（Gain）
+       --------------------------------------------------------------------------------------------
+       ■ 何が問題なのか
+         ライブ配信の映像は実時間でしか作られない。つまり手元へ届く速さの上限は 1.0 倍であり、
+         これは回線やブラウザの性能とは無関係の、配信という仕組みそのものの制約である。
+         先読みの貯金がある間は 1.25 倍で走って遅れを詰められるが、貯金を使い切って
+         配信の最先端に追いついた時点で、それ以上詰められる遅れは存在しなくなる。
+
+         ところがそこで倍率を 1.25 のままにしておくと、次のセグメントが届くまでの
+         わずかな時間ごとに再生が追い越して止まる。止まっては進み、を繰り返すため
+         実効速度は 1.0 倍（ときにそれ以下）へ落ち、得られるものは何も無いのに
+         カクつきだけが残る。バッジには 1.25x と出ているのに等倍にしか感じられない、
+         という状態はこれである。
+
+       ■ なぜバッファ残量では気づけないのか
+         この状態は「枯渇」ではない。止まるたびに読み込みが追いつくので、残量は
+         2〜4 秒あたりで安定してしまう。谷の統計から見ると健全そのもので、room は
+         margin を上回りつづける。つまり残量をいくら精密に測っても、この状態は
+         原理的に検出できない。残量は原因ではなく結果だからである。
+
+       ■ どう検出するか
+         倍率は自分で決めた値なので、加速によって何秒ぶん詰められるはずかは分かる。
+
+             要求 = ∫ (rate - 1) dt
+
+         一方、実際に詰められた量は再生位置の進み方から直接測れる。
+
+             実績 = Δ再生位置 - Δ実時間
+
+         この 2 つを短い窓で比べ、実績が要求の半分にも満たなければ、加速は
+         機能していないと判断して speedup を見送る。残量・遅延・サイトの実装に
+         一切依存しない、結果だけを見る判定である。
+
+       ■ 停止中を除外してはいけない
+         Auto の drift 積算は readyState を見て停止中を除外している。あちらは
+         「バッファが減っていない区間を消費として数えない」ための処置であり正しい。
+         しかしこちらでは逆で、止まっている時間こそが失われている量そのものなので、
+         除外すると損失が丸ごと見えなくなる。除くのは一時停止とシークだけでよい。
+
+       ■ 見送りをいつ解くか
+         時間切れ（COOL_MS）に加えて、遅延が見送り時点より一定量ぶん増えたら
+         即座に解除する。この一定量はサイトの時間尺度に合わせて決める（RECOVER_* を参照）。
+         回線の乱れなどで新たに遅れが生まれた場合は、詰めるべき遅れが
+         実際に存在するので、待たずに加速へ戻ってよい。
+       ============================================================================================ */
+
+    const Gain = (() => {
+        /*
+           判定に必要な要求量（秒）。時間ではなく秒数で決めているのは、こうすると
+           倍率によらず SN 比が一定になるためである。Δ再生位置 の測定誤差は倍率に
+           よらずほぼ一定なので、要求量を固定すれば比 got/asked の推定精度も揃う。
+        */
+        const MIN_ASKED = 1.0;
+
+        /*
+           要求に対する実績の割合。これを下回れば無駄と判断する。
+           このモジュールの定数の中で、唯一これだけが実測に裏付けを持つ。
+           これまでの計測では比がはっきり二極化していた。
+
+             Twitch 平衡状態（100 標本）   EFF 1.026   比 0.10
+             Twitch 固定 1.25 倍（46 標本） EFF 1.020   比 0.08
+             Twitch 正常 ×3                EFF 1.24    比 0.98〜1.00
+             VOD 1.25 倍 ×6                EFF 1.25    比 0.97〜1.00
+             YouTube 4 倍                  ―          比 0.68〜0.77
+
+           0.10 以下と 0.68 以上の間が空いており、0.5 はほぼその中央にある。
+           上側の余裕（0.18）を下側（0.40）より薄く取っているのは意図的で、
+           効いている加速を誤って止めるほうが実害が大きいため。
+        */
+        const RATIO = 0.5;
+
+        /*
+           要求と実績を突き合わせる時間窓の下限（ミリ秒）と、倍率に応じて伸ばすときの余裕。
+
+           窓に貯められる要求量の上限は (rate - 1) × 窓長 である。窓を固定してしまうと
+           低い倍率では上限が MIN_ASKED に届かず、どれだけ無駄でも判定が永久に下りない
+           （12 秒に固定した場合、1.083 倍未満がこれに当たる。設定の下限は 1.05 倍）。
+
+           そこで MIN_ASKED を必ず貯められる長さを確保する。SPAN_SLACK は、加速が
+           連続していない（間に通常速度が挟まる）場合に備えた余裕である。
+           BURN_MIN が 0.05 なので窓は最長でも 30 秒にしかならず、上限は要らない。
+
+           BURN_MIN は割る側の下限。設定の下限である 1.05 倍より窓を伸ばさないためであり、
+           同時に sanitize() が破損時に返す speedupRate = 1（= 0 除算）への備えでもある。
+        */
+        const WINDOW_MS  = 12000;
+        const SPAN_SLACK = 1.5;
+        const BURN_MIN   = 0.05;        // 倍率 1.05（設定の下限）の余分な消費（秒／秒）
+
+        /*
+           判定を下すのに必要な最低の観測時間（ミリ秒）。
+
+           要求量だけを条件にすると、高い倍率では窓が短くなりすぎる。4.00 倍なら
+           MIN_ASKED は 0.33 秒で貯まるが、その間に独立した観測はほとんど無く、
+           通常のセグメント待ちが 1 回挟まっただけで無駄と誤判定しかねない。
+
+           標本は窓の中で複数回の加速をまたいで残るため、1 回の加速が短くても
+           数回ぶんを合わせればこの時間には届く。
+        */
+        const MIN_SPAN_MS = 1500;
+
+        /*
+           見送りを自動で解除するまでの時間（ミリ秒）。実測の裏付けは無く、判断で置いている。
+           再試行 1 回のコストは MIN_ASKED / (rate - 1) 秒（既定倍率で 4 秒）なので、
+           30 秒なら無駄な加速の占有率がおよそ 1 割に収まる、という程度の根拠である。
+           実際には後述の遅延増加による再武装が先に効くことが多く、影響は小さい。
+        */
+        const COOL_MS = 30000;
+
+        /*
+           見送り時点からこれだけ遅延が増えたら即座に解除する量を決める係数と範囲。
+
+           ■ なぜ絶対値ではいけないのか
+             定常時の遅延はサイトとブラウザで 12 倍も違う（実測）。
+
+               Chrome  / Twitch      5.05s
+               Firefox / YouTube     2.55s
+               Firefox / Twitch      1.45s
+               Firefox / ツイキャス   0.79s
+               Chrome  / ツイキャス   0.40s
+
+             ここへ一律の秒数を課すと意味が揃わない。たとえば 0.75 秒なら、Twitch では
+             遅延の 15% で反応するのに対しツイキャスでは 95%、つまり「遅延がほぼ倍に
+             ならないと再武装しない」ことになる。同じ Twitch でもブラウザによって
+             3.5 倍違う（低遅延モードの有無）ため、サイトどころかブラウザ間でも揃わない。
+
+           ■ 何を基準に取るか
+             adapter.needs() はサイトが返すセグメント長の目安であり、そのサイトにおける
+             遅延の自然な単位そのものである。「セグメント 1/4 個ぶん遅れたら詰め直す価値が
+             ある」という尺度に置き換えると、どのサイトでも同じ意味になる。
+
+           ■ 下限と上限の根拠（すべて実測）
+             定常時の遅延ノイズは全 6 環境で sd ≤ 0.11、通常の変化量は 0.2 未満だった。
+             一方、実際にリバッファが起きた瞬間の変化量は 0.81 と 0.93 で、明確に分離している。
+             下限 0.20 はノイズ上限のおよそ 2 倍。
+
+             ただしノイズとは別に、実イベントの無い数十秒周期のゆるやかな揺らぎがあり、
+             その振幅は Twitch で 0.35〜0.36 だった。下限を 0.2 まで下げてよいのは
+             揺らぎの小さいツイキャス側だけなので、needs() 連動が必要になる。
+
+               Twitch 低遅延  needs=2    → 0.50（揺らぎ 0.36 の上）
+               Twitch 標準    needs=4    → 1.00（上限で頭打ち）
+               ツイキャス      needs=0.5  → 0.20（下限で底打ち、揺らぎ 0.05 の 4 倍）
+        */
+        const RECOVER_RATIO = 0.25;
+        const RECOVER_MIN   = 0.20;
+        const RECOVER_MAX   = 1.00;
+
+        /*
+           1 区間として認める最大の経過時間（ミリ秒）。動作条件から決まる。
+           tick 間隔は通常 20 ミリ秒だが、制御対象が無いときは 1000 ミリ秒の探索モードへ
+           落ちるため、上限はそれを確実に超えている必要がある。一方でタブの休止や
+           スリープ復帰のような長い断絶は区間として数えたくない。その間を取っている。
+        */
+        const MAX_STEP = 2000;
+
+        const asked = series();         // 加速によって詰められるはずだった秒数
+        const got   = series();         // 実際に詰められた秒数（負にもなりうる）
+
+        let at      = NaN;              // 前回の観測時刻（ミリ秒）。NaN なら今回は区間を作らない
+        let mark    = NaN;              // 前回の再生位置（秒）
+        let idle    = false;            // 加速を見送っているか
+        let idleAt  = -Infinity;        // 見送りを始めた時刻（ミリ秒）
+        let idleLat = NaN;              // 見送りを始めた時点の遅延（秒）
+
+        /**
+         * 時系列窓に入っている値の合計を求める。series は合計を直接持たないので平均から戻す。
+         *
+         * @param {Object} win - series() が返す時系列窓
+         * @returns {number} 合計値。空なら 0
+         */
+        const total = (win) => { const { n, avg } = win.stats(); return n ? n * avg : 0; };
+
+        /**
+         * 要求と実績の履歴を捨てる。判定を下した直後は、その材料を持ち越さない。
+         *
+         * @returns {void}
+         */
+        const drop = () => { asked.clear(); got.clear(); };
+
+        return {
+            /**
+             * すべての観測と見送り状態を初期化する。配信が変わったときや休止時に呼ぶ。
+             *
+             * @returns {void}
+             */
+            reset() {
+                drop();
+                at      = NaN;
+                mark    = NaN;
+                idle    = false;
+                idleAt  = -Infinity;
+                idleLat = NaN;
+            },
+
+            /** @returns {boolean} 加速を見送るべきなら true */
+            get futile() { return idle; },
+
+            /**
+             * 毎 tick 呼び出して、要求と実績を積み、必要なら見送りを開始・解除する。
+             *
+             * @param {HTMLMediaElement} node    - 監視中の <video>
+             * @param {number}           rate    - 前回の tick からこの瞬間まで効いていた再生倍率
+             * @param {number}           latency - 現在の遅延（秒）。取得できなければ NaN
+             * @param {number}           now     - 現在時刻（performance.now() 由来のミリ秒）
+             * @returns {void}
+             */
+            update(node, rate, latency, now) {
+                if (node.paused || node.seeking) {
+                    // 再生していない区間は測れない。基準点を捨てて次の区間から数え直す
+                    at = NaN; mark = NaN;
+                } else {
+                    const step = now - at;      // 区間の長さ（ミリ秒）。at が NaN なら NaN になる
+                    if (step > 0 && step <= MAX_STEP) {
+                        const want = ((Number.isFinite(rate) ? rate : 1) - 1) * step / 1000;
+                        // 加速していない区間は要求も実績も 0 なので、窓へ入れる意味が無い
+                        if (want > 0) {
+                            asked.push(now, want);
+                            got.push(now, (node.currentTime - mark) - step / 1000);
+                        }
+                    }
+                    at   = now;
+                    mark = node.currentTime;
+                }
+
+                // 倍率が低いほど窓を伸ばし、MIN_ASKED を貯められない死角を作らない
+                const burn     = Math.max(settings.speedupRate - 1, BURN_MIN);
+                const windowMs = Math.max(WINDOW_MS, (MIN_ASKED / burn) * 1000 * SPAN_SLACK);
+
+                asked.trim(now, windowMs);
+                got.trim(now, windowMs);
+
+                if (idle) {
+                    /*
+                       新たに遅れが生まれたなら、詰めるべきものがあるので待たずに再挑戦する。
+
+                       しきい値はサイトの時間尺度に合わせる（RECOVER_* の説明を参照）。
+                       needs がまだ取れていないときは上限を使う。サイトの尺度が分からない
+                       うちは鈍い側へ倒したほうが、無意味な再武装を招かずに済む。
+                    */
+                    const scale   = Auto.needs * RECOVER_RATIO;    // NaN のこともある
+                    const recover = Number.isFinite(scale) ? clamp(scale, RECOVER_MIN, RECOVER_MAX) : RECOVER_MAX;
+
+                    const behind = latency - idleLat >= recover;   // どちらかが NaN なら false になる
+                    if (behind || now - idleAt >= COOL_MS) { idle = false; drop(); log('speedup re-armed', { recover }); }
+                    return;
+                }
+
+                const want = total(asked);  // 加速で詰められるはずだった秒数の合計
+                const real = total(got);    // 実際に詰められた秒数の合計
+
+                // どちらの条件も否定形で書いている。値が NaN になったとき、肯定形
+                // （want < MIN_ASKED で return）では比較が false になって素通りし、
+                // 判断材料が無いまま見送りへ進んでしまう。ここでの安全側は
+                // 「見送らない」なので、NaN は必ず return へ落ちなければならない
+                if (!(want >= MIN_ASKED)) return;                   // 要求量がまだ足りない
+                if (!(asked.span() >= MIN_SPAN_MS)) return;         // 観測時間がまだ短い
+                if (!(real < want * RATIO)) return;                 // 効いているので何もしない
+
+                idle    = true;
+                idleAt  = now;
+                idleLat = latency;
+                drop();
+                log('speedup is futile; standing down',
+                    { asked: want.toFixed(2), got: real.toFixed(2), windowMs: Math.round(windowMs) });
+            },
+
+            /**
+             * デバッグログ用に、要求・実績・見送り状態を取り出す。
+             *
+             * @returns {{ asked: number, got: number, futile: boolean }}
+             */
+            snapshot: () => ({ asked: total(asked), got: total(got), futile: idle }),
+        };
+    })();
+
+    /* ============================================================================================
+       遅延ノイズの計測
+       --------------------------------------------------------------------------------------------
+       Gain は「見送り時点から遅延が一定量ぶん増えたら再挑戦する」という判断をするが、
+       サイトが報告する遅延そのものがどれだけばらつくかを知らないと、その一定量を
+       決めようがない。ノイズがしきい値を超えるサイトでは、遅れていないのに
+       再武装を繰り返すことになる。
+
+       そこで、Gain が実際に比較している値をそのまま観測して統計を取る。見るべきは 2 つ。
+
+         sd   … 短い窓での標準偏差。遅延そのもののばらつき
+         jump … 隣り合う観測どうしの差の最大値。Gain は差分と比較するので、
+                こちらがしきい値を超えていれば偽の再武装が起きうる
+
+       観測はデバッグの有無によらず常に回す。値を読むのは report() だけである。
+       ============================================================================================ */
+
+    const Noise = (() => {
+        const WINDOW_MS = 5000;         // 統計を取る窓（ミリ秒）
+
+        const samples = series();       // 遅延そのもの（秒）
+
+        let prev = NaN;                 // 前回の遅延（秒）
+        let jump = 0;                   // 前回の報告以降で最大の変化量（秒）
+
+        return {
+            /** すべての観測を捨てる。 @returns {void} */
+            reset() { samples.clear(); prev = NaN; jump = 0; },
+
+            /**
+             * 遅延を 1 点観測する。有限値でなければ何もしない。
+             *
+             * @param {number} latency - adapter.status() が返した遅延（秒）
+             * @param {number} now     - 現在時刻（performance.now() 由来のミリ秒）
+             * @returns {void}
+             */
+            update(latency, now) {
+                if (!Number.isFinite(latency)) { prev = NaN; return; }
+
+                samples.push(now, latency);
+                if (Number.isFinite(prev)) jump = Math.max(jump, Math.abs(latency - prev));
+                prev = latency;
+
+                samples.trim(now, WINDOW_MS);
+            },
+
+            /**
+             * デバッグログ用に、遅延の平均・ばらつき・最大変化量を取り出す。
+             *
+             * jump は「前回この関数を呼んでから」の最大値であり、呼ぶたびに 0 へ戻す。
+             * ログは 1 秒ごとなので、1 秒ぶんの最大変化量が毎行に出ることになる。
+             * series に添字アクセスが無いため窓ごとの最大は取れないが、
+             * 報告間隔ごとの最大が毎行残れば、目視でも最大値は追える。
+             *
+             * update() は常に回るのにこの関数はデバッグ時しか呼ばれないため、デバッグを
+             * 途中で有効にした直後の 1 行だけ、それまでに溜まった最大値が出る。
+             * 2 行目からは正しい値になるので、そのままにしてある。
+             *
+             * @returns {{ avg: number, sd: number, jump: number, n: number }}
+             */
+            snapshot() {
+                const { n, avg, sd } = samples.stats();
+                const peak = jump;
+                jump = 0;
+                return { avg, sd, jump: peak, n };
+            },
         };
     })();
 
@@ -961,6 +1377,8 @@
         const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : '----'); // NaN を '----' として見やすく整える
         const { n, avg, sd, windowMs, troughMs, calm, troughN, troughSpan, troughAvg, troughSd, drift } = Auto.snapshot();
         const { auto, troughK, margin, ample } = tune;
+        const { asked, got, futile } = Gain.snapshot();
+        const lat  = Noise.snapshot();
         const room = Auto.room(troughK);
 
         log(`${state.padEnd(8)} rate=${fmt(Rate.actual(video))} now=${fmt(health)}+${fmt(ahead)}`
@@ -968,7 +1386,9 @@
             + ` trough${(troughMs / 1000).toFixed(1)}s(avg=${fmt(troughAvg)}s sd=${fmt(troughSd)}s n=${String(troughN).padStart(4)}`
             + ` span=${(troughSpan / 1000).toFixed(1)}s)`
             + ` room=${fmt(troughAvg)}-${troughK}*${fmt(troughSd)}=${fmt(room)}s/${fmt(margin)}s`
-            + ` ample=${fmt(ample)}s auto=${auto} drift=${fmt(drift)}s calm=${calm ? 'yes' : 'NO'}`);
+            + ` ample=${fmt(ample)}s auto=${auto} drift=${fmt(drift)}s calm=${calm ? 'yes' : 'NO'}`
+            + ` gain=${fmt(got)}/${fmt(asked)}s${futile ? ' FUTILE' : ''}`
+            + ` lat=${fmt(lat.avg)}s(sd=${fmt(lat.sd)} jump=${fmt(lat.jump)} n=${String(lat.n).padStart(4)})`);
     }
 
     /* ============================================================================================
@@ -1034,7 +1454,11 @@
      * （floor ON なら floorThreshold + troughMargin、OFF なら troughMargin になる）。
      * ample は「谷の推定を待たずに加速してよい」と判断する残量（秒）。margin より必ず高くなるよう取る。
      *
-     * @returns {{auto: number, hysteresis: number, troughK: number, troughMs: number, margin: number, ample: number}}
+     * margin は早送り倍率を参照しない。倍率が高いほど 1 回の加速は短く終わるが、それは
+     * speedup から即座に降りられること（settle 参照）と、加速が実際には効いていない状況を
+     * 検出する Gain とで受け止める。
+     *
+     * @returns {{auto: number, troughK: number, troughMs: number, margin: number, ample: number}}
      */
     function tuning() {
         const auto   = clamp(Math.round(settings.speedupAuto), 0, AUTO_TUNING.length - 1);
@@ -1055,6 +1479,10 @@
      *   自動しきい値モード（段階 1 以上）… Auto が推定した実効余裕 room が、確保したい下限 margin を上回るか
      *   手動モード（段階 0）             … 今この瞬間の残量 health が、ユーザーが設定したしきい値を上回るか
      *
+     * ただし Gain が「加速しても進めていない」と判断している間は、3 通りのいずれにも
+     * 進ませない。配信の最先端に追いついた状態では、残量がいくらあっても詰められる遅れが
+     * 残っていないためである（Gain の説明を参照）。
+     *
      * @param {number} health - 現在のバッファ残量（秒）
      * @param {Object} tune   - tuning() が解決した制御パラメータ
      * @returns {string} 'floor' | 'speedup' | 'normal'
@@ -1062,14 +1490,19 @@
     function decide(health, tune) {
         if (!Number.isFinite(health)) return 'normal';      // 測れないなら何もしないのが最も安全
 
-        const { auto, hysteresis, troughK, margin, ample } = tune;
+        const { auto, troughK, margin, ample } = tune;
 
-        // 今の状態に「留まる側」へしきい値を hysteresis だけずらす。
+        // 今の状態に「留まる側」へしきい値を HYSTERESIS だけずらす。
         // 境界ちょうどで状態が往復すると、倍率と音量が細かく揺れて映像も音も荒れる
-        const stay = (name) => (state === name ? hysteresis : 0);
+        const stay = (name) => (state === name ? HYSTERESIS : 0);
 
         if (settings.floor && health <= settings.floorThreshold + stay('floor')) return 'floor';
         if (!settings.speedup)                                                   return 'normal';
+
+        // 加速しても実際には進めていないと分かっている間は、残量に関係なく見送る。
+        // 配信の最先端に追いついた状態がこれにあたり、続けても止まってはまた進む
+        // 動きが増えるだけで、詰められる遅れはもう残っていない
+        if (Gain.futile)                                                         return 'normal';
 
         // 自動しきい値モードだけの近道。残量そのものが ample を超えていれば、
         // 谷の推定がまだ／もう使えなくても加速して構わない。
@@ -1077,10 +1510,81 @@
         // 振幅より桁が小さく、境界上で 1 セグメント周期ごとに往復してしまうため専用の幅を使う
         if (auto && health >= ample - (state === 'speedup' ? AMPLE_KEEP : 0)) return 'speedup';
 
+        // margin には倍率補正が掛かっている（tuning 参照）。speedupThreshold はユーザーの
+        // 入力値そのものなので補正しない。高い倍率を使うなら、しきい値も自分で上げてもらう
         const room = auto ? Auto.room(troughK) : health;            // 比較する余裕の値
         const line = auto ? margin : settings.speedupThreshold;     // 比較するしきい値
 
-        return room >= line + hysteresis - stay('speedup') ? 'speedup' : 'normal';
+        return room >= line + HYSTERESIS - stay('speedup') ? 'speedup' : 'normal';
+    }
+
+    /**
+     * 統計だけをすべて捨てる。制御状態やバッジには触れない。
+     * シーク直後のように「観測は無効になったが、制御はそのまま続けたい」場面で使う。
+     *
+     * @returns {void}
+     */
+    function purge() {
+        Auto.reset();
+        Gain.reset();
+        Noise.reset();
+    }
+
+    /**
+     * 制御を初期状態へ戻す。統計に加えて、制御状態そのものも捨てる。
+     * 別の配信へ切り替わったときと、制御を休止するときの両方で必要になる後始末。
+     *
+     * stateAt を -Infinity に置いているのは、次の判断を DWELL_MS だけ待たせないため。
+     * 最小滞在時間は「同じ配信を見続けている最中の往復」を止めるための仕掛けであり、
+     * 配信が変わった直後の最初の 1 回まで縛る理由は無い。
+     * 0 ではなく -Infinity なのは、performance.now() が DWELL_MS に満たないうち
+     * （ページを開いた直後の 2 秒間）に配信が確定した場合でも確実に通すため。
+     *
+     * @returns {void}
+     */
+    function restart() {
+        purge();
+        state   = 'normal';
+        stateAt = -Infinity;
+    }
+
+    /**
+     * decide() が出した希望の状態を、最小滞在時間（DWELL_MS）の制約に通してから確定させる。
+     *
+     * ヒステリシスはしきい値を「今の状態に留まる側」へずらす仕組みなので、判定に使う値が
+     * その幅より大きく揺れていると効かない。実測では room が 0.5 秒幅で揺れており、
+     * 0.2 秒のヒステリシスでは境界を跨ぐ往復を止めきれない。そこで値の側の対策に加えて、
+     * 時間の側の制約を掛ける。
+     *
+     * 待たせるのは「加速を始める」遷移だけである（DWELL_MS の説明を参照）。
+     * 介入を弱める方向と安全側へ戻る方向は、常に即座へ移す。
+     *
+     * 【谷の履歴を捨てる条件】
+     *   遷移の前後ではバッファの水準が動くため、原則として長期窓は作り直す（Auto.shift 参照）。
+     *   ただし「加速を始める」ときだけは残す。理由は 2 つある。
+     *
+     *   ひとつは、残しても汚れないこと。加速中の水準低下は自分の倍率が原因であり、
+     *   drift 補償がきれいに打ち消す。実測でも加速中の troughSd は 0.2 前後に収まっており、
+     *   破綻していたのは脱出後の再充填（取り込み速度が上がるため補償の対象外）の側だけだった。
+     *
+     *   もうひとつは、捨てると成立しなくなること。捨てた直後は room が TROUGH_MIN_MS の
+     *   あいだ NaN に戻り、その間 decide() は必ず 'normal' を返す。脱出は待たせないので、
+     *   加速へ入った次の tick で即座に降りる空回りになってしまう。
+     *
+     * @param {string}  want    - decide() が返した希望の状態
+     * @param {number}  now     - 現在時刻（performance.now() 由来のミリ秒）
+     * @param {boolean} [force] - 最小滞在時間を無視して即座に移すか
+     * @returns {void}
+     */
+    function settle(want, now, force = false) {
+        if (want === state) return;
+
+        const opening = state === 'normal' && want === 'speedup';   // 加速を始める遷移
+        if (opening && !force && now - stateAt < DWELL_MS) return;
+
+        if (!opening) Auto.shift();
+        state   = want;
+        stateAt = now;
     }
 
     /**
@@ -1108,10 +1612,11 @@
      * レイテンシバッジに表示する文字列を作る。
      * 巻き戻して視聴中（追っかけ再生）のときは遅延の数値に意味が無いので (DVR) と出す。
      *
+     * @param {{ latency: number, atHead: boolean }} status - adapter.status() の結果
      * @returns {string} 表示文字列（表示するものが無ければ空文字）
      */
-    function latencyText() {
-        const { latency, atHead } = adapter.status();
+    function latencyText(status) {
+        const { latency, atHead } = status;
 
         if (atHead === false) return DVR;
 
@@ -1138,9 +1643,10 @@
      *
      * @param {number} health - 連続再生できるバッファ秒数
      * @param {number} ahead  - 隙間の先にあるバッファ秒数
+     * @param {{ latency: number, atHead: boolean }} status - adapter.status() の結果
      * @returns {void}
      */
-    function repaint(health, ahead) {
+    function repaint(health, ahead, status) {
         const { showPlaybackRate, showLatency, showHealth } = settings;
         if (!showPlaybackRate && !showLatency && !showHealth) return Badges.detach();
 
@@ -1150,7 +1656,7 @@
                 color: COLOR[state],    // 状態が一目で分かるよう色を変える
             },
             latency: {
-                text: showLatency ? latencyText() : '',
+                text: showLatency ? latencyText(status) : '',
                 color: COLOR.normal,    // 遅延表示は状態と無関係なので常に白
             },
             health: {
@@ -1201,7 +1707,7 @@
      *
      * @returns {void}
      */
-    function jump() { Auto.reset(); run(false); }
+    function jump() { purge(); run(false); }
 
     /**
      * メディアイベント用のリスナー。発火のタイミングが偏っているため統計には使わない。
@@ -1264,7 +1770,7 @@
      *   2. 監視すべき <video> を確認し、変わっていたら乗っ取りを解除して付け替える
      *   3. 再生中のメディアを確認し、変わっていたら状態と統計をリセットする
      *   4. ライブでなければ休止して終了（録画・クリップ・広告は制御しない）
-     *   5. 制御パラメータを解決し、バッファを測り、統計を更新する
+     *   5. 制御パラメータを解決し、バッファと遅延を測り、Auto / Gain / Noise を更新する
      *   6. 制御状態を決めて再生速度を適用する
      *   7. 必要ならダッキングを適用する
      *   8. PAINT_MS ごとにバッジを描画する
@@ -1292,10 +1798,9 @@
         const media = adapter.media();  // { id, live }
         live = media.live;              // stalled() がストールをログすべきか判断するのに使う
         if (media.id !== mediaId) {
-            mediaId  = media.id;
+            mediaId = media.id;
             adapter.reset();
-            state   = 'normal';
-            Auto.reset();
+            restart();
             log('media', media);
         }
         if (!media.live) return sleep(media.id !== null);   // ID が取れているなら「API は生きていて非ライブ」＝確定
@@ -1307,12 +1812,20 @@
         const now  = performance.now();
         const tune = tuning();          // 段階と制御パラメータを、この tick 中で 1 度だけ解く
         const { health, ahead } = buffer();
+        const stat = adapter.status();  // 遅延と追っかけ判定。Gain・Noise・バッジで使い回す
 
         // Rate.actual() は物理値を直接読むので、ユーザーがプレイヤー UI で選んだ倍率や
         // 乗っ取りに失敗した場合も含めた「実際に効いていた倍率」が得られる。
         // この行は Rate.apply() より前にあるため、読める値は前回の tick から今まで効いていた倍率になる。
         // 再生位置が進まない状況ではバッファが減らないので、NaN を渡して超過消費の積算を見送らせる
-        Auto.update(health, consuming(video) ? Rate.actual(video) : NaN, now, sampling, tune.troughMs);
+        const rate = Rate.actual(video);
+        Auto.update(health, consuming(video) ? rate : NaN, now, sampling, tune.troughMs);
+
+        // Gain は Auto と違い、停止している時間を除外してはならない。
+        // 止まっている時間こそが加速で失われている量そのものだからである
+        Gain.update(video, rate, stat.latency, now);
+        Noise.update(stat.latency, now);
+
         report(health, ahead, now, tune);
 
         // ユーザーがプレイヤー UI で 1.0 倍以外の速度を選んでいたら、その意思を尊重して手を引く。
@@ -1320,9 +1833,17 @@
         // 拡張機能自身が設定した速度と混同することなくユーザー操作だけを検出できる
         if (adapter.respectUserRate && Math.abs(Rate.wished(video) - 1) > NEAR_ONE) {
             Rate.release();
-            state = 'normal';
+            settle('normal', now, true);    // ユーザーの明示的な操作なので待たせない
         } else {
-            state = decide(health, tune);
+            const want = decide(health, tune);
+
+            // speedup から降りる判断は、実測の残量が守りたい下限を割っているなら待たせない。
+            // room は谷の統計から作る予測だが、health は観測そのものである。後者が割れて
+            // いるなら予測が外れたということで、最小滞在時間を守りながら 0.25 s/s の
+            // 超過消費を続ける理由は無い。健全なときは room >= margin が成り立って
+            // speedup に入っているので、この条件が誤って発動することはない
+            const bail = state === 'speedup' && want !== 'speedup' && health < tune.margin;
+            settle(want, now, bail);
 
             // 通常速度に戻ったなら、乗っ取ったままにせず所有権をサイトへ返す。
             // ただし respectUserRate が false のサイト（Twitch）は、返すと
@@ -1337,7 +1858,7 @@
 
         if (now < paintAt) return;
         paintAt = now + PAINT_MS;
-        repaint(health, ahead);
+        repaint(health, ahead, stat);
     }
 
     /* ============================================================================================
@@ -1390,8 +1911,7 @@
             Rate.release();
             Volume.release();
             Badges.detach();
-            Auto.reset();
-            state   = 'normal';
+            restart();
             paintAt = 0;                // 再開したら待たずにバッジを描き直す
             live    = false;            // 休止中はストールをログしない
         }
