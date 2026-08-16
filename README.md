@@ -30,6 +30,7 @@ Slipstream Live does that watching for you, about 50 times per second.
 | Situation | What Slipstream Live does |
 | :--- | :--- |
 | You've fallen behind, and plenty of video is loaded ahead | Speeds up a little (1.25x) until you catch up |
+| You've caught up, and there's no gap left to close | Stops speeding up — pushing further only stutters |
 | Loaded video is almost gone | Drops to 0.15x and lowers the volume, to avoid a full freeze |
 | Everything is fine | Does nothing — plain 1.00x |
 
@@ -127,15 +128,27 @@ opens the [user manual](https://tail4126.github.io/SlipstreamLive/manual.html), 
 | Mode | Priority | Badge colour | Speed | When it kicks in |
 | :--- | :---: | :---: | :---: | :--- |
 | **Floor** | Highest | Blue (`#83c1ff`) | **0.15x** (fixed) | Buffer is about to run out. Emergency brake, plus volume ducking. |
-| **Speedup** | Low | Red (`#ff8983`) | 1.25x | Buffer is comfortably deep. Catches up to the live edge. |
+| **Speedup** | Low | Red (`#ff8983`) | 1.25x | Buffer is comfortably deep *and* speeding up is actually gaining ground. Catches up to the live edge. |
 | **Normal** | — | White (`#eee`) | 1.00x | Nothing to do. |
 
 Higher-priority modes always win. The 0.15x floor speed isn't configurable on purpose — it's a
 safety net, not a preference.
 
 Each threshold carries hysteresis in the direction of the current mode, so playback rate and volume
-don't chatter when the buffer sits exactly on a boundary. The width follows the **Auto-adjust
-buffer threshold** level: **0.1 s** at Off and Standard, **0.05 s** at Aggressive.
+don't chatter when the buffer sits exactly on a boundary. The width is **0.2 s** at every level.
+On top of that, **starting** a speed-up is rate-limited to once every 2 seconds. Nothing else is
+delayed — not leaving a speed-up, not entering Floor, not leaving it. Only the direction that
+*increases* intervention is treated cautiously; backing off and falling back to safety always take
+effect at once. Holding 1.25x for two more seconds after the controller has decided it isn't safe
+would spend buffer it has already judged it can't spare. Widening a threshold alone can't stop the
+chatter, because the value being compared against it moves as well.
+
+**When speeding up stops helping, it stops speeding up.** Live video is only ever produced in real
+time, so once you reach the live edge there is no gap left to close. Holding a higher rate there
+just makes playback outrun each arriving segment and stall briefly, over and over, which lowers the
+effective speed rather than raising it. Slipstream Live compares the seconds the speed-up *should*
+have gained against the seconds it *actually* gained, and stands down when the latter falls below
+half the former. If you drift behind again, it goes straight back to catching up.
 
 **What Slipstream Live leaves alone:** archived videos (VODs), clips, and ad breaks are never
 touched — only live playback is controlled. TwitCasting's low-latency mode is excluded too: it
@@ -174,9 +187,9 @@ not uniform: the Firefox defaults are larger on YouTube and TwitCasting, but sma
 
 | Level | Trough window | Safety factor | Added margin | Hysteresis | Character |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Off** | — | — | — | 0.1s | No estimation; uses **Speed-up buffer threshold** as-is. |
-| **Standard** | 30s | 5 | 0.3s | 0.1s | Long window, large factor — cautious. The default. |
-| **Aggressive** | 5s | 3 | 0.1s | 0.05s | Short window; reacts quickly to recent headroom and closes the gap harder. |
+| **Off** | — | — | — | 0.2s | No estimation; uses **Speed-up buffer threshold** as-is. |
+| **Standard** | 30s | 5 | 0.3s | 0.2s | Long window, large factor — cautious. The default. |
+| **Aggressive** | 5s | 3 | 0.1s | 0.2s | Short window; reacts quickly to recent headroom and closes the gap harder. |
 
 ### All-sites settings
 
@@ -270,6 +283,36 @@ threshold is used exactly as set.
 
 </details>
 
+### Knowing when speeding up is pointless
+
+Everything above answers "is there enough buffer to speed up safely?" — but that is not the same
+question as "is there any point in speeding up?"
+
+Live video is produced in real time, so the buffer refills at 1.0x no matter how fast you play it.
+Running at 1.25x spends that cushion at 0.25 s per second, and once it's gone you are at the live
+edge. Hold 1.25x there and playback keeps outrunning the next arriving segment, stalling for a
+fraction of a second each time. Averaged out, the effective speed drops back to 1.0x — or below —
+while the picture visibly hitches every couple of seconds.
+
+Buffer health can't detect this. Each stall lets the buffer refill, so health settles at a
+comfortable-looking 2–4 seconds and `room` stays well above the margin. Health is the *result* of
+the stalling, not its cause.
+
+So Slipstream Live checks the outcome directly. The rate is its own decision, so the gain it should
+be producing is known exactly, and the gain it actually produced is visible in the playhead:
+
+$$asked = \int (rate - 1)\,dt, \qquad got = \Delta position - \Delta wallclock$$
+
+Both are summed over a 12-second window. Once `asked` exceeds 1 second and `got` has come in under
+half of it, the speed-up is judged futile and Speedup is skipped regardless of buffer health. It is
+re-armed as soon as latency grows past a threshold beyond where it stood at that moment — you've
+fallen behind again, so there's real ground to make up — or after 30 seconds, whichever comes
+first. That threshold scales with the site's segment length, so it means the same thing on sites
+whose baseline latency differs by more than tenfold.
+
+Unlike `D(t)` above, this measurement deliberately *includes* the time spent waiting on data. Those
+stalls are exactly the loss being measured; only genuine pauses and seeks are excluded.
+
 Badges are redrawn at most 10 times per second, and all statistics are smoothed, so the speed
 doesn't visibly oscillate.
 
@@ -291,6 +334,12 @@ seconds and work down).
 Make sure you're on 1.1.0 or later. From that version, buffer health above 20 seconds allows a
 speed-up on its own, without waiting for the trough statistics — which the burst of fast loading
 that follows a seek would otherwise keep unusable for a while.
+
+**The badge says 1.25x but it doesn't feel any faster, and the picture hitches every few seconds.**
+You've reached the live edge. Live video only arrives in real time, so beyond that point a higher
+rate adds stalls without adding speed. Version 1.1.2 and later detects this and stands down
+automatically, so check your version first. If it persists, look at `gain=` in the debug log —
+`FUTILE` means the detection is working.
 
 **It drops to 0.15x too often.**
 Raise the manual threshold, or lower **Speed-up playback rate** so the buffer drains more slowly.
