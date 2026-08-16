@@ -80,10 +80,13 @@
         floor:            { def: { youtube: true, twitch: true, twitcasting: true } },  // 下限機能の ON/OFF
 
         // 下限状態へ突入するバッファ残量（秒）。
+        // Twitch だけ Chrome と Firefox で値が違う。映像データの到着が 10 秒ほど途切れることがあり、
+        // Chrome はそこでエラー #3000 を出して停止し再読み込みが要るため大きめに、
+        // Firefox は読み込み待ちになるだけで自動復帰するため通常の値にしている
         floorThreshold: {
             range: [0, 10, 0.1],
-            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.1 },
-            ff:  { youtube: 1.0, twitch: 0.5, twitcasting: 0.3 },
+            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3 },
+            ff:  { twitch: 0.5 },
         },
 
         // --- サイト別設定: ダッキング（下限状態のとき音量を絞る） -------------------------------

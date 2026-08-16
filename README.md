@@ -172,16 +172,16 @@ stays in charge there — and also stops Twitch's own built-in catch-up from fig
 | **Auto-adjust buffer threshold** | Off / Standard / Aggressive | Standard | Standard | Standard | Let Slipstream Live decide when it's safe to speed up. **Recommended.** |
 | **Speed-up buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | Only used when auto-adjust is **Off**: speed up once this much video is loaded. |
 | **Maximum slowdown on buffer depletion** | ON / OFF | ON | ON | ON | Master switch for the 0.15x emergency brake. |
-| **Maximum slowdown threshold** | 0.0–10.0s | 0.80s *(FF 1.00s)* | 2.00s *(FF 0.50s)* | 0.10s *(FF 0.30s)* | Drop to 0.15x while buffer health is below this. |
+| **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | Drop to 0.15x while buffer health is below this. |
 | **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | Ducks the audio while at 0.15x. |
 | **Volume during maximum slowdown** | 0–100% | 30% | 30% | 30% | Percentage of *your* current volume (5% steps). 100 = no change, 0 = mute. |
 
-*FF = the default used on Firefox, which reports buffer levels differently. Note the direction is
-not uniform: the Firefox defaults are larger on YouTube and TwitCasting, but smaller on Twitch.*
+*FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only
+site where it differs.*
 
-> **Why is Twitch's threshold so much higher?** Twitch sometimes stops delivering video for
-> around 10 seconds at a time. The larger defaults give Slipstream Live room to react before playback
-> actually stalls.
+> **Why is Twitch's threshold so much higher?** Twitch sometimes stops delivering video for around
+> 10 seconds at a time. On Chrome that ends in error #3000 and needs a reload, so the default is set
+> higher. Firefox recovers on its own, so it keeps the normal default.
 
 #### The three auto-adjust levels
 
@@ -316,9 +316,12 @@ stalls are exactly the loss being measured; only genuine pauses and seeks are ex
 Badges are redrawn at most 10 times per second, and all statistics are smoothed, so the speed
 doesn't visibly oscillate.
 
-When there's nothing to control, the loop drops to a 1-second search mode, and after 5 seconds
-without finding a target it stops the timer entirely and waits on media events instead. It also
-runs once immediately when the tab becomes visible again.
+When there's nothing to control, the loop drops to a 1-second watch mode rather than stopping. It
+can't rely on media events to wake it: YouTube and Twitch play ads through the same `<video>` as
+the stream, so when an ad ends there's no `loadstart` or `play` to listen for — only a DOM class
+changes. The timer stops completely in one case only, when the extension is switched off, since
+that state always announces itself through the settings attribute. The loop also runs once
+immediately when the tab becomes visible again.
 
 ---
 
@@ -439,9 +442,10 @@ matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `injec
 doesn't need to change.
 
 Content scripts get injected into every frame (`all_frames: true`), so a single page ends up
-running several independent instances. Frames without a `<video>` stop their timer after a
-5-second grace period, which is why `timer stopped` shows up frequently in the debug log even when
-the main frame is working fine.
+running several independent instances. Frames without a `<video>` settle into the 1-second watch
+mode, which is cheap: each tick compares one attribute string and runs a couple of selectors. Note
+that `timer stopped` in the debug log now means the extension is switched off — during normal
+playback it should never appear.
 
 ### Debugging
 

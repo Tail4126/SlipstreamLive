@@ -611,12 +611,10 @@
     let paintAt  = 0;        // 次にバッジを描画してよい時刻（ミリ秒）
     let idling   = true;     // 制御を休止中かどうか。休止へ入った瞬間に一度だけ後始末をするためのフラグ
 
-    const IDLE_MS  = 1000;   // 制御対象を探しているあいだの周期（ミリ秒）
-    const GRACE_MS = 5000;   // 対象が確定しないまま探し続ける上限（ミリ秒）
+    const IDLE_MS  = 1000;   // 休止中（制御対象が無い・ライブでない）の見張り周期（ミリ秒）
 
     let timer  = null;       // 現在のタイマー ID（null なら完全停止中）
     let period = 0;          // 現在の周期（ミリ秒）。0 は停止を意味する
-    let seekAt = 0;          // 探索を開始した時刻（ミリ秒）
 
     /* ============================================================================================
        【最重要】speedupAuto（自動しきい値）の推定モジュール
@@ -1160,7 +1158,7 @@
 
         /*
            1 区間として認める最大の経過時間（ミリ秒）。動作条件から決まる。
-           tick 間隔は通常 20 ミリ秒だが、制御対象が無いときは 1000 ミリ秒の探索モードへ
+           tick 間隔は通常 20 ミリ秒だが、制御対象が無いときは 1000 ミリ秒の見張り周期へ
            落ちるため、上限はそれを確実に超えている必要がある。一方でタブの休止や
            スリープ復帰のような長い断絶は区間として数えたくない。その間を取っている。
         */
@@ -1780,9 +1778,10 @@
      */
     function tick(sampling) {
         refresh();
-        // settings が null なのは「まだ content.js から届いていない」だけかもしれないので、
-        // 確信を持って止めてよいのは enabled: false が明示されているときに限る
-        if (!settings?.enabled) return sleep(settings !== null);
+        // 機能 OFF は MutationObserver が確実に拾うので、ここだけは完全停止してよい（sleep 参照）。
+        // ただし settings が null なのは「まだ content.js から届いていない」だけかもしれないので、
+        // 止めてよいのは enabled: false が明示されているときに限る
+        if (!settings?.enabled) return sleep(settings === null ? IDLE_MS : 0);
 
         const next = adapter.video();   // 今このページで制御すべき <video>
         if (next !== video) {
@@ -1793,7 +1792,7 @@
             video   = next;
             mediaId = null;             // 中身も変わったはずなので、メディア判定をやり直させる
         }
-        if (!video) return sleep(false);
+        if (!video) return sleep();
 
         const media = adapter.media();  // { id, live }
         live = media.live;              // stalled() がストールをログすべきか判断するのに使う
@@ -1803,11 +1802,10 @@
             restart();
             log('media', media);
         }
-        if (!media.live) return sleep(media.id !== null);   // ID が取れているなら「API は生きていて非ライブ」＝確定
+        if (!media.live) return sleep();    // 録画・クリップ・広告は制御しない
 
         idling = false;
-        seekAt = 0;
-        schedule(TICK_MS);                                   // ← ここで全速へ引き上げる
+        schedule(TICK_MS);                  // ← ここで全速へ引き上げる
 
         const now  = performance.now();
         const tune = tuning();          // 段階と制御パラメータを、この tick 中で 1 度だけ解く
@@ -1888,23 +1886,35 @@
     function schedule(ms) {
         if (ms === period) return;
         if (timer !== null) clearInterval(timer);
-        // 統計の標本は等間隔の高速タイマーからだけ採る（探索中の粗い間隔は混ぜない）
+        // 統計の標本は等間隔の高速タイマーからだけ採る（見張り中の粗い間隔は混ぜない）
         timer  = ms > 0 ? setInterval(() => run(ms === TICK_MS), ms) : null;
         period = ms;
         log('timer', ms ? `${ms}ms` : 'stopped');
     }
 
     /**
-     * 制御対象が見つからないときの休止処理。
-     * 確信が持てないうちは低速で探し続け、猶予を過ぎたら完全に停止してイベント待ちへ移る。
+     * 制御対象が無い（あるいはライブでない）ときの休止処理。
+     * 既定ではタイマーを止めず、IDLE_MS の見張り周期へ落とすだけにする。
+     *
+     * 【タイマーを止めない理由】
+     *   復帰の合図をメディアイベントに頼れない場合があるため。YouTube と Twitch は広告を
+     *   本編と同じ <video> で再生するので、広告が終わっても要素の再ロードも一時停止も起きず、
+     *   loadstart / play / playing のいずれも発火しない。変わるのは ad-showing クラスや
+     *   広告 UI といった DOM の状態だけであり、これは待ち受けようが無い。
+     *   一方で見張りの費用は小さい。休止中の tick は refresh()（属性文字列の比較）と
+     *   adapter.video() / adapter.media() だけで終わり、注入先も manifest の matches により
+     *   対象サイトのフレームに限られる（広告の iframe は別オリジンなので入らない）。
+     *
+     * ms に 0 を渡したときだけ完全停止する。これは機能 OFF 専用で、その場合の復帰の合図は
+     * <html data-slpstrm> の書き換え、すなわち MutationObserver が確実に拾う変化に限られる。
      *
      * 後始末（乗っ取りの解除・バッジの撤去・統計の破棄）は休止へ入った最初の 1 回だけ行う。
      * 毎 tick やるのが無駄というだけでなく、再開時に古い配信の標本を残さないためでもある。
      *
-     * @param {boolean} sure - 「制御対象は無い」と確信できるか（機能 OFF・VOD 確定など）
+     * @param {number} [ms=IDLE_MS] - 休止中の周期（ミリ秒）。0 なら完全停止
      * @returns {void}
      */
-    function sleep(sure) {
+    function sleep(ms = IDLE_MS) {
         if (!idling) {
             idling = true;
 
@@ -1916,36 +1926,34 @@
             live    = false;            // 休止中はストールをログしない
         }
 
-        const now = performance.now();
-        if (!seekAt) seekAt = now;
-        if (!sure && now - seekAt < GRACE_MS) return schedule(IDLE_MS);
+        schedule(ms);
+        if (ms) return;                 // 見張りを続けるなら <video> は掴んだままでよい
 
-        schedule(0);
         drive(video, false);    // イベント駆動も切らないと timeupdate で回り続ける
         video = null;           // 次回の tick に掴み直させる
     }
 
     /**
-     * 停止中のループを外部イベントから叩き起こす。
-     * すでに動いているときは何もしないので、連続発火するイベントに繋いでも安全。
+     * 外部イベントから tick を前倒しで 1 回走らせる。
+     * 見張り周期（IDLE_MS）の待ち時間を潰して復帰を速めるためのもので、
+     * すでに全速で回っているときは何もしない。連続発火するイベントに繋いでも安全。
      *
      * @returns {void}
      */
     function wake() {
-        if (period > 0) return;
-        seekAt = 0;
-        schedule(IDLE_MS);
-        run(false);             // 待たずに 1 回確認する
+        if (period === TICK_MS) return;
+        run(false);
     }
 
-    // 停止中に再生開始を知るためのイベント。
+    // 再生開始を見張り周期より速く知るためのイベント。
     // メディアイベントはバブリングしないため、必ずキャプチャ段階で拾う
     for (const type of ['loadstart', 'loadedmetadata', 'durationchange', 'play', 'playing']) {
         document.addEventListener(type, wake, true);
     }
 
     // 設定変更（content.js による data-slpstrm の書き換え）で復帰する。
-    // 停止中は refresh() が走らないため、ここを見張らないと ON にしても起きられない。
+    // 機能 OFF のあいだはタイマーごと止まっていて refresh() が走らないため、
+    // ここを見張らないと ON にしても起きられない。
     // document_start では <html> がまだ無いことがあるため、その場合は生成後に張り直す
     (function observeSettings() {
         const root = document.documentElement;
@@ -1955,10 +1963,8 @@
 
     // 裏タブではタイマーが間引かれる。表に戻った瞬間に一度走らせて復帰を早める
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) return;
-        if (period > 0) run(false);
-        else wake();
+        if (!document.hidden) run(false);
     });
 
-    schedule(IDLE_MS);      // まず探索モードで起動する（拡張機能の再読み込み時も拾える）
+    schedule(IDLE_MS);      // まず見張りモードで起動する（拡張機能の再読み込み時も拾える）
 })();

@@ -18,7 +18,7 @@
     "floorDesc": { "message": "Réduit la lecture à la vitesse minimale (0,15x) lorsque le tampon est épuisé pour maintenir la lecture et éviter un blocage total." },
     "floorThreshold": { "message": "Seuil de ralentissement maximal (sec)" },
     "floorThresholdDesc": { "message": "Le seuil de sécurité final déclenché juste avant un blocage complet. Tant que le tampon reste sous cette valeur, la lecture est réduite à 0,15x." },
-    "floorThresholdNote_twitch": { "message": "Sur Twitch, les segments de données vidéo peuvent s'interrompre pendant environ 10 secondes. La valeur par défaut est définie plus haut pour éviter l'arrêt complet de la lecture." },
+    "floorThresholdNote_twitch": { "message": "Sur Twitch, les données vidéo peuvent cesser d'arriver pendant une dizaine de secondes. Sur Chrome, cela se termine par l'erreur #3000 et impose un rechargement : la valeur par défaut est donc plus élevée. Firefox se rétablit tout seul et conserve la valeur normale." },
     "duck": { "message": "Réduire le volume pendant le ralentissement maximal" },
     "duckDesc": { "message": "Atténue l'audio étiré pendant le ralentissement maximal pour réduire le désagrément. Diminue temporairement le volume et rétablit automatiquement le volume d'origine lors du retour à la vitesse normale." },
     "duckVolume": { "message": "Volume pendant le ralentissement maximal (%)" },

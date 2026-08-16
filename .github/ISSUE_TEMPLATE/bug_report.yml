@@ -123,7 +123,7 @@ body:
 
         配信ページ側のコンソール（F12。拡張機能のコンソールでは**ありません**）で `window.__slipstreamliveDebug = true` を実行し、症状が出ている状態で 30 秒ほど待ってから、出力を貼り付けてください。
 
-        Note: `timer stopped` appears often even when things are working — content scripts run in every frame, and frames without a `<video>` shut down after 5 seconds. / `timer stopped` は正常時も頻繁に出ます。全フレームに注入され、`<video>` の無いフレームは 5 秒で停止するためです。
+        Note: `timer stopped` means the extension is switched off — it should not appear during playback. / `timer stopped` は機能を OFF にしたことを意味します。再生中に現れることはありません。
       render: text
     validations:
       required: false
