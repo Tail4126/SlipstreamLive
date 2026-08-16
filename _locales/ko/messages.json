@@ -18,7 +18,7 @@
     "floorDesc": { "message": "버퍼 고갈 시 완전한 재생 멈춤을 피하기 위해 최소 속도(0.15배속)로 낮추어 재생을 유지합니다." },
     "floorThreshold": { "message": "최저속 재생 임계값 (초)" },
     "floorThresholdDesc": { "message": "완전 멈춤 직전에 작동하는 최종 임계값입니다. 버퍼 잔량이 이 값을 밑도는 동안 0.15배속까지 낮춥니다." },
-    "floorThresholdNote_twitch": { "message": "Twitch에서는 영상 데이터 수신이 10초 정도 중단될 수 있습니다. 완전히 재생이 멈추는 것을 방지하기 위해 기본값이 높게 설정되어 있습니다." },
+    "floorThresholdNote_twitch": { "message": "Twitch에서는 영상 데이터 수신이 10초 정도 끊길 수 있습니다. Chrome에서는 오류 #3000으로 멈춰 새로 고침이 필요하므로 기본값을 크게 잡았습니다. Firefox는 자동으로 복구되므로 일반 값을 사용합니다." },
     "duck": { "message": "최저속 재생 중 음량 낮추기" },
     "duckDesc": { "message": "최저속 재생 시 늘어지는 음성을 억제하여 불쾌감을 줄입니다. 일시적으로 음량을 낮추고, 일반 속도로 돌아오면 자동으로 원래 음량으로 복원됩니다." },
     "duckVolume": { "message": "최저속 재생 중 음량 (%)" },

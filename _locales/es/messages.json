@@ -18,7 +18,7 @@
     "floorDesc": { "message": "Reduce la reproducción a la velocidad mínima (0,15x) cuando el búfer se agota para mantener la reproducción y evitar un congelamiento total." },
     "floorThreshold": { "message": "Umbral de ralentización máxima (s)" },
     "floorThresholdDesc": { "message": "El umbral final de seguridad que se activa justo antes de un congelamiento completo. Mientras el búfer esté por debajo de este valor, la reproducción baja a 0,15x." },
-    "floorThresholdNote_twitch": { "message": "En Twitch, los fragmentos de datos de vídeo pueden pausarse durante unos 10 segundos. El valor predeterminado es más alto para evitar pausas completas en la reproducción." },
+    "floorThresholdNote_twitch": { "message": "En Twitch, los datos de vídeo pueden dejar de llegar durante unos 10 segundos. En Chrome esto termina en el error #3000 y obliga a recargar, así que el valor predeterminado es más alto. Firefox se recupera solo, por lo que mantiene el valor normal." },
     "duck": { "message": "Bajar el volumen durante la ralentización máxima" },
     "duckDesc": { "message": "Atenúa el audio distorsionado durante la ralentización máxima para reducir la molestia. Reduce temporalmente el volumen y lo restaura automáticamente al volver a la velocidad normal." },
     "duckVolume": { "message": "Volumen durante la ralentización máxima (%)" },

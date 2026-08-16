@@ -18,7 +18,7 @@
     "floorDesc": { "message": "Reduces playback to minimum speed (0.15x) when buffer is depleted to maintain playback and avoid a total freeze." },
     "floorThreshold": { "message": "Maximum slowdown threshold (sec)" },
     "floorThresholdDesc": { "message": "The final safety threshold triggered just before a complete freeze. Playback drops to 0.15x while buffer health stays below this value." },
-    "floorThresholdNote_twitch": { "message": "On Twitch, video data chunks may pause for around 10 seconds. The default value is set higher to prevent complete playback pauses." },
+    "floorThresholdNote_twitch": { "message": "On Twitch, video data can stop arriving for around 10 seconds. On Chrome this ends in error #3000 and needs a reload, so the default is set higher. Firefox recovers on its own, so it keeps the normal default." },
     "duck": { "message": "Lower volume during maximum slowdown" },
     "duckDesc": { "message": "Suppresses stretched audio during maximum slowdown to reduce discomfort. Temporarily lowers volume and automatically restores original volume when returning to normal speed." },
     "duckVolume": { "message": "Volume during maximum slowdown (%)" },

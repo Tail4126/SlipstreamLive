@@ -18,7 +18,7 @@
     "floorDesc": { "message": "缓冲耗尽时降至最低速度（0.15倍速）以维持播放，避免彻底停止。" },
     "floorThreshold": { "message": "微速播放阈值（秒）" },
     "floorThresholdDesc": { "message": "画面彻底停止前触发的最终防御阈值。缓冲残量低于该值期间，将降至 0.15 倍速。" },
-    "floorThresholdNote_twitch": { "message": "在 Twitch 上，视频数据可能中断约 10 秒。为防止彻底停止播放，默认值设置得相对较高。" },
+    "floorThresholdNote_twitch": { "message": "在 Twitch 上，视频数据可能中断约 10 秒。Chrome 会因此报错 #3000 并停止播放，需要刷新页面，所以默认值设置得较大。Firefox 可自动恢复，因此使用常规默认值。" },
     "duck": { "message": "微速播放时降低音量" },
     "duckDesc": { "message": "抑制微速播放时拉长的声音，减少不适感。临时降低音量，恢复正常速度后自动恢复原音量。" },
     "duckVolume": { "message": "微速播放时的音量（%）" },

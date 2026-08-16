@@ -18,7 +18,7 @@
     "floorDesc": { "message": "緩衝耗盡時降至最低速度（0.15倍速）以維持播放，避免徹底停止。" },
     "floorThreshold": { "message": "微速播放閾值（秒）" },
     "floorThresholdDesc": { "message": "畫面徹底停止前觸發的最終防禦閾值。緩衝殘量低於該值期間，將降至 0.15 倍速。" },
-    "floorThresholdNote_twitch": { "message": "在 Twitch 上，影片資料可能中斷約 10 秒。為防止徹底停止播放，預設值設定得相對較高。" },
+    "floorThresholdNote_twitch": { "message": "在 Twitch 上，影片資料可能中斷約 10 秒。Chrome 會因此出現錯誤 #3000 並停止播放，需要重新整理頁面，所以預設值設定得較大。Firefox 可自動恢復，因此使用一般預設值。" },
     "duck": { "message": "微速播放時降低音量" },
     "duckDesc": { "message": "抑制微速播放時拉長的聲音，減少不適感。暫時降低音量，恢復正常速度後自動恢復原音量。" },
     "duckVolume": { "message": "微速播放時的音量（%）" },

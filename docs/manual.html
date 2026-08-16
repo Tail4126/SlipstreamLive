@@ -280,15 +280,15 @@
           <tr><td><span class="ui">Speed-up buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. Speeds up once this much video is loaded ahead.</td></tr>
           <tr><td><span class="ui">Auto-adjust buffer threshold</span></td><td>Off / Standard / Aggressive</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td>Lets Slipstream Live decide when speeding up is safe. <strong>Recommended.</strong></td></tr>
           <tr><td><span class="ui">Maximum slowdown on buffer depletion</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for the 0.15x emergency brake.</td></tr>
-          <tr><td><span class="ui">Maximum slowdown threshold (sec)</span></td><td>0.0–10.0 / 0.1</td><td class="num">0.80<br>(FF 1.00)</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.10<br>(FF 0.30)</td><td>Drops to 0.15x while buffer health stays below this.</td></tr>
+          <tr><td><span class="ui">Maximum slowdown threshold (sec)</span></td><td>0.0–10.0 / 0.1</td><td class="num">0.80</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.30</td><td>Drops to 0.15x while buffer health stays below this.</td></tr>
           <tr><td><span class="ui">Lower volume during maximum slowdown</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Ducks the audio while at 0.15x.</td></tr>
           <tr><td><span class="ui">Volume during maximum slowdown (%)</span></td><td>0–100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td>A percentage of <em>your</em> current volume. 100 = no change, 0 = mute.</td></tr>
         </tbody>
       </table>
     </div>
-    <p>FF = the default used on Firefox, which reports buffer levels differently. Note the direction is not uniform: the Firefox defaults are larger on YouTube and TwitCasting, but smaller on Twitch.</p>
+    <p>FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only site where it differs.</p>
     <div class="note">
-      <p><strong>Why is Twitch's threshold so much higher?</strong> Twitch sometimes stops delivering video for around 10 seconds at a time. The larger default gives Slipstream Live room to react before playback actually stalls.</p>
+      <p><strong>Why is Twitch's threshold so much higher?</strong> Twitch sometimes stops delivering video for around 10 seconds at a time. On Chrome that ends in error #3000 and needs a reload, so the default is set higher. Firefox recovers on its own, so it keeps the normal default.</p>
     </div>
 
     <h3>7.2 The three auto-adjust levels</h3>
@@ -329,7 +329,7 @@
     <p>So instead of trusting one reading, Slipstream Live estimates statistically where the <em>troughs</em> are, over a window that adapts to each stream, and only allows a speed-up while that estimated headroom stays above the buffer level you have asked it to protect. Because the safety factor is large, headroom only opens up when the troughs are <em>consistent</em> — an unstable connection naturally suppresses speed-ups, and while there isn't enough data yet, Slipstream Live simply does nothing.</p>
     <p>One shortcut sits above that test. Once buffer health passes 20 seconds — or your maximum slowdown threshold plus 10 seconds, whichever is higher — the trough estimate is no longer what limits the decision, so Slipstream Live speeds up without waiting for it, and returns to the statistical test below 15 seconds. This is what keeps it responsive right after you seek, when the buffer refills so quickly that the statistics are temporarily unusable. The shortcut applies to the automatic levels only.</p>
     <p>All of that answers "is there enough buffer to speed up safely?" — a different question from "is there any point in speeding up?" Live video is produced in real time, so the buffer refills at 1.0x no matter how fast you play it. Once the cushion is spent you are at the live edge, and holding a higher rate there makes playback outrun each arriving segment and stall for a fraction of a second, over and over. Buffer health can't see this, because every stall lets the buffer refill. So Slipstream Live compares the gain the speed-up should have produced against the gain the playhead actually made, over a 12-second window, and stands down when the latter falls below half the former. It re-arms once latency grows past a threshold — one that scales with the site's segment length, so it means the same thing on sites whose baseline latency differs by more than tenfold — or after 30 seconds.</p>
-    <p>Badges are redrawn at most 10 times per second and all statistics are smoothed, so the speed does not visibly oscillate. When there is nothing to control, the loop drops to a 1-second search mode and then stops entirely, waking on media events or when the tab becomes visible again.</p>
+    <p>Badges are redrawn at most 10 times per second and all statistics are smoothed, so the speed does not visibly oscillate. When there is nothing to control, the loop drops to a 1-second watch mode instead of stopping, because ads play through the same video element and end without firing any media event. It also runs once immediately when the tab becomes visible again.</p>
     <div class="note">
       <p>The full derivation — including how the trough is located without knowing the segment length — is in the <a href="https://github.com/Tail4126/SlipstreamLive#-how-it-works" target="_blank" rel="noopener">project README</a>.</p>
     </div>
@@ -408,7 +408,7 @@
       <li>A persistent <code>calm=NO</code> means the stationarity gate is rejecting samples, so <code>room</code> stays <code>----</code> as well. A speed-up can still happen while buffer health is above <code>ample</code>.</li>
       <li><code>lat=</code> is the latency the site reports. <code>sd</code> is the standard deviation over a 5-second window and <code>jump</code> is the largest change seen in the last second. In practice <code>sd</code> stays at or below 0.11 and <code>jump</code> below 0.2 while latency is steady. A <code>jump</code> that stays well above that means the latency reading is noisy enough to re-arm speed-ups that were correctly stood down.</li>
       <li><code>gain=</code> reads "seconds actually gained / seconds the speed-up asked for". When the right-hand figure passes 1 second and the left-hand one is under half of it, <code>FUTILE</code> is appended and speed-ups are being skipped.</li>
-      <li><code>timer stopped</code> appears often even when everything is working — content scripts run in every frame, and frames without a video element shut down after 5 seconds.</li>
+      <li><code>timer stopped</code> means the extension is switched off. During playback it should never appear.</li>
     </ul>
   </section>
 

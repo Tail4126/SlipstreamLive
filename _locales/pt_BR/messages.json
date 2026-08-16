@@ -18,7 +18,7 @@
     "floorDesc": { "message": "Reduz para a velocidade mínima (0,15x) quando o buffer esgota para evitar o travamento total e manter a reprodução." },
     "floorThreshold": { "message": "Limite de velocidade mínima (s)" },
     "floorThresholdDesc": { "message": "O limite de segurança final ativado imediatamente antes do travamento total. Enquanto o buffer estiver abaixo deste valor, a reprodução cai para 0,15x." },
-    "floorThresholdNote_twitch": { "message": "Na Twitch, os dados de vídeo podem parar de chegar por cerca de 10 segundos. O valor padrão é maior para evitar interrupções completas na reprodução." },
+    "floorThresholdNote_twitch": { "message": "Na Twitch, os dados de vídeo podem parar de chegar por cerca de 10 segundos. No Chrome isso termina no erro #3000 e exige recarregar a página, por isso o valor padrão é maior. O Firefox se recupera sozinho e mantém o valor normal." },
     "duck": { "message": "Reduzir volume durante a velocidade mínima" },
     "duckDesc": { "message": "Suprime o áudio distorcido durante a velocidade mínima para reduzir o desconforto. Diminui o volume temporariamente e o restaura automaticamente ao retornar à velocidade normal." },
     "duckVolume": { "message": "Volume na velocidade mínima (%)" },
