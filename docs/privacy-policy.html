@@ -32,8 +32,8 @@
   <div class="page-head">
     <h1>プライバシーポリシー</h1>
     <div class="page-meta">
-      <span>対象バージョン: 1.0.0</span>
-      <span>最終更新: 2026-08-14</span>
+      <span>対象バージョン: 1.1.3</span>
+      <span>最終更新: 2026-08-17</span>
     </div>
     <div class="lang-note">
       <strong>言語について。</strong>
@@ -43,7 +43,7 @@
 
   <div class="glance">
     <div class="glance-row"><span class="glance-q">個人情報を収集しますか？</span><span class="glance-a no">NO</span></div>
-    <div class="glance-row"><span class="glance-q">外部と通信しますか？</span><span class="glance-a no">NO — 一切なし</span></div>
+    <div class="glance-row"><span class="glance-q">外部と通信しますか？</span><span class="glance-a local">動作中はなし（アンインストール時のみアンケート）</span></div>
     <div class="glance-row"><span class="glance-q">解析・テレメトリはありますか？</span><span class="glance-a no">NO</span></div>
     <div class="glance-row"><span class="glance-q">閲覧履歴を記録しますか？</span><span class="glance-a no">NO</span></div>
     <div class="glance-row"><span class="glance-q">設定の保存先は？</span><span class="glance-a local">端末内のみ</span></div>
@@ -108,6 +108,8 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
       </ul>
       <p><strong style="color:var(--ink)">Links in the settings popup.</strong> The popup holds two links to the project's documentation site on GitHub Pages: the extension icon opens the home page, and the link in the bottom-right corner opens the <a href="manual.html">user manual</a>. Both open in a new tab.</p>
       <p>Nothing is loaded until you click one. Clicking one is an ordinary navigation your browser performs, exactly as if you had typed the address in yourself — the Extension attaches no identifier, no settings, and nothing about what you were watching. Once a page from <code>github.io</code> is open, GitHub's own privacy policy applies to it, as it would for any other site you visit.</p>
+      <p><strong style="color:var(--ink)">The uninstall survey.</strong> When you remove the Extension, your browser opens a short feedback survey (a Google Form) in a new tab. This is a standard browser feature: the Extension registers the address in advance via <code>runtime.setUninstallURL()</code>, and by the time the page opens the Extension is already gone.</p>
+      <p>Opening it is an ordinary navigation, exactly as if you had typed the address in yourself. The address is the same fixed one for everybody — no identifier, no settings, and nothing about what you were watching is attached to it. Answering is entirely voluntary; close the tab and nothing beyond the page request itself is sent. Anything you do choose to write in the form is handled under Google's privacy policy.</p>
     </div>
 
     <div class="policy-section">
@@ -197,6 +199,8 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
       </ul>
       <p><strong style="color:var(--ink)">設定画面内のリンクについて。</strong> 設定画面には、GitHub Pages 上のドキュメントサイトへのリンクが2つあります。拡張機能のアイコンがトップページ、右下のリンクが<a href="manual.ja.html">取扱説明書</a>です。どちらも新しいタブで開きます。</p>
       <p>クリックするまで、何も読み込みません。クリックしたあとの動作は、そのアドレスを自分で入力したときとまったく同じ、ブラウザによる通常のページ遷移です。本拡張機能が識別子や設定内容、視聴していた配信の情報をリンクに付け足すことはありません。<code>github.io</code> のページを開いた後は、他のサイトを訪れたときと同様に GitHub 側のプライバシーポリシーが適用されます。</p>
+      <p><strong style="color:var(--ink)">アンインストール時のアンケートについて。</strong> 本拡張機能を削除すると、ブラウザが短いアンケートフォーム（Google フォーム）を新しいタブで開きます。これはブラウザの標準機能で、本拡張機能は <code>runtime.setUninstallURL()</code> であらかじめアドレスを登録しておくだけです。ページが開く時点で、本拡張機能はすでに存在しません。</p>
+      <p>開いたあとの動作は、そのアドレスを自分で入力したときとまったく同じ、通常のページ遷移です。アドレスは全ユーザー共通の固定値で、識別子・設定内容・視聴していた配信の情報を付け足すことはありません。回答は任意で、タブを閉じればページの取得以外に何も送信されません。フォームに記入した内容には Google のプライバシーポリシーが適用されます。</p>
     </div>
 
     <div class="policy-section">

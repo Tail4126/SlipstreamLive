@@ -1,6 +1,6 @@
 # Privacy Policy / プライバシーポリシー
 
-**Last updated / 最終更新:** 2026-08-14
+**Last updated / 最終更新:** 2026-08-17
 
 > **Note on Language / 言語に関する注記**
 > このポリシーは英語で書いたものが正式版で、日本語訳は参考用です。両者の内容にズレがあった場合は英語版を優先します。
@@ -13,7 +13,7 @@
 | Question / 質問 | Answer / 回答 |
 | :--- | :--- |
 | Does it collect personal data? / 個人情報を収集しますか？ | **No / いいえ** |
-| Does it make network requests? / 外部と通信しますか？ | **No — none at all / いいえ（一切ありません）** |
+| Does it make network requests? / 外部と通信しますか？ | **No while running / 動作中は一切ありません**（§3: uninstalling opens a survey page / アンインストール時のみアンケートページが開きます） |
 | Does it use analytics or telemetry? / 解析・テレメトリはありますか？ | **No / ありません** |
 | Does it record browsing history? / 閲覧履歴を記録しますか？ | **No / いいえ** |
 | Where are settings stored? / 設定の保存先は？ | Locally, on your device only / お使いの端末内のみ |
@@ -93,6 +93,12 @@ The popup holds two links to the project's documentation site on GitHub Pages: t
 
 Nothing is loaded until you click one. Clicking one is an ordinary navigation your browser performs, exactly as if you had typed the address in yourself — the Extension attaches no identifier, no settings, and nothing about what you were watching. Once a page from `github.io` is open, GitHub's own privacy policy applies to it, as it would for any other site you visit.
 
+#### The uninstall survey
+
+When you remove the Extension, your browser opens a short feedback survey (a Google Form) in a new tab. This is a standard browser feature: the Extension registers the address in advance via `runtime.setUninstallURL()`, and by the time the page opens the Extension is already gone.
+
+Opening it is an ordinary navigation, exactly as if you had typed the address in yourself. The address is the same fixed one for everybody — no identifier, no settings, and nothing about what you were watching is attached to it. Answering is entirely voluntary; close the tab and nothing beyond the page request itself is sent. Anything you do choose to write in the form is handled under Google's privacy policy.
+
 ---
 
 ### 4. Third parties
@@ -108,7 +114,7 @@ The Extension also isn't acting as a data processor for YouTube, Twitch, or Twit
 Settings stay on your device until you remove them. You can:
 
 * hit **Reset** in the settings popup to restore defaults, or
-* uninstall the Extension, which wipes its local storage along with it.
+* uninstall the Extension, which wipes its local storage along with it (this is also when the survey page above opens).
 
 Since no copy exists anywhere else, there's no separate deletion request to make.
 
@@ -203,6 +209,12 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*
 
 クリックするまで、何も読み込みません。クリックしたあとの動作は、そのアドレスを自分で入力したときとまったく同じ、ブラウザによる通常のページ遷移です。本拡張機能が識別子や設定内容、視聴していた配信の情報をリンクに付け足すことはありません。`github.io` のページを開いた後は、他のサイトを訪れたときと同様に GitHub 側のプライバシーポリシーが適用されます。
 
+#### アンインストール時のアンケートについて
+
+本拡張機能を削除すると、ブラウザが短いアンケートフォーム（Google フォーム）を新しいタブで開きます。これはブラウザの標準機能で、本拡張機能は `runtime.setUninstallURL()` であらかじめアドレスを登録しておくだけです。ページが開く時点で、本拡張機能はすでに存在しません。
+
+開いたあとの動作は、そのアドレスを自分で入力したときとまったく同じ、通常のページ遷移です。アドレスは全ユーザー共通の固定値で、識別子・設定内容・視聴していた配信の情報を付け足すことはありません。回答は任意で、タブを閉じればページの取得以外に何も送信されません。フォームに記入した内容には Google のプライバシーポリシーが適用されます。
+
 ---
 
 ### 4. 第三者への提供
@@ -218,7 +230,7 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*
 設定は消すまで端末内に残ります。消し方は2通り。
 
 * 設定画面の **「リセット」** で初期状態に戻す
-* 拡張機能をアンインストールする（ローカルストレージごと消えます）
+* 拡張機能をアンインストールする（ローカルストレージごと消えます。このとき上記のアンケートページが開きます）
 
 どこにも複製がないので、開発者への削除依頼は不要です。
 
