@@ -191,6 +191,17 @@ site where it differs.*
 | **Standard** | 30s | 5 | 0.3s | 0.2s | Long window, large factor — cautious. The default. |
 | **Aggressive** | 5s | 3 | 0.1s | 0.2s | Short window; reacts quickly to recent headroom and closes the gap harder. |
 
+*The added margin sits on top of your **Maximum slowdown threshold**. With that switch **Off**, the
+automatic levels protect one segment's worth of buffer instead — the length the site reports, 0.5–5
+seconds — because there is no 0.15x brake left to catch a trough that reaches zero.*
+
+*The automatic levels also damp the decision twice over: hysteresis raises the entry line by 0.2 s,
+and after any mode change at least 2 seconds pass before the next speed-up may begin. With
+auto-adjust **Off** neither applies — the speed-up starts the instant buffer health reaches the
+number you set and stops the instant it drops below. The manual mode therefore behaves exactly as
+written, at the cost of the rate switching more often on a bumpy connection. (The 0.15x brake is a
+separate test and keeps its own hysteresis either way.)*
+
 ### All-sites settings
 
 | Setting | Default | What it does |
@@ -267,7 +278,9 @@ $$room = troughAvg - K \times troughSd$$
 `room` stays `NaN` until the trough history spans at least 1 seconds — a single sample would have
 a standard deviation of zero and pass through with no safety margin at all. Speeding up is allowed
 only while `room` stays above the buffer level you've asked Slipstream Live to protect (your maximum
-slowdown threshold, plus the level's added margin; just the margin if that mode is off). Because
+slowdown threshold plus the level's added margin — or, with maximum slowdown switched off, one
+segment's worth of buffer as reported by the site, since nothing else is left to catch a trough that
+reaches zero). Because
 `K` is large, headroom only opens up when the troughs are *consistent* — an unstable connection
 naturally suppresses speed-ups. And while there isn't enough data yet, `room` is `NaN`, every
 comparison against it is false, and Slipstream Live falls back to doing nothing.
@@ -279,7 +292,8 @@ statistical test once health drops below 15 seconds. This matters after a manual
 the buffer drives the fetch rate far above 1.0, the stationarity gate correctly refuses to record
 troughs, and without the shortcut the extension would sit at 1.00x with a minute of video already
 loaded. The shortcut applies to the automatic levels only — with auto-adjust **Off**, your manual
-threshold is used exactly as set.
+threshold is used exactly as set: the speed-up begins the moment buffer health reaches it and ends
+the moment it drops below, with no added margin and no waiting period.
 
 </details>
 
@@ -331,7 +345,10 @@ immediately when the tab becomes visible again.
 Auto-adjust is deliberately cautious: on an unstable connection it will decide that speeding up
 isn't safe. Try switching **Auto-adjust buffer threshold** to **Aggressive** first. If that still
 isn't enough, set it to **Off** and configure **Speed-up buffer threshold** manually (try 15–20
-seconds and work down).
+seconds and work down). With auto-adjust **Off**, the speed-up starts the moment buffer health
+reaches your threshold, and stops as soon as it drops below — no extra margin and no waiting period
+(1.1.3 and later; earlier versions needed 0.2 s more and up to 2 seconds of delay). If the rate now switches back and forth more than
+you'd like, either raise the threshold or switch auto-adjust back on.
 
 **It sits at 1.00x right after seeking, even with plenty of video buffered.**
 Make sure you're on 1.1.0 or later. From that version, buffer health above 20 seconds allows a
@@ -404,10 +421,14 @@ Twitch's own troubleshooting resources are worth a look too:
 
 ## 🔒 Privacy
 
-Slipstream Live makes **no network requests whatsoever**. It asks for only two permissions:
+Slipstream Live makes **no network requests while it runs**. It asks for only two permissions:
 
 * `storage` — to save your settings locally on your device.
 * `activeTab` — to see which supported site the popup was opened on, so it can pick the right tab.
+
+The one exception is uninstalling: your browser then opens a short, optional feedback survey in a new
+tab. The extension only registers that fixed address in advance — no identifier, no settings, and
+nothing about what you were watching is attached to it.
 
 No analytics, no telemetry, no identifiers, no ads. Full details in [PRIVACY.md](PRIVACY.md).
 
@@ -419,6 +440,7 @@ No analytics, no telemetry, no identifiers, no ads. Full details in [PRIVACY.md]
 
 ```
 manifest.json          Extension manifest (MV3)
+background.js          Service worker (Chrome) / event page (Firefox): registers the uninstall survey URL
 popup.html/.css/.js    Settings UI (also serves as the options page)
 common.js              Wrapper around storage / i18n APIs
 content.js             ISOLATED world: pushes settings into <html data-slpstrm="...">

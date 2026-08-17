@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Slipstream Live — 配信との数秒を、黙って詰める</title>
-<meta name="description" content="Slipstream Live は YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能です。バッファ残量を見ながら再生速度を自動調整し、映像を止めずにライブの最先端へ近づけ続けます。通信は一切なし。">
+<meta name="description" content="Slipstream Live は YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能です。バッファ残量を見ながら再生速度を自動調整し、映像を止めずにライブの最先端へ近づけ続けます。動作中の通信は一切なし。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Slipstream Live — 配信との数秒を、黙って詰める">
-<meta property="og:description" content="YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能。バッファ残量を見ながら再生速度を自動調整し、映像を止めずにライブの最先端へ近づけ続けます。通信は一切なし。">
+<meta property="og:description" content="YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能。バッファ残量を見ながら再生速度を自動調整し、映像を止めずにライブの最先端へ近づけ続けます。動作中の通信は一切なし。">
 <meta property="og:image" content="https://tail4126.github.io/SlipstreamLive/images/slipstreamlive.jpg">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:url" content="https://tail4126.github.io/SlipstreamLive/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Slipstream Live — 配信との数秒を、黙って詰める">
-<meta name="twitter:description" content="YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能。通信は一切なし。">
+<meta name="twitter:description" content="YouTube Live・Twitch・ツイキャス向けのブラウザ拡張機能。動作中の通信は一切なし。">
 <meta name="twitter:image" content="https://tail4126.github.io/SlipstreamLive/images/slipstreamlive.jpg">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
@@ -235,7 +235,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
           </div>
           <h3>通信は一切なし</h3>
-          <p>外部サーバーには一度も接続しません。解析もテレメトリも識別子も持ちません。</p>
+          <p>動作中に外部サーバーへ接続することはありません。解析もテレメトリも識別子も持ちません。</p>
         </div>
 
       </div>
@@ -329,8 +329,9 @@
       <div class="privacy-copy">
         <h2>通信は、一切しません。</h2>
         <p>
-          個人情報も閲覧履歴も、何も外へは送りません。外部サーバーに一度もつながらないので、
+          個人情報も閲覧履歴も、何も外へは送りません。動作中は外部サーバーに一度もつながらないので、
           送りようがないというのが正確なところです。要求する権限もふたつだけです。
+          （アンインストールしたときだけ、ブラウザが任意回答のアンケートページを開きます。）
         </p>
         <div class="perm-list">
           <div class="perm-item">
@@ -349,7 +350,7 @@
 
       <div class="privacy-panel" aria-hidden="true">
         <div class="privacy-row"><span>個人情報の収集</span><span class="no">NO</span></div>
-        <div class="privacy-row"><span>外部への通信</span><span class="no">NO</span></div>
+        <div class="privacy-row"><span>動作中の外部通信</span><span class="no">NO</span></div>
         <div class="privacy-row"><span>解析・テレメトリ</span><span class="no">NO</span></div>
         <div class="privacy-row"><span>閲覧履歴の記録</span><span class="no">NO</span></div>
         <div class="privacy-row"><span>広告・トラッキング</span><span class="no">NO</span></div>
