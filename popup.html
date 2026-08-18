@@ -47,7 +47,8 @@
       data-needs  : 列挙した設定がすべて ON のときだけ、この行を操作可能にする
       data-not    : 列挙した設定が 1 つでも ON なら、この行を操作不可にする
       data-reset  : リセットボタンの対象範囲（'site' = 表示中のサイト / 'common' = 全サイト共通）
-      data-site   : その注釈を表示するサイト（表示中のタブと一致したときだけ見える）
+      data-site   : その要素を表示するサイト（表示中のタブと一致したときだけ見える）。
+                    注釈だけでなく、特定サイトにしか無い設定の行やグループにも使える
     ================================================================================================
 -->
 
@@ -110,7 +111,7 @@
 
                     <!--
                         0 なら手動しきい値、1 以上で inject.js の Auto がしきい値を自動計算する。
-                        3 段階しかないうえ数値そのものに意味は無いので、数値入力ではなく段階スライダーで選ばせる。
+                        4 段階しかないうえ数値そのものに意味は無いので、数値入力ではなく段階スライダーで選ばせる。
                         data-labels には目盛りに対応する i18n キーを 低い順に 並べる。
                         popup.js がこれを読んで、マウスカーソルの近くへ現在の段階名を出す
                     -->
@@ -118,7 +119,7 @@
                         <span data-msg="speedupAuto"></span>
                         <button class="help-icon" type="button" data-help="speedupAutoDesc">?</button>
                         <input class="slider" type="range" data-key="speedupAuto"
-                               data-labels="speedupAutoOff speedupAutoStandard speedupAutoAggressive" />
+                               data-labels="speedupAutoOff speedupAutoStable speedupAutoStandard speedupAutoAggressive" />
                     </label>
                 </div>
 
@@ -152,6 +153,19 @@
 
                     <!-- Twitch タブを選んでいるときだけ表示される注釈 -->
                     <p class="note" data-site="twitch" data-msg="floorThresholdNote_twitch"></p>
+                </div>
+
+                <!--
+                    ---- プレミア公開: YouTube タブでだけ現れるグループ ----
+                    他の 2 サイトに相当する仕組みが無いため、data-site で YouTube タブ以外では丸ごと隠す。
+                    既定を OFF にしている理由は shared/schema.js の premiere を参照
+                -->
+                <div class="group" data-site="youtube">
+                    <label class="row" data-needs="enabled">
+                        <span data-msg="premiere"></span>
+                        <button class="help-icon" type="button" data-help="premiereDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="premiere" />
+                    </label>
                 </div>
             </div>
 

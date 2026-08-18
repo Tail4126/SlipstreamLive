@@ -45,6 +45,10 @@
     const rows      = [...document.querySelectorAll('.row')]; // 設定行（.row）の一覧。有効・無効の切り替えをまとめて行うために先に集めておく
     const tabs      = new Map();        // サイト識別子 → タブボタン要素 の対応表（buildTabs() が埋める）
 
+    // 特定のサイトでだけ見せる要素の一覧（注釈と、そのサイトにしか無い設定のグループ）。
+    // #scopes に限っているのは、<html> 自身も目印として data-site を持たされるため
+    const scoped    = [...document.querySelectorAll('#scopes [data-site]')];
+
     // 設定キーに紐づく入力要素の一覧。
     // data-key の綴り間違いを黙って無視すると原因不明の不具合になるため、警告を出して除外する
     const inputs = [...document.querySelectorAll('[data-key]')].filter((input) => {
@@ -148,7 +152,9 @@
         document.getElementById('reset-site').textContent = `${t('reset')} · ${SITES[current].label}`;
 
         for (const [site, tab] of tabs) tab.ariaSelected = String(site === current);
-        for (const note of document.querySelectorAll('.note')) note.hidden = note.dataset.site !== current;
+
+        // 表示中のタブと data-site が一致する要素だけを見せる
+        for (const node of scoped) node.hidden = node.dataset.site !== current;
 
         for (const input of inputs) {
             const value = settings[input.dataset.key];

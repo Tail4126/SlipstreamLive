@@ -50,6 +50,11 @@
         // これを取得する getPlayerResponse() は重い処理なので、一度取れたら動画が変わるまで使い回す
         let latencyClass = '';
 
+        // プレミア公開かどうかの判定結果と、その判定が対応する動画 ID。
+        // 判定にはやはり重い getPlayerResponse() が要るので、動画ごとに 1 度だけ問い合わせる
+        let premiere   = false;
+        let premiereId = null;
+
         /**
          * プレイヤーの内部 API メソッドを安全に呼ぶための短縮形。
          * メソッドが存在しない・例外を投げるといった場合は undefined が返る。
@@ -74,6 +79,11 @@
 
             /**
              * 別の動画へ切り替わったときに、キャッシュしていた遅延種別を捨てる。
+             *
+             * プレミア公開の判定結果（premiere / premiereId）はここでは捨てない。
+             * あちらは動画 ID を鍵にして media() が自分で判定し直すため捨てる必要が無く、
+             * かつ reset() は media() より後に呼ばれるので、ここで捨てると動画が変わるたびに
+             * getPlayerResponse() を 1 回余計に呼ぶことになる。
              *
              * @returns {void}
              */
@@ -114,7 +124,7 @@
             },
 
             /**
-             * 再生中のコンテンツの識別 ID とライブ配信かどうかを返す。
+             * 再生中のコンテンツの識別 ID・ライブ配信かどうか・プレミア公開かどうかを返す。
              *
              * 【広告を弾く理由】
              *   YouTube は広告を本編と同じ <video> で再生するが、getVideoData() は
@@ -123,15 +133,44 @@
              *   本編の指標として読んでしまい、加速と最低速を往復することになる。
              *   プレイヤーの ad-showing クラスだけが広告区間と正確に一致するので、これを使う。
              *   ad-created は一度広告が入ると残り続けるため使ってはいけない。
+             *
+             * 【プレミア公開の見分け方】
+             *   プレミア公開は「あらかじめ用意した録画を、決まった時刻からライブとして流す」機能で、
+             *   再生中は isLive が true になり、本物のライブ配信と区別が付かない。
+             *   区別できるのは videoDetails.isLiveContent のほうで、こちらは
+             *   「素材そのものがライブとして作られたか」を表す。
+             *
+             *       本物のライブ配信 … isLive: true  / isLiveContent: true
+             *       プレミア公開     … isLive: true  / isLiveContent: false
+             *       通常の動画       … isLive: false / isLiveContent: false
+             *
+             *   すでに isLive が true のときだけ引くので、判定は isLiveContent を見るだけでよい。
+             *   getPlayerResponse() は重いため、動画 ID が変わったときにだけ呼び直す。
+             *
+             *   問い合わせはこの return と同じ tick の中で済むので、「まだ判定が付いていない」
+             *   状態が続くのは getPlayerResponse() 自体が使えないときに限られる。その場合は
+             *   premiereId を進めず次の tick で取り直しつつ、premiere は false のまま
+             *   （＝通常のライブ配信として扱う）を選んでいる。逆に倒すと、この API が読めない
+             *   プレイヤーでは YouTube のライブ配信すべてが制御対象から外れてしまい、
+             *   「プレミア公開に少し手を出す」よりはるかに影響が大きいためである。
+             *
+             * @returns {{ id: string|null, live: boolean, premiere: boolean }} 再生中のコンテンツ
              */
             media() {
                 const data = call('getVideoData');
                 const ad   = player?.classList.contains('ad-showing') === true;
+                const id   = ad ? 'ad' : (data?.video_id ?? null);
+                const live = !ad && data?.isLive === true;
 
-                return {
-                    id:   ad ? 'ad' : (data?.video_id ?? null),
-                    live: !ad && data?.isLive === true,
-                };
+                if (live && id !== premiereId) {
+                    const details = call('getPlayerResponse')?.videoDetails;
+                    if (details) {
+                        premiere   = details.isLiveContent !== true;
+                        premiereId = id;
+                    }
+                }
+
+                return { id, live, premiere: live && premiere };
             },
 
             /**
