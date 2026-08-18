@@ -123,23 +123,34 @@
     const DWELL_MS   = 2000;
 
     /*
-       speedupAuto（0 / 1 / 2）の段階ごとの制御パラメータ。
+       speedupAuto（0 / 1 / 2 / 3）の段階ごとの制御パラメータ。
          troughK      … 谷のばらつきに対する安全余裕係数。大きいほど慎重（加速しにくくなる）
          troughMs     … 推定した谷を貯める長期窓の長さ（ミリ秒）。短いほど直近の状況に素早く追従するが、
                         標本数が減るぶん推定はばらつきやすくなる
          troughMargin … 確保したいバッファ下限へ上乗せする余裕（秒）。tuning() の margin に使う。
-                        ただし floor が OFF の段階 1・2 では、下限そのものを adapter.needs() へ
+                        ただし floor が OFF の段階 1〜3 では、下限そのものを adapter.needs() へ
                         置き換えるため参照されない（tuning 参照）
 
        段階 0 は自動しきい値そのものを使わないため、ここの値は制御に影響しない
        （それでも段階 1 と同じ値を並べておくのは、表の欠けを避けて参照を単純に保つため）。
-       段階 1 は「長い窓 × 大きい k」で慎重に、段階 2 は「短い窓 × 小さい k」で
-       直近の余裕に素早く反応させる、という対比になっている。
+
+       段階 1〜3 は「窓の長さ × 安全余裕係数」の組で慎重さを段階づけている。両者を同じ向きへ
+       動かすのは、長い窓ほど谷の履歴が揃いにくく、大きい k ほどそのばらつきが強く効くためで、
+       片方だけ動かしても性格の差がはっきり出ない。
+
+         1: 安定   … 最も長い窓（60 秒）と最も大きい k（10）。谷が長時間そろって高いときにしか
+                     加速しない。回線が不安定でも最低速度へ落ちにくいが、加速の機会は少ない。
+                     倍率が変わる回数そのものが減るので、音楽ライブのように速度の変化が
+                     そのまま聴感へ出る配信に向く（0.15 倍まで落ちれば音は完全に崩れる）
+         2: 標準   … その中間。既定値であり、ほとんどの環境はこれで足りる
+         3: 積極的 … 短い窓（5 秒）と小さい k（3）。直近の余裕へ素早く反応して遅れをより詰めるが、
+                     最低速度に入る頻度は上がる
     */
     const AUTO_TUNING = [
-        { troughK: 5, troughMs: 30000, troughMargin: 0.5 }, // 0: 自動調整なし（手動しきい値）
-        { troughK: 5, troughMs: 30000, troughMargin: 0.3 }, // 1: 標準
-        { troughK: 3, troughMs:  5000, troughMargin: 0.1 }, // 2: 積極的
+        { troughK: 10, troughMs: 60000, troughMargin: 1.0 }, // 0: 自動調整なし（手動しきい値）
+        { troughK: 10, troughMs: 60000, troughMargin: 1.0 }, // 1: 安定
+        { troughK:  5, troughMs: 30000, troughMargin: 0.3 }, // 2: 標準（デフォルト）
+        { troughK:  3, troughMs:  5000, troughMargin: 0.1 }, // 3: 積極的
     ];
 
     // バッジの状態別カラー（normal=白 / speedup=赤 / floor=青）。
@@ -578,14 +589,14 @@
     // ON / OFF のスイッチ系。true 以外はすべて false 扱いにする
     const GUARD_SWITCHES = [
         'enabled', 'showPlaybackRate', 'showLatency', 'showHealth',
-        'speedup', 'floor', 'duck',
+        'speedup', 'floor', 'duck', 'premiere',
     ];
 
     // 数値系。キー: [下限, 上限, 値が壊れていたときの既定値]
     const GUARD_NUMBERS = {
         speedupRate:       [1,    4,    1],   // 早送り倍率（破損時は 1 = 加速しない）
         speedupThreshold:  [0,    100,  10],  // 手動早送りのバッファしきい値（秒）
-        speedupAuto:       [0,    2,    1],   // 自動しきい値の段階（0 = 使わない）
+        speedupAuto:       [0,    3,    2],   // 自動しきい値の段階（0 = 使わない。破損時は既定の「標準」）
         floorThreshold:    [0,    10,   0.3], // floor へ入るバッファしきい値（秒）
         duckVolume:        [0,    100,  100], // floor 中の音量割合（%。破損時は 100 = 絞らない）
     };
@@ -891,7 +902,7 @@
          * 推定した谷を長期窓へ積み、その平均と標準偏差を求める。
          *
          * 短期窓と同じく補償座標（trough + D(t)）で保存し、読み出すときに D(now) を引く。
-         * 長期窓は 5〜30 秒と長く、ドリフトの影響が最も強く出るのがここなので、適用を忘れないこと。
+         * 長期窓は 5〜60 秒と長く、ドリフトの影響が最も強く出るのがここなので、適用を忘れないこと。
          *
          * 定常でない期間を挟んだら、それ以前の観測は今の状況を代表しないので履歴ごと捨てる。
          * 汚れた谷を 1 つ混ぜるだけで、以降 troughMs のあいだ標準偏差が膨らみ続けるため、
@@ -1390,6 +1401,9 @@
         logAt = now + 1000;
 
         const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : '----'); // NaN を '----' として見やすく整える
+        const cnt = (n) => String(n).padStart(4);   // 標本数。桁が増えても列がずれないよう右寄せする
+        const sec = (ms) => (ms / 1000).toFixed(1); // 内部はミリ秒だが、読むのは秒のほうが早い
+
         const { n, avg, sd, windowMs, troughMs, calm, troughN, troughSpan, troughAvg, troughSd, drift } = Auto.snapshot();
         const { auto, troughK, margin, ample } = tune;
         const { asked, got, futile } = Gain.snapshot();
@@ -1397,13 +1411,13 @@
         const room = Auto.room(troughK);
 
         log(`${state.padEnd(8)} rate=${fmt(Rate.actual(video))} now=${fmt(health)}+${fmt(ahead)}`
-            + ` health${(windowMs / 1000).toFixed(1)}s(avg=${fmt(avg)} sd=${fmt(sd)} n=${String(n).padStart(4)})`
-            + ` trough${(troughMs / 1000).toFixed(1)}s(avg=${fmt(troughAvg)}s sd=${fmt(troughSd)}s n=${String(troughN).padStart(4)}`
-            + ` span=${(troughSpan / 1000).toFixed(1)}s)`
+            + ` health${sec(windowMs)}s(avg=${fmt(avg)} sd=${fmt(sd)} n=${cnt(n)})`
+            + ` trough${sec(troughMs)}s(avg=${fmt(troughAvg)}s sd=${fmt(troughSd)}s n=${cnt(troughN)}`
+            + ` span=${sec(troughSpan)}s)`
             + ` room=${fmt(troughAvg)}-${troughK}*${fmt(troughSd)}=${fmt(room)}s/${fmt(margin)}s`
             + ` ample=${fmt(ample)}s auto=${auto} drift=${fmt(drift)}s calm=${calm ? 'yes' : 'NO'}`
             + ` gain=${fmt(got)}/${fmt(asked)}s${futile ? ' FUTILE' : ''}`
-            + ` lat=${fmt(lat.avg)}s(sd=${fmt(lat.sd)} jump=${fmt(lat.jump)} n=${String(lat.n).padStart(4)})`);
+            + ` lat=${fmt(lat.avg)}s(sd=${fmt(lat.sd)} jump=${fmt(lat.jump)} n=${cnt(lat.n)})`);
     }
 
     /* ============================================================================================
@@ -1471,7 +1485,7 @@
      *   floor OFF + 手動     … troughMargin。この場合 margin は加速の判定には使われず、
      *                          speedup から降りるときの猶予の基準（tick の bail）としてのみ働く
      *
-     * 2 番目を needs にしているのは、従来ここが troughMargin（0.1〜0.5 秒）だけになり、
+     * 2 番目を needs にしているのは、従来ここが troughMargin（0.1〜1.0 秒）だけになり、
      * 「ブレーキを切ったほうが下限が低い」という逆転が起きていたためである。
      * needs はまだ取得できていないと NaN になるが、needs > 0 の比較が false になるので、
      * 起動直後の数 tick は自動的に従来式へ落ちる。
@@ -1486,16 +1500,16 @@
      */
     function tuning() {
         const auto  = clamp(Math.round(settings.speedupAuto), 0, AUTO_TUNING.length - 1);
-        const spec  = AUTO_TUNING[auto];
         const needs = Auto.needs;   // アダプタが返す目安バッファ秒数（秒）。未取得なら NaN
+        const { troughK, troughMs, troughMargin } = AUTO_TUNING[auto];
 
-        const margin = settings.floor    ? settings.floorThreshold + spec.troughMargin
+        const margin = settings.floor    ? settings.floorThreshold + troughMargin
                      : auto && needs > 0 ? needs
-                     :                     spec.troughMargin;
+                     :                     troughMargin;
 
         // ample は margin より必ず AMPLE_OVER 秒以上高くする。
         // floorThreshold を上限の 10 秒まで上げた場合でも、近道が margin に近づきすぎないようにするため
-        return { auto, ...spec, margin, ample: Math.max(AMPLE, margin + AMPLE_OVER) };
+        return { auto, troughK, troughMs, margin, ample: Math.max(AMPLE, margin + AMPLE_OVER) };
     }
 
     /**
@@ -1806,7 +1820,8 @@
      *   1. 設定を読み直す。無効なら休止して終了
      *   2. 監視すべき <video> を確認し、変わっていたら乗っ取りを解除して付け替える
      *   3. 再生中のメディアを確認し、変わっていたら状態と統計をリセットする
-     *   4. ライブでなければ休止して終了（録画・クリップ・広告は制御しない）
+     *   4. ライブでなければ休止して終了（録画・クリップ・広告は制御しない）。
+     *      プレミア公開は既定で対象外とし、設定を ON にしたときだけライブ配信として扱う
      *   5. 制御パラメータを解決し、バッファと遅延を測り、Auto / Gain / Noise を更新する
      *   6. 制御状態を決めて再生速度を適用する
      *   7. 必要ならダッキングを適用する
@@ -1833,7 +1848,7 @@
         }
         if (!video) return sleep();
 
-        const media = adapter.media();  // { id, live }
+        const media = adapter.media();  // { id, live, premiere }（premiere を返すのは YouTube だけ）
         live = media.live;              // stalled() がストールをログすべきか判断するのに使う
         if (media.id !== mediaId) {
             mediaId = media.id;
@@ -1842,6 +1857,16 @@
             log('media', media);
         }
         if (!media.live) return sleep();    // 録画・クリップ・広告は制御しない
+
+        // プレミア公開（録画をライブとして流す YouTube の機能）は、ライブではあるが既定で対象外とする。
+        // 素材が録画である以上、追いつくことは「他の視聴者より先を見る」ことを意味し、
+        // 同じ時刻を共有すること自体が目的の配信形態とは噛み合わないためである。
+        // settings.premiere は YouTube のサイト別設定だが、他サイトのアダプタは media() で
+        // premiere を返さないため、ここは YouTube 以外では素通りする。
+        // sleep() が倍率・音量・バッジをすべて元へ戻すので、ここを通る限り完全に手を引く。
+        // 見張りは 1 秒周期で続くため、プレミア公開が終わって通常の配信に変わったときや、
+        // 設定を切り替えたときには自動的に制御が戻る
+        if (media.premiere && !settings.premiere) return sleep();
 
         idling = false;
         schedule(TICK_MS);                  // ← ここで全速へ引き上げる

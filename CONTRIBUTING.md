@@ -55,7 +55,7 @@ To preview a UI language without touching your browser settings, open the settin
 
 ## Adding a site
 
-Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()`, plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`. Register it, then add matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `inject.js` shouldn't need any changes.
+Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()`, plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`. Register it, then add matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `inject.js` shouldn't need any changes, and neither should most of `KEYS` — defaults written with `all()` pick the new site up on their own, leaving `floorThreshold` as the only one to fill in.
 
 Include the reasoning behind any site-specific defaults you pick, especially thresholds — those numbers end up in the README tables.
 
@@ -80,7 +80,7 @@ Some facts live in more than one file. Change only one and the project starts co
 | If you change… | Also update… |
 | :--- | :--- |
 | A control mode, or a badge colour | `inject.js` (`COLOR` and the control states) · `_locales/*/messages.json` (`showPlaybackRateDesc`) · the mode tables in `README.md` / `README.ja.md` · the mode tables and `.dot` swatches in `docs/manual.html` / `docs/manual.ja.html` · `CHANGELOG.md` |
-| A setting, its range, or a default | `shared/schema.js` · the settings tables in `README.md` / `README.ja.md` · the settings tables in `docs/manual.html` / `docs/manual.ja.html` · the descriptions in `_locales/*/messages.json` |
+| A setting, its range, or a default | `shared/schema.js` · the row markup in `popup.html` · `inject.js` (`GUARD_SWITCHES` / `GUARD_NUMBERS` — its bounds must still cover `KEYS.range`) · the settings tables in `README.md` / `README.ja.md` · the settings tables in `docs/manual.html` / `docs/manual.ja.html` · the label and description in `_locales/*/messages.json`, all nine of them |
 | A UI label | `_locales/*/messages.json` · every place the manual quotes that label — the two manual pages spell the labels out as they appear on screen |
 | The look of the settings screen | the screenshots in `docs/images/`, in both languages |
 | Anything in `docs/style.css` that isn't scoped to a `page-*` class | check all four pages — that rule reaches every one of them |
@@ -156,7 +156,7 @@ window.__slipstreamliveDebug = true;
 
 ## サイトを追加する
 
-`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle` を公開するアダプタを1つ書いてください。登録したら、`shared/schema.js` の `SITES` と `manifest.json` にも対応する項目を追加します。`inject.js` は触らずに済むはずです。
+`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle` を公開するアダプタを1つ書いてください。登録したら、`shared/schema.js` の `SITES` と `manifest.json` にも対応する項目を追加します。`inject.js` は触らずに済むはずですし、`KEYS` もほとんど触らずに済みます。`all()` で書かれた既定値は新しいサイトを自動で拾うので、埋める必要があるのは `floorThreshold` だけです。
 
 サイトごとの既定値、特にしきい値を決めたときは、その根拠も書いてください。README の表に載る数字になるので。
 
@@ -181,7 +181,7 @@ GitHub Pages のサイトは `docs/` にあり、このフォルダを含む変�
 | 変更する対象 | 一緒に更新するもの |
 | :--- | :--- |
 | 制御モード、バッジの色 | `inject.js` の `COLOR` と制御状態 ・ `_locales/*/messages.json` の `showPlaybackRateDesc` ・ README.md / README.ja.md の制御モード表 ・ `docs/manual.html` / `docs/manual.ja.html` の制御モード表と色見本 `.dot` ・ `CHANGELOG.md` |
-| 設定項目、その範囲、既定値 | `shared/schema.js` ・ README.md / README.ja.md の設定一覧表 ・ `docs/manual.html` / `docs/manual.ja.html` の設定一覧表 ・ `_locales/*/messages.json` の説明文 |
+| 設定項目、その範囲、既定値 | `shared/schema.js` ・ `popup.html` の行の記述 ・ `inject.js` の `GUARD_SWITCHES` / `GUARD_NUMBERS`（範囲は `KEYS.range` を包含したままにすること） ・ README.md / README.ja.md の設定一覧表 ・ `docs/manual.html` / `docs/manual.ja.html` の設定一覧表 ・ `_locales/*/messages.json` 9 言語ぶんの文言と説明文 |
 | UI の文言 | `_locales/*/messages.json` ・ 取扱説明書でその文言を引用している箇所すべて（2ページとも、画面に出る文言をそのまま書いています） |
 | 設定画面の見た目 | `docs/images/` のスクリーンショットを英日とも撮り直し |
 | `docs/style.css` の `page-*` を前置していないルール | 4ページすべてを確認する。そのルールは全ページに届く |

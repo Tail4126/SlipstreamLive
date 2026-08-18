@@ -137,9 +137,6 @@
         const list = [];                // 時刻昇順に並んだ標本 [{ at, value }, ...]
 
         return {
-            /** @returns {number} 現在保持している標本数 */
-            get size() { return list.length; },
-
             /** @returns {{at: number, value: number}|undefined} いちばん古い標本 */
             first: () => list[0],
 

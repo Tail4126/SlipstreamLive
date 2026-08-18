@@ -49,7 +49,7 @@
     <h1>User manual</h1>
     <p class="lede">Slipstream Live watches how much video your browser has loaded ahead and nudges the playback speed so you stay close to the live edge — without the video stopping to buffer. This manual covers installation, every setting, and what to do when something looks wrong.</p>
     <div class="page-meta">
-      <span>Version 1.1.0</span>
+      <span>Version 1.2.0</span>
       <span>YouTube Live ・ Twitch ・ TwitCasting</span>
     </div>
   </div>
@@ -194,7 +194,7 @@
     </div>
     <ul>
       <li>Changes take effect immediately. There is no Save button.</li>
-      <li>Rows that are not currently in use are greyed out. For example, <span class="ui">Speed-up buffer threshold (sec)</span> is disabled while <span class="ui">Auto-adjust buffer threshold</span> is set to Standard or Aggressive.</li>
+      <li>Rows that are not currently in use are greyed out. For example, <span class="ui">Speed-up buffer threshold (sec)</span> is disabled while <span class="ui">Auto-adjust buffer threshold</span> is set to anything other than Off.</li>
       <li>On the Twitch tab only, an explanatory note about that site's larger default threshold appears at the bottom of the panel.</li>
     </ul>
     <figure class="fig-wide">
@@ -261,6 +261,7 @@
     <h3>What Slipstream Live leaves alone</h3>
     <ul>
       <li><strong>Archived videos (VODs), clips, and ad breaks</strong> are never touched. Only live playback is controlled.</li>
+      <li><strong>YouTube premieres</strong> are skipped by default. A premiere plays a pre-recorded video on a live schedule, and while one is running it is indistinguishable from a live stream — but the point of a premiere is that everyone watches the same moment together, so catching up only puts you ahead of the chat. Turn <span class="ui">Control premieres</span> on at the bottom of the <span class="ui">YouTube</span> tab to have them treated like any other live stream.</li>
       <li><strong>TwitCasting low-latency streams</strong> are out of scope. They arrive over WebRTC, which has no read-ahead buffer to measure and ignores playback-rate changes entirely. Such streams are already close to real time, so there is nothing to catch up on.</li>
       <li><strong>On YouTube and TwitCasting</strong>, if <em>you</em> choose a speed other than 1.00x in the player's own menu, Slipstream Live hands control back to you and stops adjusting. Set the speed back to normal to resume automatic control. Twitch has no such menu, so Slipstream Live stays in charge there — and also suppresses Twitch's own built-in catch-up so the two don't fight.</li>
     </ul>
@@ -278,11 +279,12 @@
           <tr><td><span class="ui">Speed up when delayed</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for catching up.</td></tr>
           <tr><td><span class="ui">Speed-up playback rate</span></td><td>1.05x–4.00x / 0.05</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td>How fast to catch up. Higher catches up sooner but consumes buffer faster.</td></tr>
           <tr><td><span class="ui">Speed-up buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. Speeds up once this much video is loaded ahead.</td></tr>
-          <tr><td><span class="ui">Auto-adjust buffer threshold</span></td><td>Off / Standard / Aggressive</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td>Lets Slipstream Live decide when speeding up is safe. <strong>Recommended.</strong></td></tr>
+          <tr><td><span class="ui">Auto-adjust buffer threshold</span></td><td>Off / Stable / Standard / Aggressive</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td>Lets Slipstream Live decide when speeding up is safe. <strong>Recommended.</strong></td></tr>
           <tr><td><span class="ui">Maximum slowdown on buffer depletion</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for the 0.15x emergency brake.</td></tr>
           <tr><td><span class="ui">Maximum slowdown threshold (sec)</span></td><td>0.0–10.0 / 0.1</td><td class="num">0.80</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.30</td><td>Drops to 0.15x while buffer health stays below this.</td></tr>
           <tr><td><span class="ui">Lower volume during maximum slowdown</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Ducks the audio while at 0.15x.</td></tr>
           <tr><td><span class="ui">Volume during maximum slowdown (%)</span></td><td>0–100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td>A percentage of <em>your</em> current volume. 100 = no change, 0 = mute.</td></tr>
+          <tr><td><span class="ui">Control premieres</span></td><td>ON / OFF</td><td class="num">OFF</td><td class="num">—</td><td class="num">—</td><td>Whether premieres count as live streams. Left off, they are not touched at all. YouTube has no equivalent on the other two sites, so this row only appears on the YouTube tab.</td></tr>
         </tbody>
       </table>
     </div>
@@ -291,23 +293,26 @@
       <p><strong>Why is Twitch's threshold so much higher?</strong> Twitch sometimes stops delivering video for around 10 seconds at a time. On Chrome that ends in error #3000 and needs a reload, so the default is set higher. Firefox recovers on its own, so it keeps the normal default.</p>
     </div>
 
-    <h3>7.2 The three auto-adjust levels</h3>
+    <h3>7.2 The four auto-adjust levels</h3>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Level</th><th class="num">Trough window</th><th class="num">Safety factor</th><th class="num">Added margin</th><th class="num">Hysteresis</th><th>Character</th></tr></thead>
         <tbody>
           <tr><td><strong>Off</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.2 s</td><td>No estimation; uses <span class="ui">Speed-up buffer threshold</span> as-is.</td></tr>
-          <tr><td><strong>Standard</strong></td><td class="num">30 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.2 s</td><td>Long window, large factor — cautious. The default.</td></tr>
-          <tr><td><strong>Aggressive</strong></td><td class="num">5 s</td><td class="num">3</td><td class="num">0.1 s</td><td class="num">0.2 s</td><td>Short window; reacts quickly to recent headroom and closes the gap harder.</td></tr>
+          <tr><td><strong>Stable</strong></td><td class="num">60 s</td><td class="num">10</td><td class="num">1.0 s</td><td class="num">0.2 s</td><td>Longest window, largest factor. Speeds up only once the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. A good fit for music.</td></tr>
+          <tr><td><strong>Standard</strong></td><td class="num">30 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.2 s</td><td>The balanced middle ground. The default, and enough for most connections.</td></tr>
+          <tr><td><strong>Aggressive</strong></td><td class="num">5 s</td><td class="num">3</td><td class="num">0.1 s</td><td class="num">0.2 s</td><td>Short window; reacts quickly to recent headroom and closes the gap harder, but reaches maximum slowdown more often.</td></tr>
         </tbody>
       </table>
     </div>
     <div class="note">
+      <p><strong>Why the window and the factor move together.</strong> A longer window makes a consistent trough history harder to accumulate, and a larger safety factor makes whatever scatter remains count for more. Changing only one of them would blur the difference between the levels.</p>
+      <p><strong>Why Stable suits music.</strong> On a concert, DJ set, or any performance stream, a change of playback rate is something you <em>hear</em>. Your browser holds the pitch steady, but the tempo still shifts — and a drop to 0.15x wrecks the audio outright. Stable cuts down how often the rate moves at all and makes the emergency brake far less likely to fire. You stay a little further behind the live edge in exchange, which rarely matters when you are listening rather than chatting.</p>
       <p><strong>What the added margin is added to.</strong> It sits on top of your <span class="ui">Maximum slowdown threshold</span>. With that switch <strong>Off</strong>, the automatic levels protect one segment's worth of buffer instead (0.5–5 seconds, as reported by the site), because there is no 0.15x brake left to catch a trough that reaches zero.</p>
       <p><strong>Damping.</strong> On the automatic levels, hysteresis raises the entry line by 0.2 s and a mode change waits 2 seconds before the next speed-up may begin. With auto-adjust <strong>Off</strong> neither applies: the speed-up starts the instant buffer health reaches your number and stops the instant it drops below. The 0.15x brake is a separate test and keeps its own hysteresis either way.</p>
     </div>
     <figure class="fig-crop">
-      <img src="images/Fig_11-en.png" alt="The three-step slider showing its tooltip" loading="lazy" width="601" height="86">
+      <img src="images/Fig_11-en.png" alt="The four-step slider showing its tooltip" loading="lazy" width="601" height="86">
       <figcaption><b>Fig. 11</b> Drag the slider to choose a level; the name appears next to the pointer.</figcaption>
     </figure>
 
@@ -345,7 +350,7 @@
 
     <div class="qa">
       <h3>It never speeds up.</h3>
-      <p>Auto-adjust is deliberately cautious: on an unstable connection it decides that speeding up isn't safe. Try <span class="ui">Auto-adjust buffer threshold</span> → <span class="ui">Aggressive</span> first. If that still isn't enough, set it to <span class="ui">Off</span> and configure <span class="ui">Speed-up buffer threshold (sec)</span> manually — start around 15–20 seconds and work down. From version 1.1.3 the manual mode speeds up the instant buffer health reaches your threshold and stops as soon as it drops below, with no added margin and no waiting period; if the rate now switches back and forth more than you'd like, raise the threshold or switch auto-adjust back on.</p>
+      <p>Auto-adjust is deliberately cautious: on an unstable connection it decides that speeding up isn't safe. Move <span class="ui">Auto-adjust buffer threshold</span> one step toward <span class="ui">Aggressive</span> first. If that still isn't enough, set it to <span class="ui">Off</span> and configure <span class="ui">Speed-up buffer threshold (sec)</span> manually — start around 15–20 seconds and work down. From version 1.1.3 onwards the manual mode speeds up the instant buffer health reaches your threshold and stops as soon as it drops below, with no added margin and no waiting period; if the rate now switches back and forth more than you'd like, raise the threshold or switch auto-adjust back on.</p>
     </div>
 
     <div class="qa">
@@ -360,12 +365,12 @@
 
     <div class="qa">
       <h3>It drops to 0.15x too often.</h3>
-      <p>Raise the manual threshold, or lower <span class="ui">Speed-up playback rate</span> so the buffer drains more slowly. Lowering <span class="ui">Maximum slowdown threshold (sec)</span> delays the brake, but increases the chance of an actual freeze.</p>
+      <p>Move <span class="ui">Auto-adjust buffer threshold</span> one step toward <span class="ui">Stable</span>: the longer window and larger safety factor mean a speed-up is only allowed once the troughs have proved themselves. Otherwise raise the manual threshold, or lower <span class="ui">Speed-up playback rate</span> so the buffer drains more slowly. Lowering <span class="ui">Maximum slowdown threshold (sec)</span> delays the brake, but increases the chance of an actual freeze.</p>
     </div>
 
     <div class="qa">
       <h3>Nothing happens at all.</h3>
-      <p>Check that <span class="ui">Change playback speed</span> is ON, that you are on a <em>live</em> stream rather than a VOD or clip, and that you haven't selected a manual playback speed in the player's own menu.</p>
+      <p>Check that <span class="ui">Change playback speed</span> is ON, that you are on a <em>live</em> stream rather than a VOD or clip, and that you haven't selected a manual playback speed in the player's own menu. On a YouTube premiere, check <span class="ui">Control premieres</span> at the bottom of the <span class="ui">YouTube</span> tab as well — it is off by default, so premieres are skipped until you turn it on.</p>
     </div>
 
     <div class="qa">

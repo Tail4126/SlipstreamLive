@@ -485,6 +485,9 @@ body
  * ::-moz-range-thumb という専用の擬似要素として指定する必要がある。
  * この 2 つはブラウザごとに別々の名前を持ち、まとめて書くと規則ごと無視されるため、
  * 面倒でも別々の規則に分けて書かなければならない。
+ * ただし中身まで二重に持つ必要は無いので、溝の描画そのものは --track へ寄せてある
+ * （カスタムプロパティはこれらの擬似要素へも継承される。--line / --steps が
+ * 擬似要素の中で効いているのと同じ仕組み）。
  *
  * 目盛りの線は repeating-linear-gradient で描いている。段階の数が変わっても
  * --steps を書き換えるだけで済むよう、間隔をパーセントで表している。
@@ -494,7 +497,15 @@ body
  */
 .slider
 {
-    --steps: 3;                                             /* 目盛りの数（speedupAuto は 0 / 1 / 2 の 3 段階） */
+    --steps: 4;                                             /* 目盛りの数（speedupAuto は 0 / 1 / 2 / 3 の 4 段階） */
+
+    /* 溝の描画。中央に細い線を敷き、その上へ目盛りを重ねる */
+    --track:
+        repeating-linear-gradient(to right,
+            var(--line) 0 1px,
+            #0000 1px calc((100% - 1px) / (var(--steps) - 1)))
+            center / calc(100% - 12px) 10px no-repeat,
+        linear-gradient(var(--line), var(--line)) center / calc(100% - 12px) 2px no-repeat;
 
     appearance: none;
     flex: none;
@@ -504,28 +515,17 @@ body
     background: none;
 }
 
-/* 溝。中央に細い線を敷き、その上へ目盛りを重ねる */
 .slider::-webkit-slider-runnable-track
 {
     height: 14px;
-    background:
-        repeating-linear-gradient(to right,
-            var(--line) 0 1px,
-            #0000 1px calc((100% - 1px) / (var(--steps) - 1)))
-            center / calc(100% - 12px) 10px no-repeat,
-        linear-gradient(var(--line), var(--line)) center / calc(100% - 12px) 2px no-repeat;
+    background: var(--track);
     border-radius: 1px;
 }
 
 .slider::-moz-range-track
 {
     height: 14px;
-    background:
-        repeating-linear-gradient(to right,
-            var(--line) 0 1px,
-            #0000 1px calc((100% - 1px) / (var(--steps) - 1)))
-            center / calc(100% - 12px) 10px no-repeat,
-        linear-gradient(var(--line), var(--line)) center / calc(100% - 12px) 2px no-repeat;
+    background: var(--track);
     border-radius: 1px;
 }
 

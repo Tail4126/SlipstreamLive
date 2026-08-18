@@ -150,6 +150,12 @@ effective speed rather than raising it. Slipstream Live compares the seconds the
 have gained against the seconds it *actually* gained, and stands down when the latter falls below
 half the former. If you drift behind again, it goes straight back to catching up.
 
+**A note on premieres:** a YouTube premiere plays a pre-recorded video on a live schedule, and
+while it runs it is indistinguishable from a live stream. Slipstream Live leaves premieres alone by
+default — the whole point of a premiere is that everyone watches the same moment together, and
+catching up there just means running ahead of the chat. Turn **Control premieres** on at the bottom
+of the **YouTube** tab if you'd rather have it treat them like any other live stream.
+
 **What Slipstream Live leaves alone:** archived videos (VODs), clips, and ad breaks are never
 touched — only live playback is controlled. TwitCasting's low-latency mode is excluded too: it
 delivers video over WebRTC, which has no read-ahead buffer to measure and ignores `playbackRate`
@@ -169,12 +175,13 @@ stays in charge there — and also stops Twitch's own built-in catch-up from fig
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Speed up when delayed** | ON / OFF | ON | ON | ON | Master switch for catching up. |
 | **Speed-up playback rate** | 1.05x–4.00x | 1.25x | 1.25x | 1.25x | How fast to catch up (0.05 steps). Higher = faster, but eats buffer. |
-| **Auto-adjust buffer threshold** | Off / Standard / Aggressive | Standard | Standard | Standard | Let Slipstream Live decide when it's safe to speed up. **Recommended.** |
+| **Auto-adjust buffer threshold** | Off / Stable / Standard / Aggressive | Standard | Standard | Standard | Let Slipstream Live decide when it's safe to speed up. **Recommended.** |
 | **Speed-up buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | Only used when auto-adjust is **Off**: speed up once this much video is loaded. |
 | **Maximum slowdown on buffer depletion** | ON / OFF | ON | ON | ON | Master switch for the 0.15x emergency brake. |
 | **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | Drop to 0.15x while buffer health is below this. |
 | **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | Ducks the audio while at 0.15x. |
 | **Volume during maximum slowdown** | 0–100% | 30% | 30% | 30% | Percentage of *your* current volume (5% steps). 100 = no change, 0 = mute. |
+| **Control premieres** | ON / OFF | OFF | — | — | Whether premieres count as live streams. Off = they're left alone entirely. YouTube only, so the row appears on that tab alone. |
 
 *FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only
 site where it differs.*
@@ -183,13 +190,24 @@ site where it differs.*
 > 10 seconds at a time. On Chrome that ends in error #3000 and needs a reload, so the default is set
 > higher. Firefox recovers on its own, so it keeps the normal default.
 
-#### The three auto-adjust levels
+#### The four auto-adjust levels
 
 | Level | Trough window | Safety factor | Added margin | Hysteresis | Character |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Off** | — | — | — | 0.2s | No estimation; uses **Speed-up buffer threshold** as-is. |
-| **Standard** | 30s | 5 | 0.3s | 0.2s | Long window, large factor — cautious. The default. |
-| **Aggressive** | 5s | 3 | 0.1s | 0.2s | Short window; reacts quickly to recent headroom and closes the gap harder. |
+| **Stable** | 60s | 10 | 1.0s | 0.2s | Longest window, largest factor. Speeds up only when the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. Good for music. |
+| **Standard** | 30s | 5 | 0.3s | 0.2s | The balanced middle ground. The default, and enough for most connections. |
+| **Aggressive** | 5s | 3 | 0.1s | 0.2s | Short window; reacts quickly to recent headroom and closes the gap harder, but reaches maximum slowdown more often. |
+
+*The window and the safety factor move together on purpose: a longer window makes a consistent
+trough history harder to accumulate, and a larger factor makes any remaining scatter count for more.
+Changing only one of them would blur the difference between the levels.*
+
+*Why **Stable** suits music: on a concert, DJ set, or any performance stream, a change of playback
+rate is something you **hear**. Your browser keeps the pitch steady, but the tempo doesn't — and a
+drop to 0.15x wrecks the audio outright. Stable cuts down how often the rate moves at all, and makes
+the emergency brake far less likely to fire. You stay a little further behind live in exchange, which
+rarely matters when you're listening rather than chatting.*
 
 *The added margin sits on top of your **Maximum slowdown threshold**. With that switch **Off**, the
 automatic levels protect one segment's worth of buffer instead — the length the site reports, 0.5–5
@@ -270,8 +288,9 @@ assumption. Event-driven ticks update `D(t)` only. Likewise, while playback is p
 waiting on data (`readyState < 3`), the buffer isn't being consumed at the nominal rate, so `D(t)`
 is not accrued for that interval either.
 
-Those trough estimates are then collected over a long window (30 s at Standard, 5 s at Aggressive)
-and reduced by a safety factor `K` (5 at Standard, 3 at Aggressive) to get the usable headroom:
+Those trough estimates are then collected over a long window (60 s at Stable, 30 s at Standard, 5 s
+at Aggressive) and reduced by a safety factor `K` (10, 5 and 3 respectively) to get the usable
+headroom:
 
 $$room = troughAvg - K \times troughSd$$
 
@@ -343,7 +362,7 @@ immediately when the tab becomes visible again.
 
 **It never speeds up.**
 Auto-adjust is deliberately cautious: on an unstable connection it will decide that speeding up
-isn't safe. Try switching **Auto-adjust buffer threshold** to **Aggressive** first. If that still
+isn't safe. Try moving **Auto-adjust buffer threshold** one step toward **Aggressive** first. If that still
 isn't enough, set it to **Off** and configure **Speed-up buffer threshold** manually (try 15–20
 seconds and work down). With auto-adjust **Off**, the speed-up starts the moment buffer health
 reaches your threshold, and stops as soon as it drops below — no extra margin and no waiting period
@@ -362,13 +381,17 @@ automatically, so check your version first. If it persists, look at `gain=` in t
 `FUTILE` means the detection is working.
 
 **It drops to 0.15x too often.**
-Raise the manual threshold, or lower **Speed-up playback rate** so the buffer drains more slowly.
+Move **Auto-adjust buffer threshold** one step toward **Stable** — a longer window and a larger
+safety factor mean a speed-up is only allowed once the troughs have proved themselves. Otherwise
+raise the manual threshold, or lower **Speed-up playback rate** so the buffer drains more slowly.
 Lowering **Maximum slowdown threshold** delays the brake, but increases the chance of an actual
 freeze.
 
 **Nothing happens at all.**
 Check that **Change playback speed** is ON, that you're on a *live* stream rather than a VOD or
-clip, and that you haven't set a manual playback speed in the player menu.
+clip, and that you haven't set a manual playback speed in the player menu. On a YouTube premiere,
+also check **Control premieres** at the bottom of the **YouTube** tab — it's off by default, so
+premieres are skipped until you turn it on.
 
 **Nothing happens on TwitCasting.**
 Check whether the stream is playing in low-latency mode. Low-latency streams arrive over WebRTC
@@ -461,7 +484,8 @@ re-validates what it reads against its own independent bounds.
 Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` /
 `reset()` plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`, register it, and add
 matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `inject.js` itself
-doesn't need to change.
+doesn't need to change, and neither does most of `KEYS` — defaults written with `all()` pick the
+new site up automatically, leaving `floorThreshold` as the only one to fill in by hand.
 
 Content scripts get injected into every frame (`all_frames: true`), so a single page ends up
 running several independent instances. Frames without a `<video>` settle into the 1-second watch
