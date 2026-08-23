@@ -1,67 +1,78 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-/* ================================================================================================
- * content.js — 設定を「MAIN world へ橋渡し」する係
- *              （ISOLATED world / document_start / すべてのフレームへ注入）
+/**
+ * =============================================================================
+ * content.js — 設定をページ側へ橋渡しする「連絡係」
+ * =============================================================================
  *
- * 【どこから呼ばれるか】
- *   manifest.json の content_scripts（1 個目のエントリ）から、shared/schema.js → common.js の
- *   順に読み込まれた最後に読み込まれ、その場で自動実行される。誰かが呼び出す関数は持たない。
+ * ■ 前提知識：2 つの「世界」
+ *   拡張機能のスクリプトは、同じページ上でも 2 種類の実行環境で動きます。
  *
- * 【なぜこのファイルが必要か】
- *   実際にプレイヤーを操作する inject.js は MAIN world で動くため、chrome.storage を読めない。
- *   逆にこの content.js は ISOLATED world なので storage を読めるが、プレイヤー内部には触れない。
- *   両者が唯一共有できるのは「同じ DOM」だけ。そこで、
+ *     1) 隔離ワールド（ISOLATED）… このファイル。
+ *        chrome.storage などの拡張 API を使えるが、
+ *        ページ自身の JavaScript 変数には触れない。
  *
- *     storage ──(このファイル)──> <html data-slpstrm='{"enabled":true,...}'> ──> inject.js
+ *     2) メインワールド（MAIN）… inject.js。
+ *        ページ本体と同じ場所で動くので YouTube プレーヤーの内部 API を呼べるが、
+ *        拡張 API（設定の読み書き）は一切使えない。
  *
- *   という経路で設定を受け渡している。属性値は JSON 文字列。
+ *   つまり「設定を読める側」と「設定を使いたい側」が分断されています。
+ *   このファイルは、その 2 つをつなぐ役割を担います。
  *
- * 【もう一つの仕事】
- *   最上位フレームかつ画面が表示中のとき、「今どのサイトを見ているか」を storage へ記録する。
- *   ポップアップを開いたとき、対象サイトのタブを自動で選ぶために使う。
- * ================================================================================================ */
+ * ■ どうやってつなぐ？
+ *   両者が唯一共有できるもの、それが「HTML そのもの」です。
+ *   そこで設定を JSON 文字列にして <html> タグの属性
+ *   （data-slpstrm）へ書き込み、inject.js 側はその属性を読む、という方式にしています。
+ *
+ *     <html data-slpstrm='{"enabled":true,"speedupRate":1.25, ...}'>
+ *
+ * ■ 処理の流れ
+ *   保存領域から設定を読む → サイト用に整える → JSON 化 → data 属性へ書き込む
+ *   （設定が変更されたら、その都度書き直す）
+ */
 (() => {
     'use strict';
 
-    // common.js が用意した窓口から、このファイルで使うものだけを取り出す
+    // common.js が用意した道具箱から、必要なものだけ取り出します。
+    // `?? {}` を付けているのは、万一 common.js が読み込まれていなくても
+    // ここでエラーにならず、次行の判定で静かに終了させるためです。
     const { api, store, log, siteOf, settingsOf } = globalThis.SLPSTRM ?? {};
-
-    // 読み込み順が壊れて設計図が合流していない場合は、例外を投げずに静かに終了する
     if (!siteOf || !settingsOf) return;
 
-    // 現在のホスト名から特定した対応サイト識別子（'youtube' / 'twitch' / 'twitcasting' / null）
+    // 今開いているページがどのサイトか判定。対応外なら何もせず終了します。
     const site = siteOf();
-    if (!site) return;                  // 非対応サイトなら何もせず終了
+    if (!site) return;
 
-    let json     = null;                // 直近に書き込んだ設定 JSON 文字列。同じ内容の書き込みを省いて無駄な DOM 更新を避けるキャッシュ
-    let observer = null;                // data-slpstrm 属性の改ざん・削除を見張る監視役。初回の write() で一度だけ作る
+    /** @type {string|null} data 属性に書き込む JSON 文字列。まだ未取得なら null */
+    let json     = null;
+    /** @type {MutationObserver|null} data 属性の消去を監視する見張り役 */
+    let observer = null;
 
     /**
-     * 設定 JSON を <html data-slpstrm="..."> 属性へ書き出す。
+     * 現在の設定 JSON を <html> の data-slpstrm 属性へ書き込む。
      *
-     * document_start の時点では <html> 要素すら存在しないことがあるため、必ず存在を確認する。
-     * また初回の書き込み時に MutationObserver を仕掛け、ページ側スクリプトが属性を
-     * 書き換えたり消したりしても自動で書き戻せるようにしている
-     * （MutationObserver のコールバックにこの write 自身を渡しているのがその仕組み）。
-     *
+     * あわせて MutationObserver（DOM の変化を監視する仕組み）を仕掛けます。
+     * ページ側のスクリプトが属性を消してしまっても、変化を検知して
+     * write() が再び呼ばれ、自動的に書き戻される仕掛けです。
      * @returns {void}
      */
     function write() {
-        const root = document.documentElement; // <html> 要素
-        if (!root || json === null) return;    // まだ書けない状態なら何もしない
+        const root = document.documentElement; // <html> 要素そのもの
+        if (!root || json === null) return;
 
+        // 中身が同じなら書き込まない。無駄な DOM 変更＝無駄な通知を防ぐためです。
         if (root.dataset.slpstrm !== json) root.dataset.slpstrm = json;
 
         if (!observer) {
             observer = new MutationObserver(write);
+            // attributeFilter で「data-slpstrm 属性の変化だけ」に絞り、
+            // 関係ない変更で何度も呼ばれないようにしています。
             observer.observe(root, { attributes: true, attributeFilter: ['data-slpstrm'] });
         }
     }
 
     /**
-     * storage の生データから実効設定を組み立て直し、DOM へ反映する。
-     *
-     * @param {Object} data - storage の 'settings' キーから読み出した生データ
+     * 保存データを受け取り、このサイト用に整えてから書き込む。
+     * @param {Record<string, unknown>} data storage から読んだ生の設定データ
      * @returns {void}
      */
     function apply(data) {
@@ -71,34 +82,42 @@
     }
 
     /**
-     * 「今このサイトを見ている」ことを storage へ記録する。
-     * ポップアップ側（popup.js の detect()）が起動時のタブ選択に使う。
+     * 「今このサイトを見ている」ことを記録する。
      *
-     * iframe の中や、裏に回ったタブからの通知は誤選択のもとになるため無視する。
-     *
+     * これは設定画面（popup）のための情報です。ユーザーがツールバーの
+     * アイコンを押したとき、直前に見ていたサイトのタブを自動で開くために使います。
      * @returns {Promise<void>}
      */
     async function announce() {
-        if (window.top !== window || document.hidden) return; // iframe 内 / 非表示タブなら記録しない
+        // window.top !== window は「自分が iframe の中にいる」という意味。
+        // 埋め込みプレーヤーが誤ってサイトを主張しないよう、最上位のページだけに限定します。
+        // document.hidden は「タブが裏に隠れている」状態。
+        if (window.top !== window || document.hidden) return;
 
-        const ui = await store.get('ui'); // { site: 手動選択, seen: 直近の閲覧サイト }
+        const ui = await store.get('ui');
+        // 値が変わるときだけ書き込む（無駄な保存を避ける）。
         if (ui.seen !== site) await store.set('ui', { ...ui, seen: site });
     }
 
-    // ポップアップでの設定変更をリアルタイムに反映する（拡張機能内の全ページへ通知が届く）
+    // --- ここから下がイベント登録。実際の動作はこれらがきっかけで始まります ---
+
+    // 設定画面で値が変更されたら、その場でページへ反映する。
     api.storage.onChanged.addListener((changes, area) => {
         if (area === 'local' && changes.settings) apply(changes.settings.newValue ?? {});
     });
 
-    // 裏タブからアクティブへ切り替わったら、閲覧中サイトを改めて通知する
+    // タブが表示状態に戻ったら「見ているサイト」を記録し直す。
     document.addEventListener('visibilitychange', () => { if (!document.hidden) announce(); });
 
-    // document_start の時点で <html> が未生成だった場合に備えた書き込みの保険（一度だけ実行）
+    // このスクリプトは HTML の解析開始直後（document_start）に動くため、
+    // <html> がまだ無い可能性があります。読み込み段階が進んだ時点で一度書き込みます。
+    // `{ once: true }` は「1 回実行したら自動で登録解除」というオプションです。
     document.addEventListener('readystatechange', write, { once: true });
 
-    // --- 初期化 ---------------------------------------------------------------------------------
-    // storage の読み出しは非同期。待っている間に onChanged が先に走って apply() 済みの可能性があるため、
-    // json が未設定（null）のときだけ適用して、新しい設定を古い設定で上書きしないようにする
+    // 起動時に保存済み設定を読み込む。
+    // `json === null` の確認は、待っている間に onChanged が先に発火して
+    // 新しい設定を書き込んでいた場合、古い値で上書きしないためのガードです。
     store.get('settings').then((data) => { if (json === null) apply(data); });
+
     announce();
 })();

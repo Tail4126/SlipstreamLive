@@ -1,234 +1,230 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-/* ================================================================================================
- * shared/schema.js — 設定の「設計図」と値の検証
- *                    （chrome.* などの拡張 API を一切使わない、純粋な JavaScript のみで構成）
+/**
+ * =============================================================================
+ * shared/schema.js — 「設定の設計図（スキーマ）」を定義するファイル
+ * =============================================================================
  *
- * 【どこから呼ばれるか】
- *   このファイルの中の関数を誰かが直接呼ぶのではなく、以下の 2 か所から「読み込まれて」自動実行される。
- *     1. manifest.json の content_scripts（ISOLATED world）  … common.js / content.js より前
- *     2. popup.html の <script src="shared/schema.js" defer> … common.js / popup.js より前
+ * ■ このファイルは何をするもの？
+ *   この拡張機能には「加速する速度」「下限しきい値」などたくさんの設定項目が
+ *   あります。それらの
+ *     - どんな名前のキーがあるか
+ *     - 初期値（既定値）はいくつか
+ *     - 入力できる最小値・最大値・刻み幅はいくつか
+ *     - サイトごとに違う値を持つのか、全サイト共通なのか
+ *   といった「仕様そのもの」を、このファイル 1 か所にまとめています。
  *
- *   読み込まれた瞬間に即時実行関数（IIFE）が動き、結果を globalThis.__slipstreamliveSchema へ置いて終わる。
- *   その置き土産を common.js が拾って SLPSTRM へ合流させ、globalThis からは削除する。
- *   したがって利用側は SLPSTRM.KEYS / SLPSTRM.settingsOf(...) のようにアクセスする。
+ * ■ なぜ 1 か所にまとめるの？
+ *   設定画面（popup.js）と、実際に再生速度を変える処理（content.js 経由）は
+ *   別のファイルですが、両方が同じルールを知っていないと食い違いが起きます。
+ *   「既定値を変えたいときはこのファイルだけ直せばよい」という状態を作るのが目的です。
  *
- * 【このファイルが提供するもの】
- *   SITES      … どのサイトに対応するか（表示名とホスト名判定の正規表現）
- *   KEYS       … どんな設定項目があるか（型・範囲・刻み幅・既定値）。サイト別の既定値は SITES から起こすため、
- *                この 2 つはこの順で定義されている
- *   fix        … 保存値や入力値を「安全な値」へ丸める
- *   settingsOf … 保存データ全体から、あるサイト向けの実際に使う設定を組み立てる
- *   siteOf     … ホスト名から対応サイトの識別子を割り出す
+ * ■ 読み込まれる場所
+ *   manifest.json の content_scripts で、common.js より先に読み込まれます。
+ *   また popup.html からも読み込まれます。
  *
- * 【MAIN world 側との関係（重要）】
- *   Chrome では同じファイルパスを 2 つの content_scripts エントリに書くと片方が注入されないため、
- *   このファイルは MAIN world 側（inject.js / adapters/*.js）からは参照できない。
- *   そのため MAIN world 側の値検証は inject.js が持つ独自の保険テーブル GUARD_NUMBERS が担当する。
- *   両者の間で守るべき約束はただ一つ。
- *     「GUARD_NUMBERS の [下限, 上限] ⊇ KEYS.range の [min, max]」であること。
- *   ここが破れると、ポップアップで設定できるのに inject.js 側で弾かれる値が生まれてしまう。
- * ================================================================================================ */
+ * ■ 全体が (() => { ... })(); で囲まれている理由
+ *   これは IIFE（即時実行関数式）と呼ばれる書き方で、「定義した瞬間に実行する
+ *   使い捨ての関数」です。中で宣言した変数（FIREFOX や SITES など）が
+ *   ページ側のグローバル変数と衝突しないよう、カプセル化するために使います。
+ */
 (() => {
+    // 'use strict' は「厳格モード」の宣言。うっかりミス（変数の宣言忘れなど）を
+    // エラーとして知らせてくれるので、付けておくのが安全です。
     'use strict';
 
-    // Firefox かどうかの判定。サイト別の既定値を出し分けるためだけに使う（拡張 API に依存しない方法）
+    /**
+     * 実行中のブラウザが Firefox かどうか。
+     * Firefox は動画バッファの挙動が Chrome と少し違うため、
+     * 一部の既定値だけ Firefox 用に差し替えます（後述の `ff` プロパティ）。
+     * @type {boolean}
+     */
     const FIREFOX = navigator.userAgent.includes('Firefox');
 
     /**
-     * 設計図の不備（既定値の書き忘れなど）を開発者コンソールへ知らせる。
-     * common.js の log はこの時点ではまだ存在しないため、console を直接使う。
-     *
-     * @param {...any} args - console.warn へそのまま渡す引数
+     * 警告ログを出すための小さなヘルパー。
+     * 先頭に必ず [slipstreamlive] を付けることで、
+     * ブラウザのコンソールで自分の拡張機能のログだけを絞り込めるようにしています。
+     * @param {...unknown} args console.warn にそのまま渡す値
      * @returns {void}
      */
     const warn = (...args) => console.warn('[slipstreamlive]', ...args);
 
-    /* ============================================================================================
-       SITES — サポート対象サイトの定義
-       --------------------------------------------------------------------------------------------
-         label … ポップアップ UI のタブに表示する名前
-         host  … 現在のホスト名がそのサイトかどうかを判定する正規表現
-
-       正規表現の (^|\.) は「先頭ぴったり」または「サブドメイン区切りのドット」を意味する。
-       これにより www.youtube.com は一致し、evil-youtube.com は一致しない。
-
-       ※ MAIN world 側の adapters/*.js も同じ内容の正規表現を持っている。
-          world をまたいでコードを共有できない制約のため、意図的に二重管理としている。
-          片方だけ直すと動作がずれるので、変更時は必ず両方を直すこと。
-       ============================================================================================ */
+    /**
+     * 対応サイトの一覧。
+     * - label: 設定画面のタブに表示する名前
+     * - host : そのサイトかどうかを判定する正規表現（ホスト名と照合する）
+     *
+     * 正規表現 `/(^|\.)twitch\.tv$/` の意味：
+     *   `(^|\.)` … 先頭、または「.」の直後（＝サブドメインを許可）
+     *   `twitch\.tv` … 文字としての "twitch.tv"（`\.` は「.」そのもの）
+     *   `$` … ここで文字列が終わる
+     *   → "twitch.tv" と "player.twitch.tv" は一致し、"nottwitch.tv" は一致しません。
+     * @type {Record<string, { label: string, host: RegExp }>}
+     */
     const SITES = {
         youtube:     { label: 'YouTube',     host: /(^|\.)(youtube\.com|youtube-nocookie\.com)$/ },
         twitch:      { label: 'Twitch',      host: /(^|\.)twitch\.tv$/ },
         twitcasting: { label: 'TwitCasting', host: /(^|\.)twitcasting\.tv$/ },
     };
 
-    /* ============================================================================================
-       設定スキーマ（＝設定項目の一覧表）
-       --------------------------------------------------------------------------------------------
-       各項目に書けるプロパティ:
-         scope … 'common' なら全サイト共通の設定。省略した項目はサイトごとに個別設定できる。
-         range … [最小値, 最大値, 刻み幅] の数値設定。省略した項目は ON/OFF のブール値。
-         def   … 既定値。共通設定なら値そのもの、サイト別設定ならサイト識別子ごとの値。
-                 全サイトで同じ値でよいものは all() で書く。サイトごとに変える必要があるのは
-                 floorThreshold だけなので、そこだけが明示的な表になっている。
-         ff    … Firefox でのみ既定値を変えたいサイトだけ上書き指定する。
-
-       しきい値（Threshold）の単位はすべて「秒」。
-       再生位置から先読みできているバッファの長さ（health）と比較して制御状態を決める。
-       ============================================================================================ */
-
     /**
-     * サイト別設定の既定値を「全サイト同じ値」で作る。
-     * SITES から鍵を起こしているので、対応サイトを増やしても既定値の書き足しは要らない。
+     * 「全サイトに同じ既定値を配る」ためのヘルパー。
+     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true }
      *
-     * @param {any} value - すべてのサイトへ与える既定値
-     * @returns {Object} サイト識別子 → 既定値 の対応表
+     * Object.fromEntries は [キー, 値] の配列をオブジェクトに変換する関数です。
+     * @param {unknown} value 全サイトに配りたい値
+     * @returns {Record<string, unknown>} サイト ID をキーにしたオブジェクト
      */
     const all = (value) => Object.fromEntries(Object.keys(SITES).map((site) => [site, value]));
 
+    /**
+     * 設定項目の一覧（このファイルの心臓部）。
+     *
+     * 各項目が持てるプロパティ：
+     *   scope : 'common' なら全サイト共通の設定。省略時はサイトごとに個別の値を持つ。
+     *   def   : 既定値。共通設定ならそのままの値、サイト別ならサイト ID をキーにしたオブジェクト。
+     *   range : [最小値, 最大値, 刻み幅]。これがある項目は数値、無い項目は ON/OFF（真偽値）。
+     *   ff    : Firefox のときだけ def を上書きする値。
+     *
+     * 各項目の意味：
+     *   enabled          … 拡張機能全体の ON/OFF
+     *   showPlaybackRate … 再生速度バッジを表示するか
+     *   showLatency      … 遅延バッジを表示するか
+     *   showHealth       … バッファ残量バッジを表示するか
+     *   speedup          … 追いつくための「加速」機能を使うか
+     *   speedupRate      … 加速時の再生速度（1.25 = 1.25 倍速）
+     *   speedupThreshold … 手動モードのとき、何秒ぶん溜まっていたら加速してよいか
+     *   speedupAuto      … 自動しきい値の積極度（0=オフ / 1=安定 / 2=標準 / 3=積極的）
+     *   floor            … バッファ切れ寸前に超低速へ落とす「下限」機能を使うか
+     *   floorThreshold   … 残量が何秒を切ったら下限モードに入るか
+     *   duck             … 下限モード中に音量を下げるか
+     *   duckVolume       … 下げたときの音量（％）
+     *   premiere         … YouTube のプレミア公開でも動作させるか
+     * @type {Record<string, { scope?: string, def: unknown, range?: number[], ff?: Record<string, number> }>}
+     */
     const KEYS = {
-        // --- 全サイト共通設定 -------------------------------------------------------------------
-        enabled:          { scope: 'common', def: true },  // 拡張機能全体のマスタースイッチ
-        showPlaybackRate: { scope: 'common', def: false }, // 現在の再生倍率をプレイヤー上に表示するか
-        showLatency:      { scope: 'common', def: false }, // 配信の最先端からの遅れ（秒）を表示するか
-        showHealth:       { scope: 'common', def: false }, // バッファ残量（秒）を表示するか
+        // --- 全サイト共通の設定（scope: 'common'）------------------------------
+        enabled:          { scope: 'common', def: true },
+        showPlaybackRate: { scope: 'common', def: false },
+        showLatency:      { scope: 'common', def: false },
+        showHealth:       { scope: 'common', def: false },
 
-        // --- サイト別設定: 早送り（遅れているとき配信に追いつく） -------------------------------
-        speedup:          { def: all(true) },   // 早送り機能の ON/OFF
-
-        // 早送り時の再生倍率。1.05 倍から 4.00 倍まで 0.05 刻み
+        // --- サイトごとに個別に保存される設定 ----------------------------------
+        speedup:          { def: all(true) },
         speedupRate:      { range: [1.05, 4, 0.05], def: all(1.25) },
-
-        // 手動モードのとき、早送りを始めるのに必要なバッファ残量（秒）
         speedupThreshold: { range: [0.1, 100, 0.1], def: all(10) },
-
-        // 上のしきい値を配信の遅延設定に合わせて自動計算するか（inject.js の Auto モジュールが担当）。
-        // 0 = 自動調整しない（手動しきい値を使う）
-        // 1 = 安定（最も長い窓と最も大きい安全余裕係数。加速の機会は減るが最低速度へ落ちにくい。
-        //          倍率が変わる回数自体が減るため、音楽ライブなど速度変化が聴感に出る配信向け）
-        // 2 = 標準（安定と積極的の中間。既定値）
-        // 3 = 積極的（短い窓で直近の余裕へ素早く反応し、遅れをより詰める）
         speedupAuto:      { range: [0, 3, 1], def: all(2) },
+        floor:            { def: all(true) },
 
-        // --- サイト別設定: 下限（枯渇寸前はほぼ停止させて貯め直す） -----------------------------
-        floor:            { def: all(true) },   // 下限機能の ON/OFF
-
-        // 下限状態へ突入するバッファ残量（秒）。
-        // Twitch だけ Chrome と Firefox で値が違う。映像データの到着が 10 秒ほど途切れることがあり、
-        // Chrome はそこでエラー #3000 を出して停止し再読み込みが要るため大きめに、
-        // Firefox は読み込み待ちになるだけで自動復帰するため通常の値にしている
+        // floorThreshold だけはサイトごとに最適値が違うため、個別に既定値を持たせています。
+        // さらに Firefox の Twitch はバッファの読み取り方が異なるので ff で上書きします。
         floorThreshold: {
             range: [0, 10, 0.1],
             def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3 },
             ff:  { twitch: 0.5 },
         },
 
-        // --- サイト別設定: ダッキング（下限状態のとき音量を絞る） -------------------------------
-        duck:             { def: all(true) },   // 音量を下げるか
-
-        // 下限状態のときの音量割合（%）。100 なら変化なし、0 なら無音
+        duck:             { def: all(true) },
         duckVolume:       { range: [0, 100, 5], def: all(30) },
-
-        // --- サイト別設定: プレミア公開（YouTube のみ） ----------------------------------------
-        // プレミア公開（録画をライブとして流す機能）を制御対象に含めるか。
-        // 再生中は isLive が true になるため放っておくとライブ配信として制御されるが、素材は録画であり、
-        // 視聴者どうしで同じ時刻を共有することに意味がある配信形態なので、既定では OFF にして手を出さない。
-        // ON にすると通常のライブ配信とまったく同じに扱う。
-        // OFF のあいだは inject.js の tick() が休止へ移り、倍率もバッジも一切触らなくなる。
-        //
-        // 効くのは YouTube だけなので、ポップアップでも YouTube タブでしか行を出さない
-        // （popup.html の data-site を参照）。既定値だけは all() で全サイトぶん用意している。
-        // settingsOf() が KEYS を全走査して値を埋めるため、欠けると defaultOf() が警告を出すからで、
-        // 他サイトのアダプタは media() で premiere を返さないので値があっても何も起きない
         premiere:         { def: all(false) },
     };
 
-    /* ============================================================================================
-       検証と既定値の解決
-       ============================================================================================ */
-
     /**
-     * その設定キーを保存すべきバケット（保存先の区画）名を返す。
-     * 共通設定なら 'common'、サイト別設定ならサイト識別子そのもの。
+     * その設定キーを「どの保存先（バケット）」に入れるかを返す。
+     * 共通設定なら 'common'、サイト別ならサイト ID そのものが保存先になります。
      *
-     * @param {string} site - 対象サイト識別子（'youtube' など）
-     * @param {string} key  - 対象設定キー（'speedupRate' など）
-     * @returns {string} 保存先バケット名
+     * 保存されるデータのイメージ：
+     *   { common: { enabled: true }, youtube: { speedupRate: 1.25 }, twitch: { ... } }
+     * @param {string} site サイト ID（'youtube' など）
+     * @param {string} key 設定キー（'enabled' など）
+     * @returns {string} 保存先の名前
      */
     const bucketOf = (site, key) => (KEYS[key].scope === 'common' ? 'common' : site);
 
     /**
-     * 設定キーの既定値を取得する。
-     * サイト別設定では Firefox 用の上書き（ff）があればそちらを優先する。
-     *
-     * @param {string} site - 対象サイト識別子
-     * @param {string} key  - 対象設定キー
-     * @returns {boolean|number} 既定値
+     * 指定サイトにおける、その設定キーの既定値を求める。
+     * Firefox 用の上書き（ff）があればそれを優先します。
+     * @param {string} site サイト ID
+     * @param {string} key 設定キー
+     * @returns {number|boolean} 既定値
      */
     function defaultOf(site, key) {
-        const spec = KEYS[key];         // その設定キーの定義（型・範囲・既定値）
+        const spec = KEYS[key];
+
+        // 共通設定は def がそのまま既定値。
         if (spec.scope === 'common') return spec.def;
 
-        // ?? は「左辺が null / undefined のときだけ右辺を使う」演算子。
-        // Firefox 用の上書きが無ければ通常の既定値へ落ちる
+        // `??` は「左が null / undefined のときだけ右を使う」演算子（Null 合体演算子）。
+        // Firefox 用の値があればそれを、無ければ通常の既定値を採用します。
         const value = (FIREFOX ? spec.ff?.[site] : undefined) ?? spec.def[site];
         if (value !== undefined) return value;
 
-        // ここへ来るのは設計図の書き忘れ。動作は止めず、無難な値で代替する
+        // ここに来るのは KEYS の定義漏れ（＝プログラム側のバグ）なので、
+        // 黙って進まず警告を出したうえで、無難な値にフォールバックします。
         warn(`KEYS.${key}.def に ${site} の既定値がありません`);
         return spec.range ? spec.range[0] : false;
     }
 
     /**
-     * 保存値や入力値を「安全に使える値」へ補正する。
-     * ブール値の設定は true / false 以外を弾き、数値の設定は次の 3 段階で整える。
+     * 保存されている値を「安全に使える正しい値」に整える。
      *
-     *   1. 刻み幅 step で丸める      … Math.round(num / step) * step
-     *   2. [min, max] の範囲に収める … Math.min(Math.max(値, min), max)
-     *   3. 浮動小数点の誤差を落とす  … Number(値.toFixed(3))
+     * 保存データはユーザーが手で書き換えたり、古いバージョンの残骸だったりする
+     * 可能性があります。そのままだと NaN や範囲外の値で誤動作するので、
+     * ここで必ず通してから使います（いわゆるサニタイズ処理）。
      *
-     * 3 が必要なのは、0.1 刻みの丸めなどで 0.30000000000000004 のような値が生まれるため。
-     *
-     * @param {string} site  - 対象サイト識別子
-     * @param {string} key   - 対象設定キー
-     * @param {any}    value - 補正したい値（storage の生値や入力欄の文字列）
-     * @returns {boolean|number|undefined} 補正済みの値。未知のキーなら undefined
+     * 数値の場合の処理：刻み幅に丸める → 最小・最大に収める → 小数誤差を整える
+     * @param {string} site サイト ID
+     * @param {string} key 設定キー
+     * @param {unknown} value 保存されていた生の値
+     * @returns {number|boolean|undefined} 整えた値。未知のキーなら undefined
      */
     function fix(site, key, value) {
-        const spec = KEYS[key];                     // その設定キーの定義
-        if (!spec) return undefined;                // 設計図に無いキーは扱わない
+        const spec = KEYS[key];
+        if (!spec) return undefined; // 知らないキーは扱わない
 
-        const fallback = defaultOf(site, key);      // 値が壊れていたときに使う既定値
+        const fallback = defaultOf(site, key);
+
+        // range が無い＝ON/OFF 項目。真偽値でなければ既定値に戻します。
         if (!spec.range) return typeof value === 'boolean' ? value : fallback;
 
-        const [min, max, step] = spec.range;        // 数値設定の 最小値 / 最大値 / 刻み幅
-        const num = Number.parseFloat(value);       // 文字列で来る場合があるので数値化する
-        if (!Number.isFinite(num)) return fallback; // NaN や Infinity なら既定値へ
+        // ここからは数値項目の処理。
+        const [min, max, step] = spec.range;
+        const num = Number.parseFloat(value);
 
+        // 数値に変換できない（空文字や文字列など）なら既定値へ。
+        if (!Number.isFinite(num)) return fallback;
+
+        // 1) Math.round(num / step) * step … 刻み幅の倍数に丸める
+        // 2) Math.min / Math.max          … 最小値〜最大値の範囲に収める
+        // 3) toFixed(3) + Number()        … 0.30000000000000004 のような
+        //                                   浮動小数点の誤差を消して数値に戻す
         return Number(Math.min(Math.max(Math.round(num / step) * step, min), max).toFixed(3));
     }
 
     /**
-     * storage から読み出した保存データ全体から、対象サイトで実際に使う設定オブジェクトを組み立てる。
-     * 保存されていないキーは undefined となるが、fix() が既定値へ差し替えるため必ず全キーが埋まる。
+     * 保存データ全体から、「あるサイト向けの完全な設定オブジェクト」を組み立てる。
      *
-     * @param {Object} data - storage の 'settings' キーから読み出した全データ
-     * @param {string} site - カレントサイト識別子
-     * @returns {Object} 全キーが補正済みの実効設定
+     * 未保存の項目は既定値で、壊れた項目は fix() で補正された状態になるので、
+     * 受け取った側は「必ず全キーが正しい値で入っている」前提で使えます。
+     * @param {Record<string, Record<string, unknown>>|null|undefined} data storage に入っている生データ
+     * @param {string} site サイト ID
+     * @returns {Record<string, number|boolean>} そのサイト用に整えた設定一式
      */
     const settingsOf = (data, site) => Object.fromEntries(
         Object.keys(KEYS).map((key) => [key, fix(site, key, data?.[bucketOf(site, key)]?.[key])]));
 
     /**
-     * ホスト名から、対応しているサイトの識別子を割り出す。
-     *
-     * @param {string} [host=location.hostname] - 判定したいホスト名
-     * @returns {string|null} サイト識別子。非対応サイトなら null
+     * ホスト名から、対応サイトのどれに当たるかを判定する。
+     * @param {string} [host=location.hostname] 判定したいホスト名
+     * @returns {string|null} サイト ID。対応外なら null
      */
     const siteOf = (host = location.hostname) =>
         Object.keys(SITES).find((site) => SITES[site].host.test(host)) ?? null;
 
-    // 置き土産として globalThis へ登録する。common.js がこれを SLPSTRM へ取り込み、直後に削除する。
-    // ??= は「まだ値が入っていないときだけ代入する」演算子で、二重読み込み時の上書きを防ぐ
+    // 組み立てた道具一式を、いったんグローバルの一時変数に置きます。
+    // この直後に読み込まれる common.js がこれを受け取り、変数ごと削除します
+    // （ページ側の JavaScript から見えっぱなしにしないための後始末）。
+    // `??=` は「左が null / undefined のときだけ代入する」演算子で、
+    // 二重読み込み時に上書きしてしまうのを防いでいます。
     globalThis.__slipstreamliveSchema ??= { KEYS, SITES, fix, settingsOf, siteOf };
 })();

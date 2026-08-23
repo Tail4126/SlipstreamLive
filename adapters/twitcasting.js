@@ -1,78 +1,70 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-/* ================================================================================================
- * adapters/twitcasting.js — ツイキャス（TwitCasting）用のプレイヤー操作アダプタ
+/**
+ * =============================================================================
+ * adapters/twitcasting.js — TwitCasting（ツイキャス）専用の「アダプター」
+ * =============================================================================
  *
- * 【どこから呼ばれるか】
- *   manifest.json の content_scripts（MAIN world）から adapters/twitch.js の次に読み込まれ、
- *   自動実行されて registerSite() で自己登録するだけ。
- *   実際にアダプタが作られるのは inject.js がホスト名を照合して create() を呼んだとき。
+ * ■ ツイキャスならではの難しさ
+ *   YouTube のような内部 API も、Twitch のような React ツリーもありません。
+ *   使えるのは <video> 要素そのものだけです。そのため、
+ *     - 遅延      … seekable（シーク可能範囲）の末尾から推定
+ *     - ライブ判定 … 動画の長さ（duration）が伸び続けているかで推定
+ *   というように、標準の情報だけで工夫して判断しています。
  *
- * 【ツイキャスならではの事情】
- *   ツイキャスは公開プレイヤー API を持たず、Twitch のように内部オブジェクトを掘り出す
- *   手掛かりもない。そこで使える情報は次の 2 つだけに絞られる。
- *     1. URL のパス（/{ユーザー名}/movie/{番号} なら録画、それ以外は配信の可能性）
- *     2. <video> の duration（尺）が時間とともに伸びていくかどうか
- *   ライブ配信では映像が届くたびに尺が伸び続けるので、その「伸び」を観測して判定する。
+ * ■ WebRTC 配信について
+ *   ツイキャスの一部の配信は WebRTC（リアルタイム通信）で届きます。
+ *   この方式にはバッファという概念が無く、速度を変えても意味がない
+ *   （むしろ音声が壊れる）ため、対象外として扱います。
  *
- * 【低遅延配信について】
- *   ツイキャスの「低遅延」モードは HLS ではなく WebRTC で映像が届く。この場合 <video> は
- *   MediaSource ではなく MediaStream（srcObject）で駆動され、buffered と seekable が
- *   どちらも空になる。先読みバッファという概念そのものが存在しないため残量を測れず、
- *   さらに MediaStream の再生では playbackRate が仕様上無視されるので、速度制御は
- *   原理的に成立しない。そこで media() の段階で制御対象から明示的に外している。
- *   （duration は Infinity を返すため、これを弾かないとライブ判定を通過してしまい、
- *     health が NaN のまま制御ループだけが 20 ミリ秒周期で空回りし続ける。）
- *
- * 【設計方針】
- *   ツイキャスは HTML のクラス名がよく変わるため、ライブ判定のような根幹部分は
- *   クラス名にまったく依存させていない。クラス名を使うのは、バッジの表示場所という
- *   「外れても致命的でない部分」だけに留め、そこも候補を大量に並べて保険をかけている。
- * ================================================================================================ */
+ * ■ アダプターの役割については adapters/youtube.js の冒頭コメントを参照。
+ */
 (() => {
     'use strict';
 
     const util = globalThis.__slipstreamliveUtil;
-    if (!util) return;                              // 読み込み順が壊れている場合は登録せず終了
+    if (!util) return;
 
     const { pick, tracker, seekableLatency, videoWatcher, registerSite,
         ENDLESS, BADGE_STYLE_PLAIN } = util;
 
-    // ライブ判定で「尺が伸びた」とみなすのに必要な最小の伸長幅（秒）。
-    // 小さすぎると計測誤差を伸びと誤認するため、余裕を持たせている
+    /**
+     * 「動画の長さが伸びた」と判断するのに必要な増加量（秒）。
+     * 小さすぎる変化はノイズなので、これ以上増えて初めてライブと見なします。
+     */
     const GROWTH = 0.25;
 
     /**
-     * ツイキャス用アダプタの本体を生成する。
-     *
-     * @returns {Object} inject.js が使うアダプタ
+     * TwitCasting 用アダプターを生成する。
+     * @returns {object} アダプターオブジェクト
      */
     function twitcasting() {
-        /* --- DOM セレクタ ---------------------------------------------------------------------- */
-
-        // プレイヤーコンテナの候補（優先度順）。すべて外れたら <video> の親要素で代用される
+        /**
+         * プレーヤーの外枠を探すためのセレクター候補（優先度順）。
+         * ツイキャスは PC 版・スマホ版・埋め込みで構造が違ううえ、
+         * 過去のバージョンも混在するため、候補を多めに用意しています。
+         */
         const ROOTS = ['.tc-player', '#player', '#player-container', '#playerarea', '#jsplayer',
             '.tw-player', '.tw-stream-player-video', '.video-container'];
 
-        // コントロールバーの候補。後半は [class*="..."] による部分一致で、命名変更にある程度耐える。
-        // すべて外れた場合は inject.js が画面左上へ独自の帯 UI を出す
+        /**
+         * バッジを差し込むコントロールバーの候補。
+         * 末尾の 3 つは `[class*="..."]`（クラス名の部分一致）を使った、
+         * 「名前は分からないがそれらしい要素」を拾うための最後の砦です。
+         */
         const BARS = ['.tw-player-control', '.tw-movie-control-layout__inner', '.tw-movie-control-layout',
             '.tw-player-controls', '.tw-player-buttons', '.tw-stream-player-controller',
             '.vjs-control-bar', '[class*="player-control"]', '[class*="movie-control"]', '[class*="control-bar"]'];
 
-        /* --- 内部状態 -------------------------------------------------------------------------- */
-
-        // 遅延の基準線トラッカー。追っかけ再生中かどうかの判定に使う
+        /** 遅延を追跡し、巻き戻し視聴中かどうかを判定する道具。 */
         const latency = tracker();
 
-        // 直近に観測した video.duration（秒）。次回の値と比べて伸びたかどうかを見る
+        /** @type {number} これまでに観測した動画の最大長（秒） */
         let span = NaN;
-
-        // 一度でも duration の伸びを観測できたか。true になったらライブ確定として扱う
+        /** @type {boolean} 動画の長さが伸び続けている＝ライブと判断できたか */
         let growing = false;
 
         /**
-         * 観測状態をすべてリセットする。配信が切り替わると尺の連続性が失われるため。
-         *
+         * 覚えていた情報をすべて忘れる。
          * @returns {void}
          */
         const forget = () => {
@@ -81,89 +73,72 @@
             growing = false;
         };
 
-        // プレイヤールートと <video> の追跡役（shared/util.js が提供）
+        // <video> 要素の入れ替わりを見張る共通部品。
         const watcher = videoWatcher({
             roots: ROOTS,
             onSwap: forget,
-            onStall: () => latency.reset(),         // 読み込み停止後は遅延が跳ねるので基準線を引き直す
+            onStall: () => latency.reset(),
         });
 
         /**
-         * <video> が MediaStream（WebRTC）で駆動されているかを判定する。
+         * この動画が WebRTC 配信かどうかを判定する。
          *
-         * 低遅延配信ではここが true になる。true の場合は buffered / seekable がどちらも空で、
-         * バッファ残量を測る手段が存在しない。加えて MediaStream の再生では playbackRate が
-         * 仕様上無視されるため、制御を試みても意味がない。
-         *
-         * MediaStream が未定義の実行環境も理論上ありうるので、typeof で存在を確かめてから
-         * instanceof を評価する（未定義のまま instanceof を書くと例外になる）。
-         *
-         * @returns {boolean} MediaStream 再生なら true
+         * 通常の動画は src に URL が入りますが、WebRTC の場合は
+         * srcObject に MediaStream オブジェクトが入ります。そこを見ています。
+         * `typeof MediaStream !== 'undefined'` は、その機能が使えない環境での
+         * エラーを避けるための確認です。
+         * @returns {boolean} WebRTC 配信なら true
          */
         const webrtc = () => typeof MediaStream !== 'undefined'
             && watcher.video?.srcObject instanceof MediaStream;
 
         /**
-         * duration の推移から、これがライブ配信かどうかを判定する。
+         * 動画の長さから「ライブ配信かどうか」を推定する。
          *
-         *   1. NaN（メタデータ未ロード）なら判定できないので、いったんライブ扱いにして保留する
-         *   2. ENDLESS（100 万秒）以上なら無条件にライブ（Infinity や巨大値が返るケース）
-         *   3. now > span + GROWTH で伸びを検出したらライブ確定
-         *      （配信中は映像が届くたびに尺が伸びていくため）
-         *
-         * @returns {boolean} ライブ配信とみなせるなら true
+         * 考え方：録画は長さが固定だが、ライブは時間とともに伸び続ける。
+         *   - 長さが不明（NaN）           → 読み込み中かもしれないので、とりあえずライブ扱い
+         *   - 長さが極端に大きい（ENDLESS 超）→ ライブ確定
+         *   - 前回より GROWTH 秒以上伸びた   → ライブ確定（以後 growing を立てたまま）
+         * @returns {boolean} ライブと推定されれば true
          */
         function endless() {
-            const now = watcher.video?.duration ?? NaN;     // 現時点の尺（秒）
-
+            const now = watcher.video?.duration ?? NaN;
             if (Number.isNaN(now)) return true;
             if (now >= ENDLESS) return true;
 
+            // 前回の最大値より十分伸びていれば「伸び続けている」と判定。
             if (now > span + GROWTH) growing = true;
 
-            // 条件をあえて否定形で書いている。span が NaN のとき (now <= NaN) は false になるので、
-            // !(false) すなわち true となり、初回でも span が正しく初期化される
+            // 観測した最大長を更新する。
+            // `if (!(now <= span))` は `if (now > span)` とほぼ同じ意味ですが、
+            // span が NaN のときも条件が成立する（NaN との比較は常に false になるため
+            // 否定で true になる）点が違います。初回の代入をこれで賄っています。
             if (!(now <= span)) span = now;
+
             return growing;
         }
 
         return {
-            // ツイキャスには公式の速度変更 UI があるため、ユーザーが手動で選んだ速度は尊重する
+            // ツイキャスのプレーヤーには速度変更機能があるため、ユーザー操作を尊重します。
             respectUserRate: true,
 
-            // 連続したバッファとみなす隙間の許容値（秒）
+            // バッファはほぼ連続しているので、隙間の許容は小さめ（0.5 秒）。
             gap: 0.5,
 
-            badgeClass: '',                         // 流用できるボタン用クラスが無い
-            badgeStyle: BADGE_STYLE_PLAIN,          // 代わりに素のスタイルを直接あてる
+            badgeClass: '',
+            badgeStyle: BADGE_STYLE_PLAIN,
 
             reset: forget,
-
-            /**
-             * バッジの器となるプレイヤールート要素を返す。
-             *
-             * @returns {Element|null}
-             */
             root: () => watcher.root,
-
-            /**
-             * 監視対象の <video> を取得する（探索は videoWatcher に任せきりでよい）。
-             *
-             * @returns {HTMLVideoElement|null}
-             */
             video: () => watcher.find(),
 
             /**
-             * メディアの識別 ID とライブ判定を返す。
-             * WebRTC 判定・URL パスによる録画判定・duration の伸長判定を組み合わせる。
+             * 現在再生中のメディアの情報を返す。
              *
-             *   MediaStream 再生（低遅延配信） … 制御が成立しないので必ず対象外
-             *   /{ユーザー名}/movie/{番号}      … 録画（VOD）なので必ず制御対象外
-             *   それ以外（/{ユーザー名} や /g:{グループID} など）… endless() の判定に委ねる
-             *
-             * live が false になると inject.js は休止するが、タイマーは 1 秒周期で回り続ける。
-             * したがってユーザーが低遅延をオフに切り替えれば、追加の仕掛けなしに制御が再開される。
-             *
+             * ライブ判定の条件は 3 つすべてを満たすこと：
+             *   1) WebRTC 配信ではない
+             *   2) URL が録画ページ（/movie/数字）ではない
+             *   3) 動画の長さが伸び続けている
              * @returns {{ id: string, live: boolean }}
              */
             media: () => ({
@@ -174,29 +149,27 @@
             }),
 
             /**
-             * 遅延（秒）を求め、基準線トラッカーを通して追っかけ再生の判定を付けて返す。
-             * 公式 API が無いため、seekable の末尾と再生位置の差から計算する。
-             *
+             * 現在の遅延と、ライブ最前線にいるかを返す。
+             * 遅延を教えてくれる API が無いため、seekable から推定します。
              * @returns {{ latency: number, atHead: boolean }}
              */
             status: () => latency.read(seekableLatency(watcher.video)),
 
             /**
-             * 自動しきい値が使う目安バッファ量（秒）。
-             * ツイキャスは元々きわめて低遅延な配信方式のため、固定で 0.5 秒とする。
-             *
+             * このサイトが必要とするバッファの目安（秒）を返す。
+             * ツイキャスは低遅延志向でセグメントが短いため、0.5 秒としています。
              * @returns {number}
              */
             needs: () => 0.5,
 
             /**
-             * バッジを差し込むコントロールバー内のスロットを探す。
-             *
+             * バッジを差し込みたい場所（コントロールバー）を返す。
              * @returns {Element|null}
              */
             host: () => pick(BARS, watcher.root ?? document),
         };
     }
 
+    // このアダプターを「twitcasting」という ID で登録する。
     registerSite('twitcasting', /(^|\.)twitcasting\.tv$/, twitcasting);
 })();

@@ -1,218 +1,269 @@
 /* SPDX-License-Identifier: Apache-2.0 OR MIT */
-/* ================================================================================================
- * popup.css — 設定画面（popup.html）のスタイル
- *
- * 【どこから読まれるか】
- *   popup.html の <link rel="stylesheet" href="popup.css"> から読み込まれる。
- *   ツールバーの小窓としても、オプションページの独立タブとしても、同じこのファイルが使われる。
- *
- * 【2 つの仕掛け】
- *   1. ライト／ダークの自動切り替え
- *      color-scheme: light dark; を宣言したうえで、色を light-dark(明るい色, 暗い色) と書く。
- *      これだけで OS のテーマ設定に自動で追従するため、JavaScript の出番は無い。
- *
- *   2. サイトごとのアクセント色
- *      popup.js がタブ切り替え時に <html data-site="youtube"> のように属性を書き換える。
- *      その属性に反応して --site-accent を差し替えることで、パネル全体の色味が変わる。
- *
- * 【全体の大きさ】
- *   幅を決める定数は存在しない。html / body とも width: max-content なので、
- *   中身の実寸がそのままポップアップの大きさになる。したがって画面を大きく／小さくしたいときは
- *   body の font-size を基準に、下記の固定 px（スイッチ・入力欄・アイコン・余白）を
- *   同じ比率で動かすこと。現在の基準は 13px。
- * ================================================================================================ */
+/*
+    =========================================================================
+    popup.css — 設定画面（popup.html）の見た目
+    =========================================================================
 
-/* ================================================================================================
-   カスタムプロパティ（配色と角丸の定義）
-   ------------------------------------------------------------------------------------------------
-   カスタムプロパティとは --名前: 値; で定義する CSS の変数のこと。
-   使うときは var(--名前) と書く。色をここへ集約しておけば、変更が 1 か所で済む。
-   ================================================================================================ */
+    ■ 全体の考え方
+      色をここに直接書くのではなく、まず :root で「変数」として定義し、
+      以降はその変数を参照するだけにしています。こうすると
+        - 配色をまとめて変えられる
+        - ライト／ダークの切り替えを 1 か所で完結できる
+        - サイトごとのテーマ色を差し替えるだけで全体の色調が変わる
+      という利点があります。
 
+    ■ 覚えておきたい CSS の書き方 3 つ
+      1) --名前: 値;  … カスタムプロパティ（CSS の変数）。使うときは var(--名前)
+      2) light-dark(明るいとき, 暗いとき)
+         … OS のテーマ設定に応じて自動的に切り替わる関数。
+           これを使うには :root に color-scheme の指定が必要です。
+      3) color-mix(in srgb, 色 40%, transparent)
+         … 2 つの色を指定した割合で混ぜる関数。ここでは「透明」と混ぜることで、
+           1 つのテーマ色から薄い背景色や境界線の色を自動生成しています。
+
+    ■ ブレースの書き方について
+      このファイルは「{ を次の行に置く」スタイル（Allman 記法）で統一しています。
+*/
+
+/*
+    :root は文書全体のいちばん外側（<html> 要素）を指す特別なセレクターです。
+    ここで定義した変数は、配下のすべての要素から参照できます。
+*/
 :root
 {
-    /* light-dark() を使うための前提条件。OS のテーマ設定に追従させる宣言 */
+    /*
+        この文書がライト／ダーク両方に対応していることをブラウザへ伝えます。
+        この 1 行がないと light-dark() が機能しません。
+    */
     color-scheme: light dark;
 
-    /* 基本色。書式は light-dark(明るいテーマのときの色, 暗いテーマのときの色) */
-    --bg: light-dark(#f9f9f9, #0f0f0f);                     /* 画面全体の背景 */
-    --surface: light-dark(#ffffff, #212121);                /* カードやヘッダーの面の色 */
-    --surface-hover: light-dark(#f2f2f2, #313131);          /* 面にマウスを乗せたときの色 */
-    --line: light-dark(#e3e3e3, #303030);                   /* 枠線・区切り線 */
-    --fg: light-dark(#0f0f0f, #f1f1f1);                     /* 通常の文字色 */
-    --muted: light-dark(#606060, #aaaaaa);                  /* 補助的な文字色（説明・単位など） */
-    --accent: light-dark(#065fd4, #3ea6ff);                 /* サイトに依存しない既定のアクセント色 */
-    --off: light-dark(#d4d4d4, #4d4d4d);                    /* OFF 状態のトグルスイッチの色 */
-    --knob: #ffffff;                                        /* トグルスイッチのつまみ（常に白） */
-    --hover: light-dark(#00000008, #ffffff12);              /* 行にマウスを乗せたときの薄い色 */
-    --shadow: light-dark(#00000014, #00000059);             /* カードの弱い影 */
-    --shadow-lg: light-dark(#00000029, #0000008c);          /* 吹き出しの強い影 */
+    /* --- 基本の配色（左がライトモード、右がダークモードの値）--- */
+    --bg: light-dark(#f9f9f9, #0f0f0f);              /* 画面全体の背景 */
+    --surface: light-dark(#ffffff, #212121);         /* カードやボタンの面の色 */
+    --surface-hover: light-dark(#f2f2f2, #313131);   /* 上にマウスを乗せたときの面の色 */
+    --line: light-dark(#e3e3e3, #303030);            /* 境界線 */
+    --fg: light-dark(#0f0f0f, #f1f1f1);              /* 通常の文字色 */
+    --muted: light-dark(#606060, #aaaaaa);           /* 補足的な文字色（控えめ） */
+    --accent: light-dark(#065fd4, #3ea6ff);          /* 既定の強調色（青） */
+    --off: light-dark(#d4d4d4, #4d4d4d);             /* OFF 状態のスイッチの色 */
+    --knob: #ffffff;                                 /* スイッチのつまみ（常に白） */
 
-    /* --ui-accent は「その領域で使うアクセント色」。既定はサイト非依存の色にしておく */
+    /*
+        末尾に数字が付いた色（#00000008 など）は 8 桁の 16 進数表記で、
+        最後の 2 桁が不透明度を表します。08 はごく薄い、a6 は 65% 程度の意味です。
+    */
+    --hover: light-dark(#00000008, #ffffff12);       /* 行にマウスを乗せたときの薄い色 */
+    --shadow: light-dark(#00000014, #00000059);      /* 小さな影 */
+    --shadow-lg: light-dark(#00000029, #0000008c);   /* 大きな影 */
+
+    /*
+        --ui-accent は「今この場所で使う強調色」。
+        既定は青ですが、サイト別パネル（#site）の中だけサイトの色に上書きされます。
+        変数は子要素へ引き継がれるため、この 1 か所を書き換えるだけで
+        中のスイッチ・スライダー・枠線の色がまとめて変わります。
+    */
     --ui-accent: var(--accent);
 
-    /* サイト色。下の :root[data-site = '...'] で上書きされる */
+    /* --site-accent は選択中のサイトのテーマ色。既定値は下の規則で上書きされます。 */
     --site-accent: var(--accent);
 
-    /* color-mix() は 2 色を指定した割合で混ぜる関数。サイト色を薄めて背景と枠線に使う */
+    /* テーマ色を透明と混ぜて、薄い背景色と枠線の色を自動生成します。 */
     --site-tint: color-mix(in srgb, var(--site-accent) 7%, transparent);
     --site-edge: color-mix(in srgb, var(--site-accent) 28%, transparent);
 
-    /* 共通設定パネル用の、色味を持たない淡い背景と枠線 */
+    /* 共通設定パネル側は、サイト色を使わない中立的な配色にします。 */
     --common-tint: light-dark(#0000000a, #ffffff0a);
     --common-edge: var(--line);
 
-    --radius-lg: 14px;                                      /* パネルの角丸 */
-    --radius: 11px;                                         /* カードと吹き出しの角丸 */
-    --radius-sm: 7px;                                       /* 行と入力欄の角丸 */
+    /* --- 角の丸みを 3 段階で用意し、大きさに応じて使い分けます --- */
+    --radius-lg: 14px;   /* パネル */
+    --radius: 11px;      /* カード、吹き出し */
+    --radius-sm: 7px;    /* 行、入力欄 */
 }
 
-/* 選択中のタブに応じたブランドカラー（popup.js が data-site を書き換えることで切り替わる） */
+/*
+    サイトごとのテーマ色。
+    popup.js の render() が <html data-site="youtube"> のように属性を書き換えると、
+    ここで --site-accent が差し替わり、パネルの色調が一斉に変わります。
+    [属性 = '値'] という書き方は「その属性がその値である要素」を指します。
+*/
 :root[data-site = 'youtube']
 {
     --site-accent: light-dark(#d90029, #ff0033);
 }
-
 :root[data-site = 'twitch']
 {
     --site-accent: light-dark(#772ce8, #a970ff);
 }
-
 :root[data-site = 'twitcasting']
 {
     --site-accent: light-dark(#0081b4, #4fc3f7);
 }
 
-/* ================================================================================================
-   ベース
-   ================================================================================================ */
-
+/*
+    * はすべての要素に当てはまるセレクター。
+    box-sizing: border-box は「指定した幅に、内側の余白と枠線も含める」という設定で、
+    これがないと padding を足すたびに要素が幅からはみ出して、幅の計算が煩雑になります。
+*/
 *
 {
-    /* 幅と高さの計算に padding と border を含める。レイアウト計算が直感的になる */
     box-sizing: border-box;
 }
 
+/*
+    popup.js が要素を隠すときに付ける hidden 属性を、確実に効かせるための指定。
+    !important を付けているのは、他の規則（例: .row の display: flex）に
+    負けて表示されたままになるのを防ぐためです。
+*/
 [hidden]
 {
-    /* JavaScript から hidden 属性で確実に隠せるようにする（他の display 指定に必ず勝たせる） */
     display: none !important;
 }
 
-/* 中身の幅に合わせてポップアップの大きさを決める。翻訳すると語の長さが大きく変わるため */
+/*
+    ポップアップの幅は「中身に合わせて自動で決める」方針です。
+    width: max-content は「折り返さずに収まる最小幅」。
+    min-width: 100% は、逆に中身が少ないときに親より狭くなりすぎないための下限です。
+    9 言語対応で文字の長さが大きく変わるため、固定幅にしていません。
+*/
 html
 {
     width: max-content;
     min-width: 100%;
 }
-
 body
 {
-    margin: 0 auto;                                         /* 左右中央寄せ */
+    margin: 0 auto;   /* 左右 auto で中央寄せ */
     width: max-content;
     background-color: var(--bg);
     color: var(--fg);
-    font: 13px/1.35 system-ui, sans-serif;                  /* OS 標準のフォントを使う。画面全体の大きさの基準 */
+
+    /*
+        font はまとめ書きで「文字サイズ/行の高さ 書体」の順。
+        system-ui は「OS の標準の書体」を指す指定で、これを使うと
+        Windows・macOS・Linux それぞれで自然な見た目になります。
+    */
+    font: 13px/1.35 system-ui, sans-serif;
 }
 
-/* ================================================================================================
-   ヘッダー
-   ================================================================================================ */
-
+/* --- ヘッダー（ロゴと全体の ON/OFF スイッチ）--- */
 #header
 {
+    /*
+        display: flex は「子要素を横一列に並べる」指定。
+        align-items: center で縦方向の中央に、gap で要素間の間隔を作ります。
+        古い書き方（float や margin での調整）より意図が明確です。
+    */
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 6px 8px;
+    padding: 6px 8px;   /* 上下 6px、左右 8px */
     background-color: var(--surface);
     border-bottom: 1px solid var(--line);
 }
-
 #brand
 {
     display: flex;
-    align-items: baseline;                                  /* 名前とバージョンの文字の下端を揃える */
-    gap: 6px;
-    user-select: none;
-}
 
+    /* baseline は「文字の下端の線」をそろえる指定。大きさの違う文字を並べるときに有効です。 */
+    align-items: baseline;
+    gap: 6px;
+    user-select: none;   /* ドラッグで文字が選択されるのを防ぐ */
+}
 #icon-link
 {
-    display: flex;                                          /* img の余白（インライン特有の隙間）を消す */
-    align-self: center;                                     /* baseline 配置の兄弟から外れ、縦中央に揃える */
-}
+    display: flex;
 
+    /* 親の baseline 揃えから外し、この要素だけ中央に配置します（画像には文字の下端が無いため）。 */
+    align-self: center;
+}
 #icon
 {
     width: 16px;
     height: 16px;
 }
-
 #title
 {
     font-size: 15px;
     font-weight: 600;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.2px;   /* 文字の間隔をわずかに広げて読みやすくする */
 }
-
 #version
 {
     color: var(--muted);
     font-size: 11px;
-    font-variant-numeric: tabular-nums;                     /* 数字の幅を揃え、桁が変わってもずれないようにする */
+
+    /*
+        tabular-nums は「数字の幅をすべて同じにする」指定。
+        1 と 8 の幅がそろうため、桁がずれずに整って見えます。
+    */
+    font-variant-numeric: tabular-nums;
 }
 
-/* マスタースイッチの行だけをヘッダーの右端へ押しやる */
+/*
+    margin-left: auto は flex 配置での定番の書き方で、
+    「左側の余白を可能な限り広げる」＝右端へ寄せる、という意味になります。
+*/
 #header .row
 {
     margin-left: auto;
 }
 
-/* ================================================================================================
-   スコープ（サイト別パネル / 共通パネル）
-   ================================================================================================ */
-
+/* --- 設定パネルの並び --- */
 #scopes
 {
     display: flex;
-    align-items: flex-start;                                /* 高さの違う 2 枚のパネルを上端で揃える */
+
+    /*
+        flex-start は「上端をそろえる」指定。
+        既定（stretch）のままだと、背の低いパネルが高いほうに合わせて
+        引き伸ばされてしまいます。
+    */
+    align-items: flex-start;
     gap: 8px;
     padding: 8px;
 }
-
 .scope
 {
     display: flex;
+
+    /* column は「縦に並べる」指定。パネルの中は見出し → 設定群 → フッターの順です。 */
     flex-direction: column;
     gap: 6px;
     padding: 6px;
+
+    /* 幅と種類だけ指定し、色は下の #site / #common でそれぞれ指定します。 */
     border: 1px solid;
     border-radius: var(--radius-lg);
 }
 
-/* サイト別パネルの内側だけ、アクセント色をそのサイトのブランドカラーに差し替える */
+/*
+    サイト別パネル。ここで --ui-accent を上書きするのが重要な点です。
+    この宣言により、パネル内のすべての要素（スイッチ、スライダー、枠線など）が
+    自動的にサイトのテーマ色を使うようになります。
+*/
 #site
 {
     --ui-accent: var(--site-accent);
     background-color: var(--site-tint);
     border-color: var(--site-edge);
-    transition: background-color 120ms ease, border-color 120ms ease;    /* タブ切り替え時になめらかに変色させる */
+
+    /* タブを切り替えたとき、色が瞬時に変わらず 120 ミリ秒かけて滑らかに移り変わります。 */
+    transition: background-color 120ms ease, border-color 120ms ease;
 }
 
+/* 共通設定パネル。こちらはサイト色を引き継がず、中立的な配色のままです。 */
 #common
 {
     background-color: var(--common-tint);
     border-color: var(--common-edge);
 }
-
 .scope-head
 {
     display: flex;
     align-items: center;
     gap: 5px;
 }
-
 .groups
 {
     display: flex;
@@ -220,32 +271,40 @@ body
     gap: 6px;
 }
 
-/* ================================================================================================
-   タブ
-   ================================================================================================ */
-
+/* --- サイト切り替えタブ（popup.js が動的に生成するボタン）--- */
 .tab
 {
-    flex: 1 1 0;                                            /* 3 つのタブを均等幅にする */
+    /*
+        flex: 1 1 0 は「余った幅を等分に分け合う」指定。
+        3 つのタブが同じ幅になり、名前の長さに左右されずに整列します。
+    */
+    flex: 1 1 0;
     padding: 4px 10px;
     background-color: var(--surface);
     color: var(--muted);
     border: 1px solid var(--line);
-    border-radius: 999px;                                   /* 極端に大きな値を指定して完全な丸型にする */
+
+    /* 極端に大きな値を指定すると、高さに応じた完全な角丸（錠剤型）になります。 */
+    border-radius: 999px;
+
+    /* font: inherit は「親の書体設定をそのまま引き継ぐ」指定。 */
     font: inherit;
     font-weight: 600;
-    white-space: nowrap;
+    white-space: nowrap;   /* 途中で折り返さない */
     cursor: pointer;
     transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
-
 .tab:hover
 {
     background-color: var(--surface-hover);
     color: var(--fg);
 }
 
-/* 選択中のタブは、そのサイトの色で塗りつぶす（aria-selected は popup.js が設定する） */
+/*
+    選択中のタブ。popup.js が aria-selected="true" を付け替えるため、
+    JavaScript 側でクラスを付け外しする必要がありません。
+    支援技術への情報伝達と見た目の指定を、1 つの属性で兼ねています。
+*/
 .tab[aria-selected = 'true']
 {
     background-color: var(--ui-accent);
@@ -253,24 +312,27 @@ body
     border-color: var(--ui-accent);
 }
 
-/* :focus-visible はキーボード操作のときだけ枠を出す指定。マウスクリックでは出ない */
+/*
+    :focus-visible は「キーボード操作でフォーカスが当たったとき」だけに反応します。
+    :focus と違い、マウスでクリックしたときには枠が出ません。
+    キーボードだけで操作する人には位置を明示しつつ、マウス操作の邪魔もしない書き方です。
+*/
 .tab:focus-visible
 {
     outline: 2px solid var(--ui-accent);
     outline-offset: 1px;
 }
 
-/* ================================================================================================
-   チップ（「共通」と書かれた小さなラベル）
-   ================================================================================================ */
-
+/* --- 「全サイト共通」を示す小さなラベル --- */
 .chip
 {
-    flex: none;                                             /* 伸び縮みさせず、文字の幅のまま保つ */
+    flex: none;   /* 伸び縮みさせない */
     padding: 2px 7px;
     background-color: var(--surface);
     color: var(--muted);
-    border: 1px dashed var(--line);                         /* 破線にして「注釈」であることを示す */
+
+    /* 破線の枠にすることで、押せるボタンではなく単なる表示だと分かるようにしています。 */
+    border: 1px dashed var(--line);
     border-radius: 999px;
     font-size: 11px;
     font-weight: 600;
@@ -278,32 +340,32 @@ body
     user-select: none;
 }
 
-/* 行の中に置かれたチップは右端へ寄せる */
+/* 行の中に置かれた場合は右端へ寄せます。 */
 .row > .chip
 {
     margin-left: auto;
 }
 
-/* 見出し位置に置かれたチップは、単独で目立つよう大きめにする */
+/* パネルの見出しに置かれた場合は、タブと釣り合う大きさにします。 */
 .scope-head .chip
 {
     padding: 5px 12px;
     font-size: inherit;
 }
 
-/* ================================================================================================
-   設定グループと行
-   ================================================================================================ */
-
+/* --- 設定のまとまり（白いカード）--- */
 .group
 {
     padding: 4px;
     background-color: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    box-shadow: 0 1px 2px var(--shadow);                    /* わずかに浮かせてカードらしく見せる */
+
+    /* box-shadow は「横方向 縦方向 ぼかし 色」。わずかに浮いて見せる効果です。 */
+    box-shadow: 0 1px 2px var(--shadow);
 }
 
+/* --- 設定 1 行 --- */
 .row
 {
     display: flex;
@@ -311,49 +373,60 @@ body
     gap: 6px;
     padding: 3px 6px;
     border-radius: var(--radius-sm);
+
+    /* 行のどこを押してもスイッチが反応するため、指のカーソルにします。 */
     cursor: pointer;
-    user-select: none;                                      /* 連続クリックで文字が選択されるのを防ぐ */
+    user-select: none;
     transition: background-color 120ms ease;
 }
-
 .row:hover
 {
     background-color: var(--hover);
 }
 
 /*
- * :has() は「その要素を含む親」を選ぶ指定。
- * 数値入力とスライダーの行は、ラベルを押しただけで値が動いてほしくないので
- * 行全体をクリック対象にはしない
- */
+    :has() は「その条件に当てはまる子孫を持つ要素」を指す、比較的新しいセレクターです
+    （いわゆる「親セレクター」）。
+    数値入力やスライダーを含む行は、行のどこを押しても操作できるわけではないので、
+    指のカーソルをやめて通常の矢印に戻しています。
+*/
 .row:has(.number),
 .row:has(.slider)
 {
     cursor: default;
 }
-
-/* ラベルが長い言語のとき、ポップアップが横に伸びすぎないよう上限を設ける */
 .row > span
 {
+    /*
+        flex: 0 1 auto は「必要なら縮むが、自分から伸びはしない」設定。
+        max-width と組み合わせることで、長い翻訳文が来たときに
+        ポップアップが横に広がりすぎるのを防いでいます。
+    */
     flex: 0 1 auto;
     max-width: 250px;
 }
 
-/* スイッチや入力欄は常に行の右端へ寄せる */
+/* 入力欄はすべて右端に寄せてそろえます（前述の margin-left: auto の応用）。 */
 .row > input
 {
     margin-left: auto;
 }
 
-/* 機能そのものの ON / OFF を担う見出し行 */
+/* --- まとまりの見出しになる行 --- */
 .row.head
 {
-    position: relative;                                     /* 下の ::after を絶対配置する基準にする */
+    /* ::after を配置する基準にするため、position を指定します。 */
+    position: relative;
     margin-bottom: 5px;
     font-weight: 600;
 }
 
-/* 見出しの下に区切り線を引く。左右に少し余白を残して、線が窮屈に見えないようにする */
+/*
+    ::after は「その要素の末尾に、CSS だけで作る飾りの要素」です。
+    ここでは見出しの下に引く区切り線として使っています。
+    border-bottom で引かないのは、左右にわずかな余白を空けたいためです
+    （right / left を 7px にすることで、線が両端から少し内側で止まります）。
+*/
 .row.head::after
 {
     content: '';
@@ -364,13 +437,17 @@ body
     border-top: 1px solid var(--line);
 }
 
-/* ~ は「同じ親を持つ後続の要素」を選ぶ指定。見出しに続く行は字下げして従属関係を示す */
+/*
+    ~ は「同じ親を持ち、後ろに並んでいる要素」を指す記号です。
+    見出し行より後ろにある行の文字を字下げして、
+    「この見出しに属する項目である」という関係を見た目で示しています。
+*/
 .row.head ~ .row > span
 {
     padding-left: 12px;
 }
 
-/* 「0.05 ~ 4.00」のような入力範囲の目安表示 */
+/* 入力可能範囲の表示（例: 1.05 ~ 4.00）。 */
 .hint
 {
     color: var(--muted);
@@ -379,49 +456,59 @@ body
     white-space: nowrap;
 }
 
-/* 前提条件を満たしていない行（data-needs / data-not を見て popup.js が付け外しする） */
+/*
+    操作できない行。
+    popup.js の render() が、data-needs / data-not の条件をもとに
+    disabled クラスを付け外しします。
+    要素を隠さず薄く表示するのは、「条件を満たせば使える設定がある」と
+    分かるようにするためです。
+*/
 .row.disabled
 {
-    opacity: 0.4;                                           /* 薄くして操作できないことを伝える */
+    opacity: 0.4;
     cursor: default;
 }
-
 .row.disabled:hover
 {
-    background-color: transparent;                          /* 反応しないことを示すためホバー効果も消す */
+    background-color: transparent;
 }
 
-/* 無効な行では ? ボタンも押せないようにする */
+/* 無効な行では「?」ボタンも押せなくします（pointer-events: none で操作を透過）。 */
 .row.disabled .help-icon
 {
     pointer-events: none;
 }
 
-/* サイト固有の注釈（左に色付きの縦線を引いた引用風の見た目） */
+/* --- 注意書き（現在は Twitch の下限しきい値についての説明で使用）--- */
 .note
 {
     margin: 3px 5px 4px;
     padding: 5px 8px;
     max-width: 270px;
+
+    /* 現在の強調色をごく薄く敷き、左端に少し濃い線を引いた引用風の見た目です。 */
     background-color: color-mix(in srgb, var(--ui-accent) 6%, transparent);
     color: var(--muted);
     border-left: 2px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;   /* 左側だけ角を立てて縦線と繋げる */
+
+    /* 角丸は右側の 2 か所だけ（左端は線をまっすぐ見せたいため）。 */
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     font-size: 11px;
     line-height: 1.5;
 }
 
-/* ================================================================================================
-   フォーム部品
-   ================================================================================================ */
-
 /*
- * トグルスイッチ。
- * appearance: none でチェックボックス本来の見た目を消し、
- * つまみ（丸）を radial-gradient（円形のグラデーション）で背景として描く。
- * ON / OFF の切り替えは、その背景の位置を background-position で左右へ動かすことで表現している。
- * 要素を 1 つも増やさずにスイッチを作れるのがこの方法の利点。
- */
+    -------------------------------------------------------------------------
+    ON/OFF スイッチ
+    -------------------------------------------------------------------------
+    中身は普通のチェックボックス（<input type="checkbox">）です。
+    appearance: none でブラウザ標準の四角い見た目を消したうえで、
+    背景色と背景画像だけを使って、画像ファイルなしでスイッチを描いています。
+
+    つまみの正体は radial-gradient（円形のグラデーション）で描いた白い丸です。
+    「半径 6px、中心が左から 8px・上から 8px の位置に白い円、それ以外は透明」
+    という指定になっています（#0000 は透明を表す短い書き方）。
+*/
 .switch
 {
     appearance: none;
@@ -429,30 +516,45 @@ body
     margin: 0;
     width: 30px;
     height: 16px;
-    border-radius: 8px;                                     /* 高さの半分にして両端を丸くする */
+    border-radius: 8px;   /* 高さの半分にすると、左右が完全な半円になります */
     background-color: var(--off);
     background-image: radial-gradient(circle 6px at 8px 8px, var(--knob) 98%, #0000);
     background-repeat: no-repeat;
+
+    /*
+        つまみの移動は background-position の変化として表現します。
+        cubic-bezier(...) は動きの緩急を自分で指定するもので、
+        この値は「勢いよく動き出し、最後にわずかに行き過ぎて戻る」動きになります。
+    */
     transition: background-color 160ms ease, background-position 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
+/* :enabled は「操作できる状態のとき」。無効な行では指のカーソルになりません。 */
 .switch:enabled
 {
     cursor: pointer;
 }
 
+/*
+    ON のとき。背景色を強調色に変え、つまみの位置を右へ 14px ずらします
+    （幅 30px − つまみ 16px ぶん ＝ 14px）。
+*/
 .switch:checked
 {
     background-color: var(--ui-accent);
-    background-position: 14px 0;                            /* つまみを右へ 14px（幅 − 高さ）動かす */
+    background-position: 14px 0;
 }
-
 .switch:focus-visible
 {
     outline: 2px solid var(--ui-accent);
     outline-offset: 1px;
 }
 
+/*
+    -------------------------------------------------------------------------
+    数値入力欄
+    -------------------------------------------------------------------------
+*/
 .number
 {
     flex: none;
@@ -463,15 +565,17 @@ body
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     font: inherit;
+
+    /* 数字の幅をそろえ、右寄せにすることで桁の位置が安定します。 */
     font-variant-numeric: tabular-nums;
-    text-align: right;                                      /* 数字は右揃えのほうが桁を比べやすい */
+    text-align: right;
 }
 
+/* :enabled:hover と重ねることで、操作できるときだけ枠線を濃くします。 */
 .number:enabled:hover
 {
     border-color: var(--muted);
 }
-
 .number:focus-visible
 {
     outline: 2px solid var(--ui-accent);
@@ -479,34 +583,30 @@ body
 }
 
 /*
- * 段階スライダー（type="range"）。
- * appearance: none で OS 標準の見た目を消し、溝（トラック）とつまみを自前で描く。
- * トラックは要素そのものの背景として、つまみは ::-webkit-slider-thumb /
- * ::-moz-range-thumb という専用の擬似要素として指定する必要がある。
- * この 2 つはブラウザごとに別々の名前を持ち、まとめて書くと規則ごと無視されるため、
- * 面倒でも別々の規則に分けて書かなければならない。
- * ただし中身まで二重に持つ必要は無いので、溝の描画そのものは --track へ寄せてある
- * （カスタムプロパティはこれらの擬似要素へも継承される。--line / --steps が
- * 擬似要素の中で効いているのと同じ仕組み）。
- *
- * 目盛りの線は repeating-linear-gradient で描いている。段階の数が変わっても
- * --steps を書き換えるだけで済むよう、間隔をパーセントで表している。
- * 左右を 12px（つまみの直径ぶん）詰めているのは、ブラウザがつまみの中心を
- * 「半径ぶん内側」の範囲でしか動かさないため。詰めないと両端の目盛りが
- * つまみの止まる位置から半径ぶんずれて見える。
- */
+    -------------------------------------------------------------------------
+    段階スライダー（自動調整の積極度）
+    -------------------------------------------------------------------------
+    溝の部分は、2 枚の背景を重ねて描いています。
+
+      1 枚目 repeating-linear-gradient … 目盛りの縦線を等間隔でくり返す
+      2 枚目 linear-gradient           … 横に伸びる細い線（溝そのもの）
+
+    目盛りの間隔は calc((100% - 1px) / (var(--steps) - 1)) で計算しており、
+    --steps の値を変えるだけで目盛りの数が変わります。
+    「4 段階なら区間は 3 つ」なので 1 を引いています。
+
+    左右に 12px 引いているのは、つまみ（幅 12px）が両端まで移動したときに
+    中心が溝の端とそろうようにするためです。
+*/
 .slider
 {
-    --steps: 4;                                             /* 目盛りの数（speedupAuto は 0 / 1 / 2 / 3 の 4 段階） */
-
-    /* 溝の描画。中央に細い線を敷き、その上へ目盛りを重ねる */
+    --steps: 4;
     --track:
         repeating-linear-gradient(to right,
             var(--line) 0 1px,
             #0000 1px calc((100% - 1px) / (var(--steps) - 1)))
             center / calc(100% - 12px) 10px no-repeat,
         linear-gradient(var(--line), var(--line)) center / calc(100% - 12px) 2px no-repeat;
-
     appearance: none;
     flex: none;
     margin: 0;
@@ -515,13 +615,21 @@ body
     background: none;
 }
 
+/*
+    溝とつまみの見た目は、ブラウザごとに違う擬似要素で指定する必要があります
+    （Chrome / Edge 系は ::-webkit-*、Firefox は ::-moz-*）。
+    これらは 1 つの規則にまとめて書くことができません。片方でも解釈できない
+    セレクターが混ざると、規則ごと無視されてしまうためです。
+
+    ただし値そのものを二重に持つ必要はありません。カスタムプロパティ
+    （--track）は擬似要素にも引き継がれるので、実際の定義は上の 1 か所だけです。
+*/
 .slider::-webkit-slider-runnable-track
 {
     height: 14px;
     background: var(--track);
     border-radius: 1px;
 }
-
 .slider::-moz-range-track
 {
     height: 14px;
@@ -529,11 +637,11 @@ body
     border-radius: 1px;
 }
 
-/* つまみ。margin-top で、トラックの高さに対して上下中央へ寄せる（WebKit のみ必要） */
+/* つまみ（Chrome / Edge 系）。border-radius: 50% で正円になります。 */
 .slider::-webkit-slider-thumb
 {
     appearance: none;
-    margin-top: 1px;
+    margin-top: 1px;   /* 溝の中心に来るよう、わずかに下げる */
     width: 12px;
     height: 12px;
     background-color: var(--ui-accent);
@@ -542,6 +650,7 @@ body
     cursor: pointer;
 }
 
+/* つまみ（Firefox）。Firefox は既定で中央に配置されるため margin-top が不要です。 */
 .slider::-moz-range-thumb
 {
     width: 12px;
@@ -552,19 +661,17 @@ body
     cursor: pointer;
 }
 
-/* 操作できない行では、つまみもアクセント色をやめて沈ませる */
+/* 操作できないときのつまみ（こちらもブラウザごとに指定が必要）。 */
 .slider:disabled::-webkit-slider-thumb
 {
     background-color: var(--muted);
     cursor: default;
 }
-
 .slider:disabled::-moz-range-thumb
 {
     background-color: var(--muted);
     cursor: default;
 }
-
 .slider:focus-visible
 {
     outline: 2px solid var(--ui-accent);
@@ -572,15 +679,18 @@ body
 }
 
 /*
- * スライダーにマウスを乗せている間だけ出る、現在の段階名の吹き出し。
- * 位置は popup.js がカーソル座標から計算して left / top へ直接入れる。
- * pointer-events: none が要。これが無いと吹き出し自身がカーソルの下に入り込み、
- * スライダーから mouse が離れたと判定されて点滅する。
- */
+    -------------------------------------------------------------------------
+    スライダーに追従する小さなラベル（popup.js の Tip が作る要素）
+    -------------------------------------------------------------------------
+    position: fixed は「画面を基準に位置を決める」指定です。
+    実際の座標は popup.js が left / top を書き込んで動かします。
+    pointer-events: none により、この要素の下にあるスライダーを
+    そのまま操作し続けられます。
+*/
 .tip
 {
     position: fixed;
-    z-index: 10;
+    z-index: 10;   /* 他の要素より手前に表示する */
     padding: 4px 8px;
     background-color: var(--surface);
     color: var(--fg);
@@ -594,44 +704,62 @@ body
     user-select: none;
 }
 
-/* ================================================================================================
-   ヘルプ（? ボタンとポップオーバー）
-   ================================================================================================ */
-
+/*
+    -------------------------------------------------------------------------
+    「?」ボタンと、その説明の吹き出し
+    -------------------------------------------------------------------------
+*/
 .help-icon
 {
     flex: none;
+
+    /*
+        display: grid と place-items: center を組み合わせると、
+        中身を縦横ともに中央へ配置できます（「?」を円の中心に置くため）。
+    */
     display: grid;
-    place-items: center;                                    /* ? の文字を縦横とも中央に置く */
+    place-items: center;
     padding: 0;
     width: 15px;
     height: 15px;
     background: none;
     color: var(--muted);
-    border: 1px solid currentColor;                         /* 枠線を文字色に追従させる */
+
+    /*
+        currentColor は「その要素の文字色」を指すキーワードです。
+        これを使うと、下の :hover で color を変えるだけで
+        文字と枠線の色が一緒に変わります（枠線の指定を書き足す必要がありません）。
+    */
+    border: 1px solid currentColor;
     border-radius: 50%;
     font: 600 10px/1 system-ui, sans-serif;
     cursor: pointer;
     transition: color 120ms ease;
 }
-
-/* currentColor のおかげで、文字色を変えるだけで枠線も一緒にアクセント色へ変わる */
 .help-icon:hover
 {
     color: var(--ui-accent);
 }
-
 .help-icon:focus-visible
 {
     outline: 2px solid var(--ui-accent);
     outline-offset: 1px;
 }
 
-/* popover 属性で開閉される吹き出し。表示位置は popup.js が実測して決める */
+/*
+    説明の吹き出し。
+    popup.html には無く、popup.js の buildHelp() が生成して
+    popover 属性を付けた要素です。
+
+    popover はブラウザ標準の「最前面に浮かぶ小窓」の仕組みで、
+    z-index を管理しなくても必ず他の要素より手前に表示されます。
+    inset: auto と margin: 0 は、その既定の中央配置を打ち消す指定で、
+    こうすることで popup.js が計算した座標へ自由に置けるようになります。
+*/
 .help
 {
     position: fixed;
-    inset: auto;                                            /* ブラウザ既定の中央寄せを打ち消す */
+    inset: auto;
     margin: 0;
     max-width: 260px;
     padding: 9px 12px;
@@ -644,23 +772,27 @@ body
     line-height: 1.55;
 }
 
-/* ::backdrop は popover の背後に敷かれる層。透明にして、外側クリックで閉じる挙動だけを活かす */
+/*
+    ::backdrop は popover の背後に敷かれる層です。
+    既定では薄暗くなりますが、設定画面では背後を見えたままにしたいので
+    透明に上書きしています（画面外をクリックすると閉じる動作はそのまま残ります）。
+*/
 .help::backdrop
 {
     background-color: transparent;
 }
 
-/* ================================================================================================
-   フッター（リセットボタン）
-   ================================================================================================ */
-
+/*
+    -------------------------------------------------------------------------
+    リセットボタンとフッター
+    -------------------------------------------------------------------------
+*/
 .footer
 {
     display: flex;
-    justify-content: flex-end;                              /* ボタンを右端へ寄せる */
+    justify-content: flex-end;   /* 中身を右端に寄せる */
     padding: 2px 2px 0;
 }
-
 .reset
 {
     padding: 4px 12px;
@@ -672,26 +804,22 @@ body
     cursor: pointer;
     transition: background-color 120ms ease, border-color 120ms ease;
 }
-
 .reset:hover
 {
     background-color: var(--surface-hover);
     border-color: var(--muted);
 }
-
 .reset:focus-visible
 {
     outline: 2px solid var(--ui-accent);
     outline-offset: 1px;
 }
 
-/* ================================================================================================
-   アクセシビリティ: アニメーションを控える設定への対応
-   ------------------------------------------------------------------------------------------------
-   OS の「視差効果を減らす」設定を有効にしている利用者には、動きが体調不良の原因になり得る。
-   その場合はすべてのトランジションを無効にする。
-   ================================================================================================ */
-
+/*
+    OS 側で「視覚効果を減らす」設定にしている場合、アニメーションを一切止めます。
+    動きに酔いやすい人や、前庭障害のある人への配慮として重要な指定で、
+    すべての要素をまとめて対象にすることで指定漏れを防いでいます。
+*/
 @media (prefers-reduced-motion: reduce)
 {
     *
@@ -700,22 +828,19 @@ body
     }
 }
 
-/* ================================================================================================
-   ページフッター（取扱説明書へのリンク）
-   ------------------------------------------------------------------------------------------------
-   2 枚のパネルの下、ポップアップの右下隅に小さく置く。
-   視線を奪わないよう既定は補助色で、マウスを乗せたときだけ通常の文字色へ上げる。
-   ================================================================================================ */
-
+/* --- 画面最下部の取扱説明書リンク --- */
 #page-footer
 {
     display: flex;
-    justify-content: flex-end;                              /* 右端へ寄せる */
+    justify-content: flex-end;
     padding: 0 10px 8px;
 }
-
 #manual-link
 {
+    /*
+        inline-flex は「まわりの文字と同じ行に収まりつつ、中身は flex で並べる」指定。
+        文字と、下の ::after で作る矢印を横並びにするために使っています。
+    */
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -723,23 +848,26 @@ body
     border-radius: var(--radius-sm);
     color: var(--muted);
     font-size: 11px;
-    text-decoration: none;
+    text-decoration: none;   /* リンクの下線を消す */
     transition: color 120ms ease, background-color 120ms ease;
 }
 
-/* 外部サイトへ開くことを示す小さな矢印。文言の翻訳とは無関係なので CSS で付ける */
+/*
+    リンクの末尾に「↗」を付けて、外部サイトが開くことを示します。
+    "\2197" は、その記号の文字コードを 16 進数で書いたものです。
+    CSS の content で記号を直接書くと文字化けする環境があるため、
+    この書き方のほうが確実です。
+*/
 #manual-link::after
 {
-    content: "\2197";                                       /* ↗ */
+    content: "\2197";
     font-size: 10px;
 }
-
 #manual-link:hover
 {
     background-color: var(--hover);
     color: var(--fg);
 }
-
 #manual-link:focus-visible
 {
     outline: 2px solid var(--ui-accent);
