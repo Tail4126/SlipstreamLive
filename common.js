@@ -1,70 +1,80 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-/* ================================================================================================
- * common.js — ブラウザ拡張 API のラッパー（設定の保存・読み出し・多言語対応・ログ）
+/**
+ * =============================================================================
+ * common.js — 拡張機能のどこからでも使う「共通の道具箱」
+ * =============================================================================
  *
- * 【どこから呼ばれるか】
- *   このファイルの関数を誰かが直接呼ぶのではなく、以下の 2 か所から読み込まれて自動実行される。
- *     1. manifest.json の content_scripts（ISOLATED world）… shared/schema.js の後、content.js の前
- *     2. popup.html の <script src="common.js" defer>      … shared/schema.js の後、popup.js の前
+ * ■ このファイルは何をするもの？
+ *   設定の保存/読み出し、ログ出力、多言語テキストの取得といった、
+ *   いろいろな場所で必要になる基本機能をひとまとめにして提供します。
  *
- *   読み込まれると globalThis.SLPSTRM という 1 つの窓口オブジェクトを作る。
- *   以降 content.js と popup.js は SLPSTRM だけを見ればよい。
+ * ■ 使い方
+ *   このファイルを読み込むと `globalThis.SLPSTRM` という名前で道具箱が
+ *   置かれるので、他のファイル（content.js / popup.js）はこう書いて取り出します。
  *
- * 【役割分担】
- *   common.js        … 拡張 API（storage / i18n）のラッパーとロガー。このファイル
- *   shared/schema.js … 設定の設計図（KEYS / SITES）と値の検証。ここで SLPSTRM へ合流させる
- *   content.js       … 設定を <html data-slpstrm="..."> へ書き出す係
- *   adapters/*.js    … 「そのサイトを具体的にどう操作するか」（MAIN world 側の実装）
+ *     const { api, store, log } = globalThis.SLPSTRM;
  *
- * 【読み込まれない場所】
- *   MAIN world（inject.js / adapters/*.js）では chrome.storage 等の拡張 API が使えないため、
- *   このファイルは読み込まれない。MAIN world 側の共通処理は shared/util.js が担当する。
- * ================================================================================================ */
+ *   これは「分割代入」という書き方で、オブジェクトの中から必要なものだけを
+ *   同じ名前の変数として取り出すショートカットです。
+ *
+ * ■ 読み込まれる場所
+ *   shared/schema.js の直後、content.js の直前（manifest.json で指定）。
+ *   popup.html からも読み込まれます。
+ *
+ * ■ 「拡張コンテキスト」という注意点
+ *   拡張機能が更新・再読み込み・削除されると、すでに開いているページに残った
+ *   スクリプトは「本体との通信手段を失った幽霊」状態になります。
+ *   その状態で API を呼ぶと例外が飛ぶため、下の alive() で毎回確認しています。
+ */
 globalThis.SLPSTRM = (() => {
     'use strict';
 
-    // 拡張 API の参照。Firefox は browser、Chrome は chrome という名前で公開しているため両対応にする
+    /**
+     * ブラウザ拡張の API 本体。
+     * Firefox は `browser`、Chrome / Edge は `chrome` という名前で提供しているため、
+     * 存在するほうを選んで、以降はブラウザの違いを意識せずに書けるようにします。
+     * （`??` は「左が null / undefined なら右を使う」演算子）
+     */
     const api = globalThis.browser ?? globalThis.chrome;
 
-    /* ============================================================================================
-       デバッグ用ロガー
-       --------------------------------------------------------------------------------------------
-       通常は静かにしておき、開発者コンソールで SLPSTRM.log.on = true と打ったときだけ
-       詳細ログを出す。警告（warn）は問題の見逃しを防ぐため常に出力する。
-       ============================================================================================ */
+    /**
+     * ログ出力用のヘルパー。
+     * - log.on   : 通常ログを出すかどうかのスイッチ（既定は false ＝ 出さない）
+     * - log.say  : 開発中に見たい詳細ログ。log.on が true のときだけ出る
+     * - log.warn : 異常時の警告。こちらは常に出る
+     */
     const log = {
-        on: false,                                                          // 詳細ログを出すかどうかのスイッチ
-        say(...args) { if (log.on) console.log('[slipstreamlive]', ...args); }, // 詳細ログ（既定では出力しない）
-        warn(...args) { console.warn('[slipstreamlive]', ...args); },           // 警告ログ（常に出力する）
+        on: false,
+        say(...args) { if (log.on) console.log('[slipstreamlive]', ...args); },
+        warn(...args) { console.warn('[slipstreamlive]', ...args); },
     };
 
     /**
-     * 拡張機能のコンテキストがまだ生きているかを調べる。
-     * 拡張機能を再読み込み・更新・無効化すると、開いたままのページに残った古いスクリプトからは
-     * api.storage 自体が undefined になる（api.runtime.id も消える）。
-     * これは異常ではなく「役目を終えた」だけなので、警告を出さず静かに諦める。
+     * 拡張機能との接続がまだ生きているかを確認する。
+     * 切れているのに API を呼ぶと例外になるので、その手前で止めるための関数です。
+     * try/catch で囲んでいるのは、確認する行為自体が例外を投げる場合があるためです。
+     * @returns {boolean} 生きていれば true
      */
     const alive = () => {
         try { return Boolean(api?.runtime?.id && api?.storage?.local); }
         catch { return false; }
     };
 
-    /* ============================================================================================
-       ストレージのラッパー
-       --------------------------------------------------------------------------------------------
-       拡張機能を再読み込み・更新すると、開きっぱなしのページに残った古いスクリプトは
-       「コンテキストが失効した」状態になり、API 呼び出しが例外を投げるようになる。
-       そのまま投げっぱなしにするとページ側の処理まで巻き込んで壊すため、
-       ここで try/catch により握り潰し、常に安全側（空オブジェクトや無操作）へ倒す。
-       ============================================================================================ */
+    /**
+     * 設定の保存領域（chrome.storage.local）を扱いやすくしたラッパー。
+     *
+     * 素の API との違い：
+     *   - 接続が切れていたら何もせず、安全な値を返す
+     *   - 例外を握りつぶして警告に変えるので、呼び出し側で try/catch が不要
+     *   - 値が無いときは undefined ではなく空オブジェクト {} を返す
+     */
     const store = {
         alive,
 
         /**
-         * storage.local から 1 キー分のデータを読み出す。
-         *
-         * @param {string} key - storage 内のデータキー（'settings' または 'ui'）
-         * @returns {Promise<Object>} 取得したオブジェクト。未保存や失敗時は空オブジェクト
+         * 保存されている値を読み出す。
+         * @param {string} key 'settings' や 'ui' などの保存キー
+         * @returns {Promise<Record<string, unknown>>} 保存値。無ければ空オブジェクト
          */
         async get(key) {
             if (!alive()) return {};
@@ -73,36 +83,37 @@ globalThis.SLPSTRM = (() => {
         },
 
         /**
-         * storage.local へ 1 キー分のデータを書き込む。
-         * 書き込みが成功すると、同じ拡張機能の全ページで storage.onChanged が発火する。
-         *
-         * @param {string} key - storage 内のデータキー
-         * @param {any} value - 保存する値
+         * 値を保存する。
+         * @param {string} key 保存キー
+         * @param {unknown} value 保存する値
          * @returns {Promise<void>}
          */
         async set(key, value) {
             if (!alive()) return;
+            // `{ [key]: value }` は「変数 key の中身をプロパティ名にする」書き方
+            // （計算されたプロパティ名）。key が 'ui' なら { ui: value } になります。
             try { await api.storage.local.set({ [key]: value }); }
             catch (error) { log.warn(`storage.set(${key})`, error); }
         },
     };
 
     /**
-     * _locales/＊/messages.json から翻訳済みの文言を取り出す。
-     * ブラウザの表示言語に合わせて自動的に辞書が選ばれる。
-     *
-     * @param {string} key - messages.json のメッセージキー（'appName' など）
-     * @returns {string} 翻訳文字列。キーが未定義なら空文字
+     * 表示言語に合わせた文言を取り出す。
+     * 実際の文章は _locales/<言語>/messages.json に入っていて、
+     * ブラウザの言語設定に応じて自動的に切り替わります。
+     * @param {string} key messages.json のキー名
+     * @returns {string} 対応する文言。見つからなければ空文字
      */
     const msg = (key) => api.i18n.getMessage(key) || '';
 
-    // shared/schema.js が置いた設計図を取り込み、globalThis からは消す。
-    // こうすることで利用側（content.js / popup.js）は SLPSTRM 一つだけを参照すればよくなり、
-    // ページ側スクリプトから設計図オブジェクトを触られる余地も無くなる
+    // 直前に読み込まれた shared/schema.js が置いていった設定スキーマを受け取ります。
+    // 受け取ったらすぐ delete して、グローバル空間に痕跡を残さないようにします。
     const schema = globalThis.__slipstreamliveSchema;
     delete globalThis.__slipstreamliveSchema;
     if (!schema) log.warn('shared/schema.js が読み込まれていません');
 
-    // スプレッド構文で schema の中身（KEYS / SITES / fix / settingsOf / siteOf）を平らに展開する
+    // ここで返したオブジェクトが、そのまま globalThis.SLPSTRM になります。
+    // `...schema` はスプレッド構文で、schema の中身（KEYS, SITES, fix …）を
+    // このオブジェクトの直下に展開する書き方です。
     return { api, store, msg, log, ...schema };
 })();

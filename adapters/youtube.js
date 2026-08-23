@@ -1,122 +1,115 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-/* ================================================================================================
- * adapters/youtube.js — YouTube 用のプレイヤー操作アダプタ
+/**
+ * =============================================================================
+ * adapters/youtube.js — YouTube 専用の「アダプター」
+ * =============================================================================
  *
- * 【どこから呼ばれるか】
- *   manifest.json の content_scripts（MAIN world）から shared/util.js の次に読み込まれ、
- *   その場で自動実行される。実行時に行うのは registerSite() による自己登録だけで、
- *   DOM には一切触れない（document_start 時点では DOM がまだ存在しないため）。
+ * ■ アダプターとは？
+ *   inject.js（速度制御の本体）は、サイトごとの事情を一切知りません。
+ *   代わりに「video 要素を取ってきて」「今ライブ？」といった決まった質問を投げ、
+ *   その答えを返すのがアダプターの役目です。
  *
- *   実際にアダプタが作られるのは、最後に読み込まれる inject.js が
- *   ホスト名を照合して create()（＝下の youtube 関数）を呼んだときである。
- *   以降、inject.js のメインループが毎回このアダプタのメソッドを呼び出す。
+ *   こうしておくと、対応サイトを増やしたいときはアダプターを 1 つ足すだけで済み、
+ *   本体のロジックには手を入れずに済みます（＝関心の分離）。
  *
- * 【アダプタとは何か】
- *   inject.js は「バッファに余裕があれば加速し、枯渇寸前なら最低速度まで落とす」という
- *   サイトに依存しない共通のルールだけを持ち、「この <video> はどこにあるのか」
- *   「今ライブなのか」「遅延は何秒か」といったサイトごとに違う部分をアダプタへ丸投げしている。
- *   サイトを追加したいときはこのファイルと同じ形のアダプタを 1 つ書き足せばよい、
- *   という構造になっている。
+ * ■ アダプターが必ず備えるべきもの（インターフェース）
+ *   respectUserRate … ユーザーが手動で変えた再生速度を尊重するか
+ *   gap             … バッファの「隙間」を無視してよい最大秒数
+ *   badgeClass      … バッジに付ける、サイト純正のボタン用 CSS クラス
+ *   badgeStyle      … バッジに追加で当てるインラインスタイル
+ *   reset()         … 動画が切り替わったときに内部状態を捨てる
+ *   root()          … プレーヤーの外枠要素を返す
+ *   video()         … 現在の <video> 要素を返す
+ *   media()         … 動画の識別子・ライブかどうかなどを返す
+ *   status()        … 現在の遅延と、最前線にいるかを返す
+ *   needs()         … このサイトが必要とするバッファの目安秒数
+ *   host()          … バッジを差し込みたい場所（コントロールバー）を返す
  *
- * 【YouTube ならではの事情】
- *   YouTube は公式プレイヤー（#movie_player）が便利な API メソッドを大量に公開しているため、
- *   DOM を推測で漁る必要がほとんど無く、3 サイトの中でもっとも素直に実装できる。
- *
- * 【補足】
- *   表示名・既定値などの設定まわりの情報は shared/schema.js が持っている（このファイルには無い）。
- * ================================================================================================ */
+ * ■ YouTube の特徴
+ *   #movie_player 要素に、内部 API（getVideoData など）が生えています。
+ *   これを呼べば遅延やライブ判定を正確に取得できるため、他サイトより有利です。
+ *   ただし非公開 API なので、いつ消えても壊れないよう safeCall で包んで呼びます。
+ */
 (() => {
     'use strict';
 
-    // shared/util.js の置き土産を取り込む。inject.js が globalThis から削除する前に確保しておく
+    // shared/util.js が置いた道具箱を参照します（ここでは delete しません。
+    // 後続のアダプターと inject.js もまだ使うため、削除は inject.js が担当します）。
     const util = globalThis.__slipstreamliveUtil;
-    if (!util) return;                              // 読み込み順が壊れている場合は登録せず終了
+    if (!util) return;
 
     const { pick, toNum, safeCall, registerSite } = util;
 
     /**
-     * YouTube 用アダプタの本体を生成する。
+     * YouTube 用アダプターを生成する。
      *
-     * @returns {Object} inject.js が使うアダプタ（respectUserRate / gap / video() / media() など）
+     * この関数が返すオブジェクトが、inject.js から使われる「窓口」になります。
+     * 内側の変数（player, video など）はクロージャで保持され、外からは触れません。
+     * @returns {object} アダプターオブジェクト
      */
     function youtube() {
-        // 掴んでいるプレイヤー要素（通常は #movie_player）
+        /** @type {Element|null} YouTube プレーヤー本体（#movie_player） */
         let player = null;
-
-        // プレイヤー内部の <video> 要素
+        /** @type {HTMLVideoElement|null} 現在の video 要素 */
         let video = null;
-
-        // 配信の遅延種別を表す文字列（'...LATENCY_ULTRA_LOW' など）。
-        // これを取得する getPlayerResponse() は重い処理なので、一度取れたら動画が変わるまで使い回す
+        /** @type {string} 遅延モード（ULTRA_LOW / LOW / NORMAL）。一度取れたら覚えておく */
         let latencyClass = '';
-
-        // プレミア公開かどうかの判定結果と、その判定が対応する動画 ID。
-        // 判定にはやはり重い getPlayerResponse() が要るので、動画ごとに 1 度だけ問い合わせる
+        /** @type {boolean} 現在の動画がプレミア公開かどうか */
         let premiere   = false;
+        /** @type {string|null} premiere を判定済みの動画 ID（同じ動画で何度も調べないため） */
         let premiereId = null;
 
         /**
-         * プレイヤーの内部 API メソッドを安全に呼ぶための短縮形。
-         * メソッドが存在しない・例外を投げるといった場合は undefined が返る。
-         *
-         * @param {string} name - プレイヤー API のメソッド名
-         * @param {...any} args - メソッドへ渡す引数
-         * @returns {any} 戻り値。呼び出せなければ undefined
+         * YouTube プレーヤーの内部 API を安全に呼び出すショートカット。
+         * メソッドが存在しなければ undefined が返るだけで、例外にはなりません。
+         * @param {string} name 呼び出すメソッド名
+         * @param {...unknown} args 渡す引数
+         * @returns {*} 戻り値。呼べなければ undefined
          */
         const call = (name, ...args) => safeCall(player, name, undefined, ...args);
 
         return {
-            // YouTube はプレイヤー UI に速度変更メニューがある。
-            // ユーザーが手動で 1.0 倍以外を選んだときは、拡張機能は制御を譲って手を引く
+            // YouTube はプレーヤー UI に速度変更メニューがあります。
+            // ユーザーが自分で 2 倍速などにしていたら、拡張機能は手を引きます。
             respectUserRate: true,
 
-            // 連続したバッファとみなす隙間の許容値（秒）。数フレーム分のごく小さな途切れを想定
+            // YouTube のバッファはほぼ連続しているため、隙間の許容は小さめ（0.5 秒）。
             gap: 0.5,
 
-            // バッジ（プレイヤー上の小さな表示）に流用する YouTube 既存のボタン用クラス
+            // 'ytp-button' は YouTube 純正のボタン用クラス。これを付けると
+            // 見た目がプレーヤーのコントロールに自然になじみます。
             badgeClass: 'ytp-button',
-            badgeStyle: '',                         // クラスで十分なので追加スタイルは不要
+            badgeStyle: '',
 
             /**
-             * 別の動画へ切り替わったときに、キャッシュしていた遅延種別を捨てる。
-             *
-             * プレミア公開の判定結果（premiere / premiereId）はここでは捨てない。
-             * あちらは動画 ID を鍵にして media() が自分で判定し直すため捨てる必要が無く、
-             * かつ reset() は media() より後に呼ばれるので、ここで捨てると動画が変わるたびに
-             * getPlayerResponse() を 1 回余計に呼ぶことになる。
-             *
+             * 動画が切り替わったときの後始末。
+             * 遅延モードは動画ごとに違うので忘れます。
              * @returns {void}
              */
             reset() { latencyClass = ''; },
 
             /**
-             * バッジの表示位置を決める際の「器」となるプレイヤー要素を返す。
-             *
-             * @returns {Element|null} プレイヤー要素
+             * プレーヤーの外枠要素を返す（バッジの表示位置の基準に使われる）。
+             * @returns {Element|null}
              */
             root: () => player,
 
             /**
-             * 監視対象の <video> 要素を取得する。
-             * YouTube はページ遷移でプレイヤーごと差し替わるため、毎回確認し直す。
-             *
-             * 【#movie_player を毎回最優先で掴み直す理由】
-             *   ホーム画面のサムネイルにマウスを乗せると出るプレビュー用プレイヤー
-             *   （#inline-preview-player.html5-video-player）は、watch ページへ遷移した後も
-             *   DOM に残り続ける。そのため「掴んでいる要素がまだ DOM にあるか」だけで判定すると
-             *   プレビュー側を掴んだまま離さず、本来の動画を制御できなくなってしまう。
-             *
-             * @returns {HTMLVideoElement|null} 監視対象の <video>。見つからなければ null
+             * 現在の <video> 要素を返す。毎フレーム呼ばれます。
+             * @returns {HTMLVideoElement|null} 見つかった video 要素
              */
             video() {
-                const main = document.querySelector('#movie_player');    // 通常の視聴ページのプレイヤー
-
+                // (1) 通常の視聴ページには #movie_player があります。
+                const main = document.querySelector('#movie_player');
                 if (main) {
+                    // 別のプレーヤーに変わったら、覚えていた遅延モードを捨てます。
                     if (player !== main) { player = main; latencyClass = ''; }
                 } else if (!player?.isConnected) {
-                    player = pick(['.html5-video-player']);              // 埋め込み・モバイル向けの保険
+                    // (2) 埋め込みプレーヤーなど #movie_player が無いページ向けの代替探索。
+                    player = pick(['.html5-video-player']);
                 }
 
+                // (3) 覚えていた video が消えた／プレーヤーの外に出たら探し直します。
                 if (!video?.isConnected || !player?.contains(video)) {
                     video = player?.querySelector('video') ?? null;
                 }
@@ -124,103 +117,83 @@
             },
 
             /**
-             * 再生中のコンテンツの識別 ID・ライブ配信かどうか・プレミア公開かどうかを返す。
+             * 現在再生中のメディアの情報を返す。
              *
-             * 【広告を弾く理由】
-             *   YouTube は広告を本編と同じ <video> で再生するが、getVideoData() は
-             *   広告中も本編の video_id と isLive をそのまま返し続ける。そのため API だけでは
-             *   広告を見分けられず、広告のバッファ（尺のぶん丸ごと読み込み済み → 末尾で枯渇）を
-             *   本編の指標として読んでしまい、加速と最低速を往復することになる。
-             *   プレイヤーの ad-showing クラスだけが広告区間と正確に一致するので、これを使う。
-             *   ad-created は一度広告が入ると残り続けるため使ってはいけない。
-             *
-             * 【プレミア公開の見分け方】
-             *   プレミア公開は「あらかじめ用意した録画を、決まった時刻からライブとして流す」機能で、
-             *   再生中は isLive が true になり、本物のライブ配信と区別が付かない。
-             *   区別できるのは videoDetails.isLiveContent のほうで、こちらは
-             *   「素材そのものがライブとして作られたか」を表す。
-             *
-             *       本物のライブ配信 … isLive: true  / isLiveContent: true
-             *       プレミア公開     … isLive: true  / isLiveContent: false
-             *       通常の動画       … isLive: false / isLiveContent: false
-             *
-             *   すでに isLive が true のときだけ引くので、判定は isLiveContent を見るだけでよい。
-             *   getPlayerResponse() は重いため、動画 ID が変わったときにだけ呼び直す。
-             *
-             *   問い合わせはこの return と同じ tick の中で済むので、「まだ判定が付いていない」
-             *   状態が続くのは getPlayerResponse() 自体が使えないときに限られる。その場合は
-             *   premiereId を進めず次の tick で取り直しつつ、premiere は false のまま
-             *   （＝通常のライブ配信として扱う）を選んでいる。逆に倒すと、この API が読めない
-             *   プレイヤーでは YouTube のライブ配信すべてが制御対象から外れてしまい、
-             *   「プレミア公開に少し手を出す」よりはるかに影響が大きいためである。
-             *
-             * @returns {{ id: string|null, live: boolean, premiere: boolean }} 再生中のコンテンツ
+             * inject.js は id の変化を見て「別の動画に切り替わった」と判断し、
+             * 学習してきた統計をリセットします。
+             * @returns {{ id: string|null, live: boolean, premiere: boolean }}
              */
             media() {
                 const data = call('getVideoData');
+
+                // 'ad-showing' クラスが付いている間は広告を再生中。
                 const ad   = player?.classList.contains('ad-showing') === true;
+
+                // 広告中は動画 ID を 'ad' に固定します。こうすると広告の開始と終了が
+                // 「動画の切り替わり」として扱われ、統計が自動的にリセットされます。
                 const id   = ad ? 'ad' : (data?.video_id ?? null);
                 const live = !ad && data?.isLive === true;
 
+                // プレミア公開（事前に用意した動画を同時視聴するもの）の判定。
+                // 判定にコストのかかる API なので、動画が変わったときだけ調べます。
                 if (live && id !== premiereId) {
                     const details = call('getPlayerResponse')?.videoDetails;
                     if (details) {
+                        // isLiveContent が true = 本物のライブ配信。
+                        // false なら、ライブ扱いだが中身は録画＝プレミア公開。
                         premiere   = details.isLiveContent !== true;
                         premiereId = id;
                     }
                 }
-
                 return { id, live, premiere: live && premiere };
             },
 
             /**
-             * 配信の遅延（秒）と、追っかけ再生（DVR）中かどうかを返す。
-             * YouTube は両方とも公式 API で取得できるため、util.js のトラッカーは使わない。
-             *
-             * @returns {{ latency: number, atHead: boolean }} atHead が false なら巻き戻して視聴中
+             * 現在の遅延と、ライブ最前線にいるかどうかを返す。
+             * YouTube は「統計情報」API から実測値を教えてくれます。
+             * @returns {{ latency: number, atHead: boolean }}
              */
             status: () => ({
                 latency: toNum(call('getStatsForNerds')?.live_latency_secs),
+                // isAtLiveHead が明示的に false のときだけ「巻き戻して視聴中」と判断します。
                 atHead: call('getProgressState')?.isAtLiveHead !== false,
             }),
 
             /**
-             * 自動しきい値（speedupAuto）が使う「この配信で目安となるバッファ量」を秒で返す。
+             * このサイトが必要とするバッファの目安（秒）を返す。
              *
-             *   1. セグメント長（segduration）が取れればそれをそのまま使うのが最も正確
-             *   2. 取れなければ配信の遅延クラスから推定する
-             *      ULTRA_LOW（超低遅延）→ 1 秒 ／ LOW（低遅延）→ 2 秒 ／ それ以外（通常）→ 5 秒
-             *
-             * セグメントとは、配信映像を数秒ずつに切り分けた配信単位のこと。
-             * inject.js の Auto はこの値を「統計をとる時間窓の長さ」の基準に使う。
-             *
-             * @returns {number} 目安となるバッファ量（秒）
+             * 統計の観測窓の長さを決めるのに使います。動画は「セグメント」という
+             * 小さな塊で配信されるため、その 1 個ぶんの長さが目安になります。
+             * @returns {number} 目安の秒数
              */
             needs() {
+                // (1) セグメント長が取れれば、それが一番正確。
                 const segment = toNum(call('getVideoStats')?.segduration);
                 if (segment > 0) return segment;
 
-                // ||= は「左辺が空文字などの偽値のときだけ代入する」演算子。取得済みなら再取得しない
+                // (2) 取れなければ配信の遅延モードから推定します。
+                // `||=` は「左が偽の値のときだけ代入」する演算子（一度取れたら再取得しない）。
                 latencyClass ||= String(call('getPlayerResponse')?.videoDetails?.latencyClass ?? '');
-
-                if (latencyClass.endsWith('ULTRA_LOW')) return 1;
-                if (latencyClass.endsWith('LOW')) return 2;
-                return 5;
+                if (latencyClass.endsWith('ULTRA_LOW')) return 1; // 超低遅延
+                if (latencyClass.endsWith('LOW')) return 2;       // 低遅延
+                return 5;                                          // 通常
             },
 
             /**
-             * バッジを差し込む場所（コントロールバー内のスロット）を探す。
-             * 新 UI → 旧 UI → 左側コントロール群、の順に候補を試す。
-             *
-             * @returns {Element|null} 差し込み先の要素。見つからなければ null（帯 UI へ退避する）
+             * バッジを差し込みたい場所（コントロールバー内）を返す。
+             * 上から順に試し、最初に見つかった場所を使います。
+             * YouTube の UI 変更に耐えられるよう、候補を複数用意しています。
+             * @returns {Element|null} 見つからなければ null（本体側が代替の枠を作る）
              */
             host: () => pick([
-                'player-time-display .ytwPlayerTimeDisplayLiveDot',
-                '.ytp-time-display .ytp-time-wrapper',
-                '.ytp-chrome-controls .ytp-left-controls',
+                'player-time-display .ytwPlayerTimeDisplayLiveDot', // 新 UI のライブ表示
+                '.ytp-time-display .ytp-time-wrapper',              // 時間表示の隣
+                '.ytp-chrome-controls .ytp-left-controls',          // 左側コントロール群
             ], player ?? document),
         };
     }
 
+    // このアダプターを「youtube」という ID で登録します。
+    // ホスト名が正規表現に一致したページで、inject.js が youtube() を呼び出します。
     registerSite('youtube', /(^|\.)(youtube\.com|youtube-nocookie\.com)$/, youtube);
 })();

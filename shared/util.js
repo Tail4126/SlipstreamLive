@@ -1,74 +1,61 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-/* ================================================================================================
- * shared/util.js — MAIN world 側の共通ユーティリティ（拡張 API に依存しない純粋な関数の詰め合わせ）
+/**
+ * =============================================================================
+ * shared/util.js — メインワールド側で使う「汎用ツール集」
+ * =============================================================================
  *
- * 【どこから呼ばれるか】
- *   manifest.json の content_scripts（2 個目、world: "MAIN" のエントリ）の *先頭* で読み込まれ、
- *   その場で自動実行される。誰かが呼び出す関数は持たず、
- *   globalThis.__slipstreamliveUtil という置き土産を作って終わる。
+ * ■ このファイルは何をするもの？
+ *   inject.js と 3 つのサイトアダプター（youtube / twitch / twitcasting）が
+ *   共通して使う小さな部品を集めたファイルです。
+ *   数値の丸め、時系列データの記録、<video> 要素の探索などが入っています。
  *
- *   その置き土産を、後から読み込まれる以下のファイルが取り込んで使う。
- *     adapters/youtube.js / twitch.js / twitcasting.js … 読み込み時に参照を確保しておく
- *     inject.js                                        … 参照を確保したうえで globalThis から削除する
+ * ■ 読み込まれる場所
+ *   メインワールド（ページ本体と同じ実行環境）で、アダプターより先に読み込まれます。
+ *   ここには拡張機能の API を使うコードは一切ありません（使えないため）。
  *
- *   最後に inject.js が削除するのは、ページ本体のスクリプトから本拡張の内部関数を
- *   触られないようにするため。adapters は各自の関数スコープ（IIFE）内に参照を持っているので、
- *   globalThis から消えても問題なく動き続ける。
- *
- * 【ISOLATED world から参照してはいけない理由】
- *   Chrome では同じファイルパスを 2 つの content_scripts エントリに書くと、片方（実測では MAIN 側）が
- *   注入されないという挙動がある。そのため common.js / content.js からは決して読み込まないこと。
- *   ISOLATED 側の共通処理は shared/schema.js と common.js が担当する。
- * ================================================================================================ */
+ * ■ 受け渡しの仕組み
+ *   最後に globalThis.__slipstreamliveUtil へ道具一式を置きます。
+ *   inject.js がそれを受け取ったあと、変数ごと削除して痕跡を消します。
+ */
 (() => {
     'use strict';
 
-    /* ============================================================================================
-       数値ヘルパー
-       ============================================================================================ */
-
     /**
-     * 数値 n を [lo, hi] の範囲に押し込める（範囲外なら端の値にする）。
-     *
-     * @param {number} n - 対象の数値
-     * @param {number} lo - 下限
-     * @param {number} hi - 上限
-     * @returns {number} 範囲内に収めた数値
+     * 数値を指定の範囲内に収める（クランプ処理）。
+     * 例: clamp(1.5, 0, 1) → 1 ／ clamp(-3, 0, 1) → 0
+     * @param {number} n 対象の数値
+     * @param {number} lo 下限
+     * @param {number} hi 上限
+     * @returns {number} lo 以上 hi 以下に収めた値
      */
     const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi);
 
     /**
-     * 何が来ても「使える有限の数値」か「NaN」のどちらかに変換する。
-     * プレイヤーの内部 API は文字列・null・undefined を返すことがあるため、その受け皿。
-     *
-     * NaN を返すのには意味がある。NaN はどんな比較をしても false になるので、
-     * 呼び出し側が「値が取れなかったから制御しない」という安全側の判断へ自然に倒れる。
-     *
-     * @param {any} value - 変換したい値
-     * @returns {number} 有限数値。変換できなければ NaN
+     * 何でも受け取って「使える数値」に変換する。
+     * 数値にできない場合は NaN（Not a Number）を返すので、
+     * 受け取った側は Number.isFinite() で有効性を判定できます。
+     * @param {unknown} value 変換したい値
+     * @returns {number} 数値。変換できなければ NaN
      */
     function toNum(value) {
         const num = Number.parseFloat(value);
         return Number.isFinite(num) ? num : NaN;
     }
 
-    /* ============================================================================================
-       DOM ヘルパー
-       ============================================================================================ */
-
     /**
-     * CSS セレクタの配列を上から順に試し、最初に見つかった要素を返す。
+     * 複数の CSS セレクターを順番に試して、最初に見つかった要素を返す。
      *
-     * 動画サイトは HTML 構造をよく変えるうえ、新旧の UI が混在することもある。
-     * そこで「本命 → 次点 → 保険」と候補を並べておき、当たったものを使う方式にしている。
-     * まず scope の中を探し、そこで見つからなければ document 全体をもう一周する。
+     * 動画サイトは HTML 構造をしばしば変更するため、「本命 → 代替 →
+     * さらに代替」と候補を並べておき、どれか当たればよい、という設計にしています。
      *
-     * @param {string[]}   selectors        - CSS セレクタの配列（優先度の高い順）
-     * @param {ParentNode} [scope=document] - 優先して探索する範囲
-     * @returns {Element|null} 見つかった要素。どれも当たらなければ null
+     * scope（探す起点）で見つからなければ document 全体でも探します。
+     * new Set([...]) を使っているのは、scope が document だったときに
+     * 同じ場所を二重に探すのを避けるためです。
+     * @param {string[]} selectors 試す CSS セレクターの配列（優先度順）
+     * @param {ParentNode} [scope=document] 探す起点となる要素
+     * @returns {Element|null} 見つかった要素。無ければ null
      */
     function pick(selectors, scope = document) {
-        // new Set([...]) で重複を除く。scope が document のときに 2 周する無駄を省くため
         for (const root of new Set([scope ?? document, document])) {
             for (const selector of selectors) {
                 const node = root.querySelector(selector);
@@ -78,43 +65,42 @@
         return null;
     }
 
-    /* ============================================================================================
-       統計と時系列の窓
-       ============================================================================================ */
-
     /**
-     * 標本の配列 [{ at, value }, ...] から 件数・平均・母標準偏差 を求める。
+     * サンプル配列から、個数・平均・標準偏差を計算する。
      *
-     *   avg = sum(value) / n
-     *   sd  = Math.sqrt(sum((value - avg) ** 2) / n)
-     *
-     * 平均と分散を 1 回のループでまとめて計算する方法（二乗和から引く式）もあるが、
-     * 値が大きいときに桁落ちで精度が落ちるため、あえて 2 回に分けて回している。
-     *
-     * @param {Array<{value: number}>} list - 標本の配列
-     * @returns {{ n: number, avg: number, sd: number }} 空配列なら { n: 0, avg: NaN, sd: NaN }
+     * 標準偏差（sd）は「値のばらつき具合」を表す指標です。
+     * この拡張機能では「バッファ残量がどれくらい安定しているか」を見るために使い、
+     * ばらつきが大きいときほど安全マージンを厚くとる判断に利用します。
+     * @param {{ at: number, value: number }[]} list サンプルの配列
+     * @returns {{ n: number, avg: number, sd: number }} 個数・平均・標準偏差
      */
     function stats(list) {
-        const n = list.length;          // 標本数
+        const n = list.length;
         if (n === 0) return { n: 0, avg: NaN, sd: NaN };
 
-        let sum = 0;                    // 値の合計（1 パス目で使う）
-        let acc = 0;                    // 偏差の二乗和（2 パス目で使う）
+        let sum = 0;
+        let acc = 0;
 
+        // 1 周目：合計を出して平均を求める
         for (const sample of list) sum += sample.value;
-        const avg = sum / n;            // 平均
+        const avg = sum / n;
 
+        // 2 周目：平均との差を 2 乗して足す（`**` はべき乗の演算子）
         for (const sample of list) acc += (sample.value - avg) ** 2;
+
+        // 分散（acc / n）の平方根が標準偏差
         return { n, avg, sd: Math.sqrt(acc / n) };
     }
 
     /**
-     * 時間窓 ms を過ぎた古い標本を、配列の先頭から捨てる（元の配列を直接書き換える破壊的な操作）。
-     * 標本は時刻の昇順で push されている前提なので、先頭から順に見て古いものだけ落とせばよい。
+     * 配列の先頭から「古すぎるサンプル」を削除する。
      *
-     * @param {Array<{at: number}>} list - 時刻昇順に並んだ標本配列
-     * @param {number}              now  - 現在時刻（performance.now() 由来のミリ秒）
-     * @param {number}              ms   - 保持したい時間窓の長さ（ミリ秒）
+     * 直近 N ミリ秒ぶんだけを残す＝スライディングウィンドウ（移動窓）の処理です。
+     * 配列は古い順に並んでいる前提なので、先頭から順に見て
+     * 何個捨てるかを数え、splice でまとめて削除します（1 個ずつ削るより高速）。
+     * @param {{ at: number, value: number }[]} list サンプル配列（直接書き換えます）
+     * @param {number} now 現在時刻（performance.now() の値）
+     * @param {number} ms 残しておきたい期間（ミリ秒）
      * @returns {void}
      */
     function sliceWindow(list, now, ms) {
@@ -124,149 +110,115 @@
     }
 
     /**
-     * 「時刻付きの標本を時間窓で保持し、統計を返す」振る舞いをまとめた小さな入れ物。
+     * 時系列データを記録する「シリーズ」オブジェクトを作る。
      *
-     * inject.js の Auto は 短期窓（バッファ残量）・谷の履歴・水準の履歴 の 3 か所で、
-     * まったく同じ「push → sliceWindow → stats → 端の差で時間幅を取る」を書き分けていた。
-     * その重複をここへ寄せている。生の配列を外へ出さないので、
-     * 「時刻昇順に push されている」という stats / sliceWindow の前提も破られにくくなる。
-     *
-     * @returns {Object} 時系列窓
+     * これはクロージャという仕組みを使った書き方です。内部の `list` は
+     * 外から直接触れず、返されたメソッド経由でのみ操作できます
+     * （＝うっかり壊されない、安全なデータの入れ物になる）。
+     * @returns {{
+     *   first: () => { at: number, value: number }|undefined,
+     *   last: () => { at: number, value: number }|undefined,
+     *   span: () => number,
+     *   clear: () => void,
+     *   push: (at: number, value: number) => void,
+     *   trim: (now: number, ms: number) => void,
+     *   stats: () => { n: number, avg: number, sd: number }
+     * }} 時系列データ操作用のオブジェクト
      */
     function series() {
-        const list = [];                // 時刻昇順に並んだ標本 [{ at, value }, ...]
-
+        const list = [];
         return {
-            /** @returns {{at: number, value: number}|undefined} いちばん古い標本 */
+            /** 最も古いサンプルを返す。 */
             first: () => list[0],
-
-            /** @returns {{at: number, value: number}|undefined} いちばん新しい標本 */
+            /** 最も新しいサンプルを返す。 */
             last: () => list[list.length - 1],
-
-            /** @returns {number} 手元の標本が実際に張っている時間（ミリ秒）。空なら 0 */
+            /** 記録が何ミリ秒ぶん溜まっているかを返す（最新の時刻 − 最古の時刻）。 */
             span: () => (list.length ? list[list.length - 1].at - list[0].at : 0),
-
-            /** 標本をすべて捨てる。 @returns {void} */
+            /** すべて捨てる。動画が切り替わったときなどに使う。 */
             clear() { list.length = 0; },
-
-            /**
-             * 標本を 1 個積む。
-             *
-             * @param {number} at    - 観測時刻（performance.now() 由来のミリ秒）
-             * @param {number} value - 観測値
-             * @returns {void}
-             */
+            /** サンプルを 1 件追加する。 */
             push(at, value) { list.push({ at, value }); },
-
-            /**
-             * 時間窓 ms より古い標本を捨てる。
-             *
-             * @param {number} now - 現在時刻（ミリ秒）
-             * @param {number} ms  - 保持したい時間窓の長さ（ミリ秒）
-             * @returns {void}
-             */
+            /** 直近 ms ミリ秒ぶんだけ残して、古いものを捨てる。 */
             trim(now, ms) { sliceWindow(list, now, ms); },
-
-            /** @returns {{ n: number, avg: number, sd: number }} 件数・平均・母標準偏差 */
+            /** 個数・平均・標準偏差を計算して返す。 */
             stats: () => stats(list),
         };
     }
 
-    /* ============================================================================================
-       遅延の基準線トラッカー
-       ============================================================================================ */
-
     /**
-     * 「今このユーザーは配信の最先端を見ているのか、それとも巻き戻して追っかけ再生しているのか」を
-     * 判定するための小さな装置を作る（Twitch とツイキャス用）。
+     * 遅延（ライブ最前線からの遅れ）を追跡し、「今は最前線にいるか」を判定する。
      *
-     * 【なぜ必要か】
-     *   遅延の生の値（例: 3.2 秒）だけでは、それが普通なのか異常なのか判断できない。
-     *   配信の設定や回線状況によって「その配信にとっての普通の遅延」は大きく変わるからである。
-     *   そこで観測した最小の遅延 low を「その配信の基準線」とみなし、
-     *   そこから slack 秒以上遅れていたら巻き戻し中（追っかけ再生）と判断する。
+     * ■ 何のため？
+     *   ユーザーが自分でシークバーを戻して過去の場面を見ている（DVR 視聴）とき、
+     *   遅延を詰めようと加速するのはお節介です。それを検知するのが目的です。
      *
-     * 【基準線が固定されない工夫】
-     *   low を一度きりの最小値にしてしまうと、配信全体の遅延がじわじわ増えたときに
-     *   ずっと「巻き戻し中」と誤判定してしまう。そこで毎秒 EASE 秒ずつ基準線を緩める（甘くする）。
-     *
-     *     low = Math.min(low + EASE * 経過秒数, latency)
-     *
-     * @param {number} [slack=2.5] - 基準線からこれ以上遅れたら巻き戻し中とみなす秒数
-     * @returns {{ reset: function(): void, read: function(number): Object }} トラッカー
+     * ■ 仕組み
+     *   これまでに観測した「最小の遅延」を low として覚えておきます。
+     *   ただし固定してしまうと配信側の変化に追従できないので、
+     *   時間の経過とともに毎秒 EASE 秒ずつ緩めて（値を大きくして）いきます。
+     *   現在の遅延がその low より slack 秒以上大きければ「巻き戻して見ている」と判断します。
+     * @param {number} [slack=2.5] 最前線とみなす許容差（秒）
+     * @returns {{ reset: () => void, read: (latency: number) => { latency: number, atHead: boolean } }}
      */
     function tracker(slack = 2.5) {
-        const EASE = 0.1;               // 1 秒あたり基準線を緩める量（秒／秒）
-        let low    = Infinity;          // これまでに観測した最小の遅延（秒）＝基準線
-        let at     = 0;                 // 前回 read() を呼んだ時刻（ミリ秒）
+        const EASE = 0.1;      // low を 1 秒あたり何秒ぶん緩めるか
+        let low    = Infinity; // 観測した最小の遅延（初期値は「まだ無い」を表す無限大）
+        let at     = 0;        // low を最後に更新した時刻
 
         return {
-            /**
-             * 基準線をリセットする（配信の切り替わりやバッファ枯渇の直後に呼ぶ）。
-             *
-             * @returns {void}
-             */
+            /** 記録をまっさらに戻す。動画が切り替わったときなどに呼ぶ。 */
             reset() {
                 low = Infinity;
                 at  = performance.now();
             },
 
             /**
-             * 最新の遅延を渡して、基準線を更新しつつ「最先端にいるか」を判定する。
-             *
-             * @param {number} latency - 測定された現在のレイテンシ（秒）。取得できなければ NaN
-             * @returns {{ latency: number, atHead: boolean }} atHead が false なら追っかけ再生中
+             * 現在の遅延を渡して、判定結果を受け取る。
+             * @param {number} latency 現在の遅延（秒）。不明なら NaN
+             * @returns {{ latency: number, atHead: boolean }} atHead が true なら最前線付近
              */
             read(latency) {
                 const now = performance.now();
                 if (Number.isFinite(latency)) {
+                    // 経過時間ぶんだけ low を緩めたうえで、今回の値と小さいほうを採用。
                     low = Math.min(low + (EASE * (now - at)) / 1000, latency);
                     at  = now;
                 }
-
-                // latency が NaN のときは (NaN > slack) が false になるため、自動的に atHead: true となる。
-                // 「判定できないなら最先端扱いにして余計な表示を出さない」という安全側の設計
+                // 差が slack 以内なら最前線とみなす。
+                // latency が NaN のときは比較が false になり、atHead は true になります
+                // （＝判断材料が無いときは「最前線にいる」とみなして通常動作を続ける）。
                 return { latency, atHead: !(latency - low > slack) };
             },
         };
     }
 
-    /* ============================================================================================
-       アダプタ共通の定数
-       ============================================================================================ */
-
     /**
-     * 動画の duration（尺）がこの値以上なら「終わりの決まっていないライブ配信」とみなす。
-     * 100 万秒 ≒ 約 11.5 日で、通常の録画動画がこの長さになることはない。
-     *
-     * ※ 本来ライブ配信の duration は Infinity になるが、Firefox は Infinity ではなく
-     *    INT64_MAX マイクロ秒という極端に大きな有限値を返すため、しきい値方式で両方を吸収する。
+     * 「実質的に無限」とみなす秒数のしきい値。
+     * ライブ配信は動画の長さ（duration）が非常に大きな値、あるいは Infinity になるため、
+     * これを超えていれば録画ではなくライブと判定する材料になります。
      */
     const ENDLESS = 1e6;
 
     /**
-     * プレイヤー既存のボタン用 CSS クラスを流用できないサイト向けの、素のバッジスタイル。
-     * YouTube は 'ytp-button' を借りられるが、Twitch とツイキャスは借りられる適当なクラスが無い。
+     * サイト独自のボタンデザインに合わせられないときに使う、素朴なバッジのスタイル。
+     * 背景も枠線も消し、親要素のフォントをそのまま継承する指定です。
      */
     const BADGE_STYLE_PLAIN = 'background:none;border:none;font-size:13px;font-family:inherit;'
         + 'line-height:1;align-self:center;white-space:nowrap';
 
-    /* ============================================================================================
-       プレイヤー操作のヘルパー
-       ============================================================================================ */
-
     /**
-     * オブジェクトのメソッドを「存在しない場合」と「例外を投げた場合」の両方に耐える形で呼び出す。
+     * 「あるかどうか分からないメソッド」を安全に呼び出す。
      *
-     * サイト側のプレイヤー API はあくまで内部実装であり、公式に約束されたものではない。
-     * サイト更新でメソッドごと消えることもあれば、再生していない状態で呼ぶと例外を投げることもある。
-     * そのため、これらの呼び出しは必ずこのラッパー経由で行うルールにしている。
-     *
-     * @param {Object|null} target   - 呼び出し対象のオブジェクト
-     * @param {string}      name     - メソッド名
-     * @param {any}         fallback - メソッドが無い、または例外が出たときに返す値
-     * @param {...any}      args     - メソッドへ渡す引数
-     * @returns {any} メソッドの戻り値、または fallback
+     * 動画サイトの内部 API は予告なく変更・削除されます。存在しないメソッドを
+     * 呼ぶと例外で処理全体が止まってしまうため、
+     *   1) 本当に関数か確認してから呼ぶ
+     *   2) それでも例外が出たら握りつぶして fallback を返す
+     * という二重の防御をしています。
+     * @param {object|null|undefined} target 呼び出し先のオブジェクト
+     * @param {string} name メソッド名
+     * @param {*} fallback 呼べなかった場合に返す値
+     * @param {...unknown} args メソッドへ渡す引数
+     * @returns {*} 戻り値。呼べなければ fallback
      */
     function safeCall(target, name, fallback, ...args) {
         try {
@@ -275,16 +227,13 @@
     }
 
     /**
-     * <video> の seekable（シーク可能な範囲）の末尾と現在再生位置から、遅延量（秒）を求める。
-     * 公式の「レイテンシ取得 API」を持たないサイト向けの汎用手段。
+     * <video> 要素の seekable 情報から遅延（秒）を推定する。
      *
-     *   delay = seekable.end(seekable.length - 1) - video.currentTime
-     *
-     * seekable の末尾は「配信としていま到達している最先端の時刻」に相当するので、
-     * そこから現在の再生位置を引けば、どれだけ遅れて見ているかが分かる。
-     *
-     * @param {HTMLVideoElement|null} video - 対象の <video> 要素
-     * @returns {number} レイテンシ（秒）。取得できなければ NaN
+     * seekable は「シーク可能な時間範囲」のリストです。その末尾＝配信の最新地点なので、
+     * そこから現在の再生位置を引けば「どれだけ遅れているか」が分かります。
+     * サイトが遅延を教えてくれない場合（TwitCasting など）の代替手段です。
+     * @param {HTMLVideoElement|null|undefined} video 対象の video 要素
+     * @returns {number} 推定した遅延（秒）。求められなければ NaN
      */
     function seekableLatency(video) {
         try {
@@ -294,57 +243,61 @@
     }
 
     /**
-     * プレイヤーのルート要素と <video> 要素を探し出し、差し替わりを追いかけ続ける監視役を作る。
+     * ページ内の <video> 要素を探し続け、入れ替わりを検知する「見張り役」を作る。
      *
-     * 動画サイトはページ遷移（SPA 遷移）や広告の明け際にプレイヤーごと DOM を作り直すことがある。
-     * そのたびに掴んでいた <video> は無効になるため、次の 4 つをまとめて面倒みる。
-     *
-     *   1. 掴んでいたルート要素が DOM から外れていたら、セレクタ配列で探し直す
-     *   2. その配下（見つからなければ document 全体）から <video> を取得する
-     *   3. <video> が別物に差し替わったら waiting リスナーを付け替え、onSwap で持ち主へ知らせる
-     *   4. ルート要素がその <video> を含んでいない場合は、<video> の親要素を器として代用する
-     *
-     * @param {Object}           options           - 設定オブジェクト
-     * @param {string[]}         options.roots     - プレイヤールートの候補セレクタ（優先度順）
-     * @param {function(): void} [options.onSwap]  - <video> が差し替わった直後に呼ばれる
-     * @param {function(): void} [options.onStall] - waiting（読み込み待ち）発生時に呼ばれる
-     * @returns {{ root: Element|null, video: HTMLVideoElement|null, find: function(): HTMLVideoElement|null }}
+     * ■ なぜ必要？
+     *   動画サイトはページ遷移や広告の挿入で <video> 要素をまるごと差し替えます。
+     *   一度つかんだ参照を持ち続けると、いつのまにか画面に無い要素を操作していた、
+     *   ということが起こります。そこで毎回 find() で最新の要素を確認します。
+     * @param {{ roots: string[], onSwap?: () => void, onStall?: () => void }} options
+     *        roots   … プレーヤーの外枠を探すためのセレクター候補（優先度順）
+     *        onSwap  … video 要素が入れ替わったときに呼ばれる関数
+     *        onStall … 再生が詰まった（waiting イベント）ときに呼ばれる関数
+     * @returns {{ root: Element|null, video: HTMLVideoElement|null, find: () => HTMLVideoElement|null }}
      */
     function videoWatcher({ roots, onSwap, onStall }) {
-        const RETRY_MS = 1000;          // 代用中に本来のルートを探し直す間隔（ミリ秒）
+        const RETRY_MS = 1000;      // 仮の外枠で代用しているときに、本物を再探索する間隔
+        let root       = null;      // プレーヤーの外枠要素
+        let video      = null;      // 現在の video 要素
+        let improvised = false;     // root が「間に合わせ」で決めた要素かどうか
+        let retryAt    = -Infinity; // 最後に再探索した時刻
 
-        let root       = null;          // 現在掴んでいるプレイヤーのルート要素
-        let video      = null;          // 現在掴んでいる <video> 要素
-        let improvised = false;         // root が <video> の親要素による「代用」かどうか
-        let retryAt    = -Infinity;     // 次に代用からの復帰を試みてよい時刻（ミリ秒）
-
-        // バッファ枯渇による読み込み停止。ユーザー自身のシーク操作でも waiting は出るため、それは除外する
+        /**
+         * 再生が詰まったときのハンドラ。
+         * ユーザー操作によるシーク中は正常な待機なので通知しません。
+         * @returns {void}
+         */
         const stalled = () => { if (video && !video.seeking) onStall?.(); };
 
         return {
-            get root() { return root; }, // 外からは読み取り専用として公開する
+            /** 現在のプレーヤー外枠要素（読み取り専用）。 */
+            get root() { return root; },
+            /** 現在の video 要素（読み取り専用）。 */
             get video() { return video; },
 
             /**
-             * ルート要素と <video> を解決し直して、監視対象を最新の状態にする。
-             *
-             * 代用ルート（<video> の親要素）を掴んでいる間も RETRY_MS ごとに本来のルートを探し直す。
-             * こうしないと、プレイヤーの UI が後から組み上がった場合に代用のまま固定されてしまい、
-             * バッジがコントロールバーへ引っ越せなくなる。
-             *
-             * @returns {HTMLVideoElement|null} 最新の <video> 要素。見つからなければ null
+             * 最新の video 要素を探して返す。毎フレーム呼ばれる想定です。
+             * @returns {HTMLVideoElement|null} 見つかった video 要素
              */
             find() {
                 const now = performance.now();
+
+                // (1) 外枠を確認する。
+                // isConnected は「その要素がまだページ上に存在するか」を表すプロパティ。
+                // 外枠が消えた場合、または間に合わせの外枠を使っていて再探索の時間が来た場合に探し直します。
                 if (!root?.isConnected || (improvised && now - retryAt >= RETRY_MS)) {
                     retryAt = now;
-                    const found = pick(roots); // DOM から外れていたら／代用中なら探し直す
+                    const found = pick(roots);
                     if (found) { root = found; improvised = false; }
                     else if (!root?.isConnected) { root = null; improvised = false; }
                 }
 
-                // querySelector はどちらも見つからなければ null を返すので、追加の既定値は要らない
+                // (2) 外枠の中から video を探す。見つからなければページ全体から探す。
                 const next = root?.querySelector('video') ?? document.querySelector('video');
+
+                // (3) 前回と違う要素なら「入れ替わった」ということ。
+                // 古い要素のイベント登録を外し、新しい要素に付け替えます。
+                // これを怠ると、消えた要素への参照が残り続けてメモリリークの原因になります。
                 if (next !== video) {
                     video?.removeEventListener('waiting', stalled);
                     video = next;
@@ -352,8 +305,8 @@
                     onSwap?.();
                 }
 
-                // セレクタが空振りした場合や、<video> を含まない要素を掴んでしまった場合は親要素で代用する。
-                // ルート要素はバッジの表示位置を決める「器」としても使うため、必ず <video> を含む必要がある
+                // (4) 外枠が見つからない／video を含んでいない場合は、
+                // video の親要素を間に合わせの外枠として使います（バッジの表示位置に必要）。
                 if (video && (!root || root === video || !root.contains(video))) {
                     root       = video.parentElement;
                     improvised = true;
@@ -365,21 +318,22 @@
     }
 
     /**
-     * サイトアダプタをグローバルのレジストリ（登録簿）へ登録する。
-     * 各 adapters/*.js が読み込まれた時点で自分自身を登録し、後から起動する inject.js が
-     * ホスト名に一致するものを 1 つ選んで使う、という流れになっている。
+     * サイトアダプターを登録する。
      *
-     * @param {string}             id     - サイト識別子（'youtube' など）
-     * @param {RegExp}             host   - ホスト名を判定する正規表現
-     * @param {function(): Object} create - アダプタ本体を生成するファクトリ関数
+     * 各アダプターファイル（adapters/youtube.js など）が最後にこれを呼ぶことで、
+     * inject.js から「対応サイト一覧」として参照できるようになります。
+     * `??=` は「まだ無ければ空オブジェクトを作る」書き方です。
+     * @param {string} id サイト ID（'youtube' など）
+     * @param {RegExp} host このアダプターを使うホスト名の判定用正規表現
+     * @param {() => object} create アダプター本体を生成する関数
      * @returns {void}
      */
     function registerSite(id, host, create) {
         (globalThis.__slipstreamliveSites ??= {})[id] = { host, create };
     }
 
-    // MAIN world のグローバルへ置き土産を登録する（inject.js が取り込んだ直後に削除する）。
-    // ??= は「まだ値が入っていないときだけ代入する」演算子で、二重読み込み時の上書きを防ぐ
+    // 道具一式を受け渡し用のグローバル変数に置きます。
+    // inject.js がこれを受け取った直後、変数ごと削除します。
     globalThis.__slipstreamliveUtil ??= {
         clamp, toNum, pick, series, tracker,
         ENDLESS, BADGE_STYLE_PLAIN, safeCall, seekableLatency, videoWatcher, registerSite,
