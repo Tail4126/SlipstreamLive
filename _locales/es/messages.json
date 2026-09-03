@@ -26,6 +26,8 @@
     "duckVolumeDesc": { "message": "Especifica el volumen durante la ralentización máxima. 50 es la mitad del volumen, 0 es silencio y 100 mantiene el volumen sin cambios." },
     "premiere": { "message": "Controlar los estrenos" },
     "premiereDesc": { "message": "Un estreno reproduce un vídeo grabado previamente como si fuera una emisión en directo, por lo que no se distingue de una transmisión en vivo mientras dura. Activado: Slipstream Live lo trata igual que una transmisión en vivo. Desactivado: no interviene en absoluto, tampoco con los indicadores." },
+    "recover": { "message": "Recuperarse de errores del reproductor" },
+    "recoverDesc": { "message": "En Twitch, el reproductor a veces se detiene con un error numerado como #3000, lo que normalmente obliga a recargar la página. Activado: Slipstream Live pulsa por ti el propio botón de recarga de Twitch y la reproducción vuelve en aproximadamente un segundo. La página nunca se recarga, así que el chat permanece intacto. Primero espera un momento por si el reproductor se recupera solo, luego lo intenta unas cuantas veces con intervalos crecientes y se detiene. Desactivado: no hace nada y el error permanece en pantalla." },
     "showPlaybackRate": { "message": "Mostrar velocidad de reproducción" },
     "showPlaybackRateDesc": { "message": "Muestra la velocidad de reproducción actual. El color del texto cambia según el estado (Blanco: normal, Rojo: acelerando, Azul: ralentización máxima de emergencia)." },
     "showLatency": { "message": "Mostrar latencia" },

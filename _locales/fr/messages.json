@@ -26,6 +26,8 @@
     "duckVolumeDesc": { "message": "Spécifie le volume pendant le ralentissement maximal. 50 correspond à la moitié du volume, 0 au muet, et 100 conserve le volume inchangé." },
     "premiere": { "message": "Contrôler les premières" },
     "premiereDesc": { "message": "Une première diffuse une vidéo préenregistrée comme s'il s'agissait d'un direct : impossible de la distinguer d'un live pendant sa diffusion. Activé : Slipstream Live la traite exactement comme un direct. Désactivé : il n'y touche pas du tout, badges compris." },
+    "recover": { "message": "Récupérer après une erreur du lecteur" },
+    "recoverDesc": { "message": "Sur Twitch, le lecteur s'arrête parfois sur une erreur numérotée comme #3000, ce qui impose normalement de recharger la page. Activé : Slipstream Live appuie à votre place sur le bouton de rechargement de Twitch et la lecture reprend en une seconde environ. La page elle-même n'est jamais rechargée, le chat reste donc intact. Il patiente d'abord un instant au cas où le lecteur se rétablirait seul, réessaie quelques fois à intervalles croissants, puis s'arrête. Désactivé : rien n'est fait et l'erreur reste affichée." },
     "showPlaybackRate": { "message": "Afficher la vitesse de lecture" },
     "showPlaybackRateDesc": { "message": "Affiche la vitesse de lecture actuelle. La couleur du texte change selon le statut (Blanc : normal, Rouge : accélération, Bleu : ralentissement maximal d'urgence)." },
     "showLatency": { "message": "Afficher la latence" },

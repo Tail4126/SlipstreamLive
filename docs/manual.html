@@ -49,7 +49,7 @@
     <h1>User manual</h1>
     <p class="lede">Slipstream Live watches how much video your browser has loaded ahead and nudges the playback speed so you stay close to the live edge — without the video stopping to buffer. This manual covers installation, every setting, and what to do when something looks wrong.</p>
     <div class="page-meta">
-      <span>Version 1.2.0</span>
+      <span>Version 1.3.0</span>
       <span>YouTube Live ・ Twitch ・ TwitCasting</span>
     </div>
   </div>
@@ -195,7 +195,7 @@
     <ul>
       <li>Changes take effect immediately. There is no Save button.</li>
       <li>Rows that are not currently in use are greyed out. For example, <span class="ui">Speed-up buffer threshold (sec)</span> is disabled while <span class="ui">Auto-adjust buffer threshold</span> is set to anything other than Off.</li>
-      <li>On the Twitch tab only, an explanatory note about that site's larger default threshold appears at the bottom of the panel.</li>
+      <li>On the Twitch tab only, an explanatory note about that site's larger default threshold appears at the bottom of the panel, along with a <span class="ui">Recover from player errors</span> switch that has no equivalent on the other two sites.</li>
     </ul>
     <figure class="fig-wide">
       <img src="images/Fig_3-en.png" alt="The settings screen with the Twitch tab selected" loading="lazy" width="831" height="750">
@@ -258,6 +258,9 @@
       <p><b>When speeding up stops helping, it stops speeding up.</b> Live video is only ever produced in real time, so once you reach the live edge there is no gap left to close. Holding a higher rate there just makes playback outrun each arriving segment and stall briefly, over and over, which lowers the effective speed rather than raising it. Slipstream Live compares the seconds the speed-up <em>should</em> have gained against the seconds it <em>actually</em> gained, and stands down when the latter falls below half the former. If you drift behind again, it goes straight back to catching up.</p>
     </div>
 
+    <h3>Recovering from a dead player</h3>
+    <p>On Twitch the player occasionally stops outright with a numbered error — #3000 is the common one. The usual cure is a page reload, which costs you the chat and your place in it. Slipstream Live watches for that error and presses Twitch's own reload button instead, so playback comes back in about a second with the page untouched. It waits a moment first in case the player rights itself, tries a few times at widening intervals, and then stops rather than hammering a stream that has simply ended. This is on by default and can be switched off on the <span class="ui">Twitch</span> tab.</p>
+
     <h3>What Slipstream Live leaves alone</h3>
     <ul>
       <li><strong>Archived videos (VODs), clips, and ad breaks</strong> are never touched. Only live playback is controlled.</li>
@@ -285,6 +288,7 @@
           <tr><td><span class="ui">Lower volume during maximum slowdown</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Ducks the audio while at 0.15x.</td></tr>
           <tr><td><span class="ui">Volume during maximum slowdown (%)</span></td><td>0–100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td>A percentage of <em>your</em> current volume. 100 = no change, 0 = mute.</td></tr>
           <tr><td><span class="ui">Control premieres</span></td><td>ON / OFF</td><td class="num">OFF</td><td class="num">—</td><td class="num">—</td><td>Whether premieres count as live streams. Left off, they are not touched at all. YouTube has no equivalent on the other two sites, so this row only appears on the YouTube tab.</td></tr>
+          <tr><td><span class="ui">Recover from player errors</span></td><td>ON / OFF</td><td class="num">—</td><td class="num">ON</td><td class="num">—</td><td>Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so this row appears on the Twitch tab alone.</td></tr>
         </tbody>
       </table>
     </div>
@@ -385,7 +389,7 @@
 
     <div class="qa">
       <h3>Twitch video freezes or shows an error (unrelated to Slipstream Live).</h3>
-      <p>Slipstream Live only adjusts playback <em>speed</em>, so a complete stop or an "Error #XXXX" code is almost always a Twitch or browser issue. Try these in order:</p>
+      <p>Slipstream Live only adjusts playback <em>speed</em>, so a complete stop or an "Error #XXXX" code is almost always a Twitch or browser issue. Since 1.3.0 it does try to clear those errors for you, so first check that <span class="ui">Recover from player errors</span> is ON in the <span class="ui">Twitch</span> tab. If the error keeps coming back, try these in order:</p>
       <ol>
         <li>Check <a href="https://status.twitch.com/" target="_blank" rel="noopener">status.twitch.com</a> for an ongoing outage.</li>
         <li>Open the same stream in an Incognito window (<code>Ctrl+Shift+N</code>, <code>Cmd+Shift+N</code> on Mac). If that fixes it, the cause is an extension or cached data.</li>
