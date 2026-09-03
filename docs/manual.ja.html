@@ -49,7 +49,7 @@
     <h1>取扱説明書</h1>
     <p class="lede">Slipstream Live は、ブラウザがどれだけ先まで映像を読み込めているかを監視し、再生速度をほんの少しだけ上げ下げすることで、映像を止めずにライブ配信の「今」へ近づけ続けます。このページでは、インストール方法・すべての設定項目・うまく動かないときの対処をまとめています。</p>
     <div class="page-meta">
-      <span>バージョン 1.2.0</span>
+      <span>バージョン 1.3.0</span>
       <span>YouTube Live ・ Twitch ・ ツイキャス</span>
     </div>
   </div>
@@ -195,7 +195,7 @@
     <ul>
       <li>変更は即時反映されます。保存ボタンはありません。</li>
       <li>現在使われない項目はグレー表示になります。たとえば<span class="ui">「バッファ閾値を自動調整する」</span>がオフ以外のとき、<span class="ui">「加速するバッファ閾値（秒）」</span>は操作できません。</li>
-      <li>Twitch タブを選んでいるときだけ、既定値が大きい理由の注釈がパネル下部に表示されます。</li>
+      <li>Twitch タブを選んでいるときだけ、既定値が大きい理由の注釈と、他の 2 サイトにはない<span class="ui">「プレイヤーのエラーから自動復帰する」</span>のスイッチがパネル下部に表示されます。</li>
     </ul>
     <figure class="fig-wide">
       <img src="images/Fig_3-ja.png" alt="Twitch タブを選択した設定画面" loading="lazy" width="740" height="714">
@@ -258,6 +258,9 @@
       <p><b>加速が効かない状況では、自動的に加速をやめます。</b>ライブ映像は実時間でしか作られないため、配信の最先端に追いついた時点で、それ以上詰められる遅れは存在しなくなります。そこで倍率を上げたままにしておくと、再生がセグメントの到着を追い越して細かく止まり、実効速度はかえって落ちます。Slipstream Live は「加速で詰められるはずだった秒数」と「実際に詰められた秒数」を突き合わせ、後者が前者の半分に満たない状態が続けば加速を見送ります。その後あらためて遅れが生じれば、すぐに加速へ戻ります。</p>
     </div>
 
+    <h3>止まったプレイヤーからの復帰</h3>
+    <p>Twitch ではプレイヤーが番号付きのエラーで完全に停止することがあります。よく見かけるのは「エラー #3000」で、通常の対処はページの再読み込みですが、それではチャットの流れも読んでいた位置も失われます。Slipstream Live はこのエラーを検知し、代わりに Twitch 自身の再読み込みボタンを押します。ページはそのままなので、1 秒ほどで映像だけが戻ります。まず少し待って自動復帰を見守り、間隔を広げながら数回試したところで打ち切ります。終了した配信に延々と挑み続けないためです。既定はオンで、<span class="ui">Twitch</span> タブでオフにできます。</p>
+
     <h3>制御しないもの</h3>
     <ul>
       <li><strong>アーカイブ（VOD）・クリップ・広告再生中</strong>には一切手を出しません。ライブ再生中のみが対象です。</li>
@@ -285,6 +288,7 @@
           <tr><td><span class="ui">最低速度中は音量を下げる</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>0.15x の間だけ音量を絞ります。</td></tr>
           <tr><td><span class="ui">最低速度中の音量（%）</span></td><td>0〜100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td><em>今の音量に対する</em>割合。100 で変化なし、0 で無音。</td></tr>
           <tr><td><span class="ui">プレミア公開も制御する</span></td><td>ON / OFF</td><td class="num">OFF</td><td class="num">—</td><td class="num">—</td><td>プレミア公開をライブ配信として扱うか。オフのままなら一切手を出しません。他の 2 サイトに相当する仕組みが無いため、この行は YouTube タブにだけ現れます。</td></tr>
+          <tr><td><span class="ui">プレイヤーのエラーから自動復帰する</span></td><td>ON / OFF</td><td class="num">—</td><td class="num">ON</td><td class="num">—</td><td>「エラー #3000」のような番号付きエラーでプレイヤーが止まったとき、Twitch 自身の再読み込みボタンを代わりに押し、ページを再読み込みせずに再生を戻します。Twitch のみのため、この行は Twitch タブにだけ現れます。</td></tr>
         </tbody>
       </table>
     </div>
@@ -385,7 +389,7 @@
 
     <div class="qa">
       <h3>Twitch の映像だけエラーで止まる・固まる（Slipstream Live とは無関係の場合）</h3>
-      <p>Slipstream Live は再生「速度」を調整するだけなので、映像が完全に止まったり「エラー #〇〇〇〇」が出たりするのは、たいてい Twitch やブラウザ側の問題です。次を上から順に試してください。</p>
+      <p>Slipstream Live は再生「速度」を調整するだけなので、映像が完全に止まったり「エラー #〇〇〇〇」が出たりするのは、たいてい Twitch やブラウザ側の問題です。ただし 1.3.0 以降は、出てしまったエラーの解消までは引き受けます。まず <span class="ui">Twitch</span> タブの<span class="ui">「プレイヤーのエラーから自動復帰する」</span>がオンになっているか確認してください。それでも繰り返し出る場合は、次を上から順に試してください。</p>
       <ol>
         <li><a href="https://status.twitch.com/" target="_blank" rel="noopener">status.twitch.com</a> で Twitch 側の障害情報を確認する。</li>
         <li><strong>シークレットウィンドウ</strong>（<code>Ctrl+Shift+N</code> / Mac は <code>Cmd+Shift+N</code>）で同じ配信を開く。直るなら原因は拡張機能かキャッシュです。</li>

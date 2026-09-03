@@ -13,6 +13,11 @@
  *   内部ツリーを辿って実体を探し出す、という少し強引な手を使っています。
  *   見つからなくても動作は続く（遅延表示が出ないだけ）ように作られています。
  *
+ * ■ プレーヤーが落ちたときの復帰について
+ *   Twitch のプレーヤーは「エラー #3000」のような番号付きのエラーで完全に停止することがあり、
+ *   通常の対処はページの再読み込みです。このアダプターは heal() でその状態を見張り、
+ *   Twitch 自身が表示する再読み込みボタンを代わりに押して、ページを保ったまま復帰させます。
+ *
  * ■ アダプターの役割については adapters/youtube.js の冒頭コメントを参照。
  */
 (() => {
@@ -29,6 +34,49 @@
 
     /** Twitch 独自の自動加速機能を無効化し直す間隔（ミリ秒）。 */
     const TAME_MS = 2000;
+
+    /** エラーゲート（「エラー #3000」などの覆い）のセレクター。 */
+    const GATE = '.content-overlay-gate, [data-a-target="player-overlay-content-gate"]';
+
+    /**
+     * Twitch のエラー番号。
+     *
+     * 同じ覆いは年齢確認やサブスク限定の告知にも使われますが、そちらには番号が入りません。
+     * 番号の有無で「復帰させるべき異常」だけを選び分けます。
+     * 文言は言語ごとに変わっても番号は変わらないため、この判定は 9 言語すべてで通用します。
+     */
+    const CODE = /#\s*\d{4}/;
+
+    /** 異常の有無を確かめる間隔（ミリ秒）。20ms ごとに DOM を探す必要はありません。 */
+    const HEAL_POLL_MS = 500;
+
+    /**
+     * 復帰を試みる間隔（ミリ秒）。
+     *
+     * 先頭の値は「異常を見つけてから 1 回目まで」の猶予で、2 つ目以降は前回の試行からの間隔です。
+     * 最初に少し待つのは、Twitch 自身が立ち直ることがあり、その復帰と衝突させないためです。
+     * 配列の長さがそのまま試行回数の上限になり、配信終了など直りようのない相手へ
+     * 延々と挑み続けないための歯止めになります。
+     */
+    const HEAL_WAIT = [1200, 4000, 10000, 25000];
+
+    /** 何回目までを「再読み込みボタンを押す」で対応するか。それ以降は setSrc に切り替えます。 */
+    const HEAL_CLICKS = 3;
+
+    /** 正常な再生がこれだけ続いたら、試行回数を忘れる（ミリ秒）。 */
+    const HEAL_CLEAR_MS = 5000;
+
+    /**
+     * React ツリー全体を辿るときの探索上限。
+     *
+     * setSrc を持つコンポーネントはプレーヤー要素のはるか上流（実測で 12,500 ノードほど先）に
+     * あり、search() のようにプレーヤーの周辺だけを見る探索では届きません。
+     * 余裕を見てこの値にしています。
+     */
+    const SOURCE_BUDGET = 40000;
+
+    /** setSrc コンポーネントを探し直す間隔（ミリ秒）。探索が重いので広めに取ります。 */
+    const SOURCE_MS = 3000;
 
     /**
      * Twitch 用アダプターを生成する。
@@ -54,15 +102,38 @@
         /** @type {number} 最後に Twitch 独自の自動加速を無効化した時刻 */
         let tamedAt = -Infinity;
 
+        /** @type {object|null} setSrc を持つ React コンポーネント（Twitch 内部の player-source） */
+        let source = null;
+        /** @type {number} 最後に source を探した時刻 */
+        let sourceAt = -Infinity;
+        /** @type {number} 最後に異常の有無を確かめた時刻 */
+        let pollAt = -Infinity;
+        /** @type {number} 異常を最初に見つけた時刻。異常が無ければ NaN */
+        let brokenAt = NaN;
+        /** @type {number} 最後に復帰を試みた時刻 */
+        let healAt = -Infinity;
+        /** @type {number} 今回の異常で復帰を試みた回数 */
+        let tries = 0;
+        /** @type {number} 正常な再生が続き始めた時刻。途切れていれば NaN */
+        let goodAt = NaN;
+
         /**
          * 覚えていた情報をすべて忘れる。
          * 配信やチャンネルが切り替わったとき、前の配信のデータを引きずらないために呼びます。
+         *
+         * ■ 復帰の試行回数（tries）をここで消さない理由
+         *   復帰に成功すると <video> が入れ替わり、onSwap 経由でこの関数が呼ばれます。
+         *   ここで回数を 0 に戻すと「復帰する → また落ちる → また復帰する」を
+         *   無限に繰り返せてしまいます。回数を忘れるのは heal() の中、
+         *   正常な再生が一定時間続いたときだけです。
          * @returns {void}
          */
         const forget = () => {
             core = null;
             coreAt = -Infinity;
             tamedAt = -Infinity;
+            source = null;
+            sourceAt = -Infinity;
             latency.reset();
         };
 
@@ -139,6 +210,147 @@
             return safeCall(core, name, fallback, ...args);
         }
 
+        /**
+         * setSrc を持つ React コンポーネントを、#root から辿って探す。
+         *
+         * ■ なぜ #root から探すのか
+         *   このコンポーネントはプレーヤー要素のはるか上流にあり、
+         *   search() のようにプレーヤーの周辺だけを見る探索では届きません。
+         *   ツリー全体を対象にする必要があります。
+         *
+         * setInitialPlaybackSettings も併せ持つものを本命とし、見つからなければ
+         * setSrc だけを持つものを代わりに使います。Twitch 側の作りが変わって
+         * 片方のメソッドが消えても、完全に手詰まりにならないようにするためです。
+         * @returns {object|null} 見つかったコンポーネント。無ければ null
+         */
+        function findSource() {
+            const host = document.getElementById('root');
+            if (!host) return null;
+
+            // React はツリーの根を __reactContainer$xxxxx という名前で置きます。
+            // 末尾のランダム文字列は毎回変わるので、前方一致で探します。
+            const key = Object.keys(host).find((name) =>
+                name.startsWith('__reactContainer$') || name.startsWith('__reactFiber$'));
+            const fiber = key ? host[key] : null;
+            if (!fiber) return null;
+
+            let loose = null;
+            const stack = [fiber];
+            for (let budget = SOURCE_BUDGET; stack.length && budget > 0; budget--) {
+                const node = stack.pop();
+                const inst = node.stateNode;
+                if (typeof inst?.setSrc === 'function') {
+                    if (typeof inst.setInitialPlaybackSettings === 'function') return inst;
+                    loose ??= inst;
+                }
+                if (node.sibling) stack.push(node.sibling);
+                if (node.child) stack.push(node.child);
+            }
+            return loose;
+        }
+
+        /**
+         * setSrc コンポーネントを、探索間隔を守りながら取得する。
+         * 探索はツリー全体を歩くため重く、見つからないときに探し続けないよう制限しています。
+         * @returns {object|null} コンポーネント。見つからなければ null
+         */
+        function sourceOf() {
+            const now = performance.now();
+            if (!source && now - sourceAt >= SOURCE_MS) {
+                sourceAt = now;
+                try { source = findSource(); } catch { source = null; }
+            }
+            return source;
+        }
+
+        /**
+         * 「エラー #3000」などのゲートが出ていれば、その要素を返す。
+         *
+         * ■ video.error を見ない理由
+         *   このエラーで止まったとき、<video> は error が立つのではなく中身を空にされます
+         *   （readyState も networkState も 0 になります）。MediaError では検知できないため、
+         *   画面に出る番号を手がかりにします。
+         * @returns {Element|null} ゲート要素。異常が無ければ null
+         */
+        function fault() {
+            const gate = pick([GATE], watcher.root ?? document);
+            return gate && CODE.test(gate.textContent ?? '') ? gate : null;
+        }
+
+        /**
+         * 復帰を 1 回試みる。回数が増えるほど強い手を使います。
+         * @param {Element} gate エラーゲートの要素
+         * @param {number} n 今回が何回目の試行か（1 から始まる）
+         * @returns {string} 何をしたかを表す短い文字列（デバッグログ用）
+         */
+        function attempt(gate, n) {
+            const button = gate.querySelector('button');
+
+            // 前半は Twitch 純正の再読み込みボタンを押します。実測で 1 秒未満に復帰します。
+            // ボタンの文言は言語ごとに変わるため、「ゲートの中の button」という構造で拾います。
+            if (button && n <= HEAL_CLICKS) { safeCall(button, 'click', null); return `click #${n}`; }
+
+            // それでも直らなければ、React 側にソースを張り直させます。
+            const inst = sourceOf();
+            if (inst) {
+                const done = safeCall(inst, 'setSrc', null, { isNewMediaPlayerInstance: false });
+                // 戻り値は Promise です。拒否されたときに未処理の警告が出ないよう受けておきます。
+                if (typeof done?.catch === 'function') done.catch(() => { });
+                return `setSrc #${n}`;
+            }
+
+            if (button) { safeCall(button, 'click', null); return `click #${n}`; }
+            return `giveup #${n}`;
+        }
+
+        /**
+         * プレーヤーが落ちていないかを見張り、必要なら復帰を試みる。
+         *
+         * ■ すぐに手を出さない理由
+         *   落ちた直後は Twitch 自身が立ち直ることがあります。そこへ割り込むと
+         *   互いの復帰処理がぶつかるため、まず HEAL_WAIT[0] だけ待ちます。
+         *   以降も間隔を広げながら数回だけ試し、駄目なら諦めます。
+         * @returns {string|null} 検知または試行をしたときだけ、その内容を表す文字列
+         */
+        function heal() {
+            const now = performance.now();
+            if (now - pollAt < HEAL_POLL_MS) return null;
+            pollAt = now;
+
+            const gate = fault();
+
+            // --- 異常なし ---
+            if (!gate) {
+                const node = watcher.video;
+                if (!node || node.error || node.readyState < 3) { goodAt = NaN; return null; }
+
+                // 正常な再生が続いたら、今回の異常のことは忘れます。
+                if (Number.isNaN(goodAt)) goodAt = now;
+                if (now - goodAt >= HEAL_CLEAR_MS) { brokenAt = NaN; tries = 0; }
+                return null;
+            }
+
+            // --- 異常あり ---
+            goodAt = NaN;
+
+            // 広告中は触りません。広告の差し替えで一瞬ゲートが出ることがあるためです。
+            if (document.querySelector(ADS)) return null;
+
+            // 見つけた最初の 1 回は記録だけして様子を見ます。
+            if (Number.isNaN(brokenAt)) {
+                brokenAt = now;
+                healAt = now;
+                return 'detected';
+            }
+
+            if (tries >= HEAL_WAIT.length) return null;
+            if (now - healAt < HEAL_WAIT[tries]) return null;
+
+            healAt = now;
+            tries += 1;
+            return attempt(gate, tries);
+        }
+
         return {
             // Twitch のプレーヤー UI には速度変更メニューがないため、
             // ユーザーの手動設定を気にする必要がありません。
@@ -152,6 +364,13 @@
 
             reset: forget,
             root: () => watcher.root,
+
+            /**
+             * エラーで止まったプレーヤーを復帰させる。
+             * このアダプターにだけある任意のメソッドで、inject.js は
+             * 持たないサイト（YouTube・ツイキャス）では呼びません。
+             */
+            heal,
 
             /**
              * 現在の <video> 要素を返す。

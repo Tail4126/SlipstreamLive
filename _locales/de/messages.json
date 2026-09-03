@@ -26,6 +26,8 @@
     "duckVolumeDesc": { "message": "Gibt die Lautstärke bei maximaler Verlangsamung an. 50 ist halbe Lautstärke, 0 ist stumm und 100 lässt die Lautstärke unverändert." },
     "premiere": { "message": "Premieren steuern" },
     "premiereDesc": { "message": "Bei einer Premiere wird ein vorab aufgezeichnetes Video wie eine Live-Übertragung abgespielt und ist währenddessen von einem Livestream nicht zu unterscheiden. Ein: Slipstream Live behandelt sie genau wie einen Livestream. Aus: Premieren bleiben vollständig unangetastet, auch die Anzeigen." },
+    "recover": { "message": "Von Player-Fehlern erholen" },
+    "recoverDesc": { "message": "Auf Twitch bleibt der Player gelegentlich mit einem nummerierten Fehler wie #3000 stehen, was normalerweise ein Neuladen der Seite erfordert. Ein: Slipstream Live drückt für Sie die Neuladen-Schaltfläche von Twitch, und die Wiedergabe kehrt nach etwa einer Sekunde zurück. Die Seite selbst wird nie neu geladen, der Chat bleibt also erhalten. Zuerst wird kurz abgewartet, ob sich der Player selbst fängt, danach folgen einige Versuche mit wachsenden Abständen, dann wird abgebrochen. Aus: Es passiert nichts, die Fehlermeldung bleibt stehen." },
     "showPlaybackRate": { "message": "Wiedergabegeschwindigkeit anzeigen" },
     "showPlaybackRateDesc": { "message": "Zeigt die aktuelle Wiedergabegeschwindigkeit an. Die Textfarbe ändert sich je nach Status (Weiß: normal, Rot: Beschleunigen, Blau: Maximale Verlangsamung im Notfall)." },
     "showLatency": { "message": "Latenz anzeigen" },

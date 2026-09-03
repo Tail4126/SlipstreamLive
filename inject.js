@@ -489,7 +489,7 @@
     /** ON/OFF として扱う設定キーの一覧。 */
     const GUARD_SWITCHES = [
         'enabled', 'showPlaybackRate', 'showLatency', 'showHealth',
-        'speedup', 'floor', 'duck', 'premiere',
+        'speedup', 'floor', 'duck', 'premiere', 'recover',
     ];
 
     /**
@@ -1417,6 +1417,21 @@
             video   = next;
             mediaId = null;
         }
+
+        // --- プレーヤーが落ちていないか見張る（対応するアダプターは Twitch のみ）---
+        // ライブ判定より前に置くのが要点です。プレーヤーが落ちると duration も
+        // LIVE 表示も崩れてライブと判定できなくなるため、判定の後ろに置くと
+        // sleep() へ抜けてしまい、復帰処理まで到達しません。
+        const healed = settings.recover ? adapter.heal?.() : null;
+        if (healed) {
+            // 死んだ要素に 0.15 倍速と音量ダッキングを残したまま
+            // 新しいストリームを掴まないよう、横取りを解除して学習内容も捨てます。
+            Rate.release();
+            Volume.release();
+            restart();
+            log('recover', healed);
+        }
+
         if (!video) return sleep();
 
         // --- 再生中のメディアを確認する ---

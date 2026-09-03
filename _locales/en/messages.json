@@ -26,6 +26,8 @@
     "duckVolumeDesc": { "message": "Specifies volume during maximum slowdown. 50 is half volume, 0 is mute, and 100 leaves volume unchanged." },
     "premiere": { "message": "Control premieres" },
     "premiereDesc": { "message": "A premiere plays a pre-recorded video as if it were a live broadcast, so it looks like a live stream while it runs. On: Slipstream Live treats it exactly like a live stream. Off: it leaves premieres alone entirely, badges included." },
+    "recover": { "message": "Recover from player errors" },
+    "recoverDesc": { "message": "Twitch sometimes stops the player with a numbered error such as #3000, which normally requires reloading the page. On: Slipstream Live presses Twitch's own reload button for you and playback returns in about a second. The page itself is never reloaded, so chat stays intact. It waits a moment first in case the player recovers by itself, retries a few times at widening intervals, then stops. Off: nothing is done and the error stays on screen." },
     "showPlaybackRate": { "message": "Show playback rate" },
     "showPlaybackRateDesc": { "message": "Displays current playback speed. Text color changes based on status (White: normal, Red: speeding up, Blue: maximum slowdown emergency)." },
     "showLatency": { "message": "Show latency" },

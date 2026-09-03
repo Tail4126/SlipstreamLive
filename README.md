@@ -44,6 +44,7 @@ Slipstream Live does that watching for you, about 50 times per second.
 * 🛡️ **Freeze avoidance** — a last-resort 0.15x mode that keeps the picture moving while the buffer refills.
 * 🔊 **Volume ducking** — quiets the distorted audio that extreme slow-motion produces.
 * 📊 **Optional on-screen badges** — current speed, live latency, and buffer health, right in the player.
+* 🩹 **Twitch error recovery** — when the player stops with a numbered error such as #3000, it presses Twitch's own reload button, so playback returns in about a second without reloading the page.
 * 🌍 **9 UI languages** — English, 日本語, 한국어, Deutsch, Español, Français, Português (BR), 简体中文, 繁體中文.
 * 🔒 **No network access, no tracking** — see [PRIVACY.md](PRIVACY.md).
 
@@ -156,6 +157,14 @@ default — the whole point of a premiere is that everyone watches the same mome
 catching up there just means running ahead of the chat. Turn **Control premieres** on at the bottom
 of the **YouTube** tab if you'd rather have it treat them like any other live stream.
 
+**Recovering from a dead player.** On Twitch the player occasionally stops outright with a numbered
+error — #3000 is the common one. The usual cure is a page reload, which costs you the chat and your
+place in it. Slipstream Live watches for that error and presses Twitch's own reload button instead,
+so playback comes back in about a second with the page untouched. It waits a moment first in case
+the player rights itself, tries a few times at widening intervals, and then stops rather than
+hammering a stream that has simply ended. This is on by default and can be switched off on the
+**Twitch** tab.
+
 **What Slipstream Live leaves alone:** archived videos (VODs), clips, and ad breaks are never
 touched — only live playback is controlled. TwitCasting's low-latency mode is excluded too: it
 delivers video over WebRTC, which has no read-ahead buffer to measure and ignores `playbackRate`
@@ -182,6 +191,7 @@ stays in charge there — and also stops Twitch's own built-in catch-up from fig
 | **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | Ducks the audio while at 0.15x. |
 | **Volume during maximum slowdown** | 0–100% | 30% | 30% | 30% | Percentage of *your* current volume (5% steps). 100 = no change, 0 = mute. |
 | **Control premieres** | ON / OFF | OFF | — | — | Whether premieres count as live streams. Off = they're left alone entirely. YouTube only, so the row appears on that tab alone. |
+| **Recover from player errors** | ON / OFF | — | ON | — | Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so the row appears on that tab alone. |
 
 *FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only
 site where it differs.*
@@ -404,8 +414,9 @@ found, Slipstream Live falls back to a small dark strip in the top-left corner o
 
 **Twitch video itself freezes or errors out (unrelated to Slipstream Live)**
 Slipstream Live only adjusts playback *speed*, so if the video stops completely or shows an
-"Error #XXXX" code, that's almost always a Twitch or Chrome issue rather than Slipstream Live. Try
-these steps in order:
+"Error #XXXX" code, that's almost always a Twitch or Chrome issue rather than Slipstream Live.
+Since 1.3.0 it does try to clear those errors for you, so first check that **Recover from player
+errors** is ON in the **Twitch** tab. If the error keeps coming back, work through these in order:
 
 1. Check [status.twitch.com](https://status.twitch.com/) for an ongoing Twitch outage
 2. Open the same stream in an **Incognito window** (`Ctrl+Shift+N`, `Cmd+Shift+N` on Mac) — if
@@ -482,7 +493,8 @@ re-validates what it reads against its own independent bounds.
 ### Adding a site
 
 Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` /
-`reset()` plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`, register it, and add
+`reset()` plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle` (and, optionally, `heal()` —
+`inject.js` skips it on adapters that don't provide one), register it, and add
 matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `inject.js` itself
 doesn't need to change, and neither does most of `KEYS` — defaults written with `all()` pick the
 new site up automatically, leaving `floorThreshold` as the only one to fill in by hand.

@@ -100,6 +100,7 @@
      *   duck             … 下限モード中に音量を下げるか
      *   duckVolume       … 下げたときの音量（％）
      *   premiere         … YouTube のプレミア公開でも動作させるか
+     *   recover          … Twitch のプレイヤーがエラーで止まったとき、自動で復帰させるか
      * @type {Record<string, { scope?: string, def: unknown, range?: number[], ff?: Record<string, number> }>}
      */
     const KEYS = {
@@ -127,6 +128,10 @@
         duck:             { def: all(true) },
         duckVolume:       { range: [0, 100, 5], def: all(30) },
         premiere:         { def: all(false) },
+
+        // recover は Twitch のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
+        // （heal() を持たないサイトでは、ON にしても何も起きません。）
+        recover:          { def: { youtube: false, twitch: true, twitcasting: false } },
     };
 
     /**
