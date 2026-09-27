@@ -176,13 +176,9 @@
     function hijack(prop, valid, output) {
         // HTMLMediaElement の「本来の」getter / setter を控えておきます。
         // 上書き後もこれを使えば、実際の値を読み書きできます。
-        const { get, set } = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, prop) ?? {};
-
-        // 取得できない環境では、何もしない「ダミー」を返して安全に動作を続けます。
-        if (typeof get !== 'function' || typeof set !== 'function') {
-            log(`cannot hijack ${prop}: accessor not found`);
-            return { release() { }, actual: () => 1, wished: () => 1, apply() { } };
-        }
+        // （最新の Chrome / Firefox では、playbackRate も volume も
+        //   プロトタイプ上のアクセサとして必ず定義されています）
+        const { get, set } = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, prop);
 
         /**
          * 本来の getter で実際の値を読む。
@@ -371,16 +367,22 @@
             + 'background:#000000a6;pointer-events:none;';
 
         /** @type {HTMLElement|null} position を書き換えた要素（元に戻すために覚えておく） */
-        let styled = null;
+        let styled    = null;
+        /** @type {string} 書き換える前のインライン指定（style 属性に無ければ空文字） */
+        let styledWas = '';
 
         /**
          * 書き換えた position の指定を元に戻す。
          * 拡張機能を切ったときにページのレイアウトを汚したままにしないための後始末です。
+         *
+         * 空文字で消すのではなく「書き換える前の値」に戻すのが要点です。
+         * 元から style="position: static" と書かれていた要素を空文字にすると、
+         * ページの CSS 側の指定（absolute など）が表に出てレイアウトが崩れるためです。
          * @returns {void}
          */
         function unstyle() {
             if (!styled) return;
-            styled.style.position = '';
+            styled.style.position = styledWas;
             styled = null;
         }
 
@@ -406,8 +408,9 @@
                 // 親が static のままだとページ全体を基準に飛んでいってしまうため、
                 // 一時的に relative に変更します（後で unstyle() で戻します）。
                 if (getComputedStyle(box).position === 'static') {
+                    styled    = box;
+                    styledWas = box.style.position; // 元のインライン指定（多くは空文字）
                     box.style.position = 'relative';
-                    styled = box;
                 }
                 box.append(shelf);
                 log('badges on fallback shelf', box);
@@ -500,6 +503,10 @@
      * このファイルは設定を DOM 属性経由で受け取るため、ページ側の
      * スクリプトが属性を書き換えて壊れた値を渡してくる可能性があります。
      * そこで、使う直前にもう一度確認しています（多層防御の考え方）。
+     *
+     * 異常時の代替値は、あえて schema.js の既定値とそろえていません。
+     * 再生速度や音量を直接変える項目は「効果なし」の値（speedupRate = 1 倍、
+     * duckVolume = 100%）にしてあり、壊れた値でページの速度や音量を勝手に変えないためです。
      */
     const GUARD_NUMBERS = {
         speedupRate:       [1,    4,    1],
@@ -1118,13 +1125,13 @@
         const needs = Auto.needs;
         const { troughK, troughMs, troughMargin } = AUTO_TUNING[auto];
 
-        // margin（確保しておきたい余裕）の決め方は 3 通り。
+        // margin（確保しておきたい余裕）の決め方は 3 通り。上から順に当てはまるものを使います。
         //   1) 下限モードが有効 … 下限しきい値 + 段階ごとの余裕（下限に踏み込まない高さ）
         //   2) 自動 ON かつサイトが必要量を報告 … その値をそのまま使う
         //   3) それ以外 … 段階ごとの既定の余裕
-        const margin = settings.floor    ? settings.floorThreshold + troughMargin
-                     : auto && needs > 0 ? needs
-                     :                     troughMargin;
+        let margin = troughMargin;
+        if (settings.floor) margin = settings.floorThreshold + troughMargin;
+        else if (auto && needs > 0) margin = needs;
 
         // ample（統計を待たずに加速してよい残量ライン）は、必ず AMPLE 秒以上になります。
         return { auto, troughK, troughMs, margin, ample: Math.max(AMPLE, margin + AMPLE_OVER) };
@@ -1251,6 +1258,8 @@
         const { latency, atHead } = status;
 
         // 巻き戻して視聴中なら、遅延秒数ではなく (DVR) と表示します。
+        // これは表示だけの区別で、制御は止めません。巻き戻した後の「追っかけ再生」でも、
+        // バッファに余裕があれば加速して最前線へ戻るのが仕様です。
         if (atHead === false) return DVR;
 
         // Math.max(0, ...) は、計測誤差でわずかにマイナスになった値を 0 に丸めるため。

@@ -7,6 +7,7 @@
  * ■ このファイルは何をするもの？
  *   popup.html に並んだスイッチ・数値入力・スライダーを動かし、
  *   変更内容を保存領域へ書き込むところまでを担当します。
+ *   同じ画面は、新しいタブで開く「オプション」ページとしても使われます。
  *
  * ■ 設計の考え方：HTML の data-* 属性が「設定」を持つ
  *   このファイルには「speedupRate は数値入力」といった個別の記述がありません。
@@ -33,8 +34,11 @@
     'use strict';
 
     // common.js が用意した道具箱から必要なものを取り出します。
-    const { api, store, msg, log, KEYS, SITES, siteOf, settingsOf, fix } = globalThis.SLPSTRM ?? {};
-    if (!KEYS || !SITES) { console.warn('[slipstreamlive] shared/schema.js が読み込まれていません'); return; }
+    const { api, store, log, KEYS, SITES, siteOf, settingsOf, fix } = globalThis.SLPSTRM ?? {};
+    if (!KEYS || !SITES) {
+        console.warn('[slipstreamlive] shared/schema.js が読み込まれていません');
+        return;
+    }
 
     /** 数値入力欄で、入力が止まってから保存するまでの待ち時間（ミリ秒）。 */
     const COMMIT_MS = 400;
@@ -46,16 +50,16 @@
     const TIP_DY    = 18;
 
     /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting']）。 */
-    const sites     = Object.keys(SITES);
+    const sites  = Object.keys(SITES);
 
     /** 設定 1 行ぶんの要素（有効/無効の切り替えに使う）。 */
-    const rows      = [...document.querySelectorAll('.row')];
+    const rows   = [...document.querySelectorAll('.row')];
 
     /** @type {Map<string, HTMLButtonElement>} サイト ID → タブボタン */
-    const tabs      = new Map();
+    const tabs   = new Map();
 
     /** サイトごとに表示を切り替える要素（選択中のサイトのものだけ表示する）。 */
-    const scoped    = [...document.querySelectorAll('#scopes [data-site]')];
+    const scoped = [...document.querySelectorAll('#scopes [data-site]')];
 
     /**
      * 画面上のすべての入力欄。
@@ -77,20 +81,22 @@
     let ui      = {};
     /** @type {Record<string, { message: string }>|null} 手動で読み込んだ言語ファイル */
     let strings = null;
-    /** @type {string} 表示に使う言語コード */
+    /** @type {string} 表示に使う言語タグ（例: 'ja'、'pt-BR'） */
     let locale  = api.i18n.getUILanguage();
 
     /**
      * 表示用の文言を取り出す。
-     * URL で言語を指定されていればそちらを優先し、無ければブラウザの言語設定を使います。
+     * URL で言語を指定されていればそちらを優先し、無ければブラウザの言語設定に従って
+     * 拡張機能の多言語機能（i18n.getMessage）から取り出します（見つからなければ空文字）。
      * @param {string} key 文言のキー
      * @returns {string} 対応する文言
      */
-    const t = (key) => strings?.[key]?.message ?? msg(key);
+    const t = (key) => strings?.[key]?.message ?? api.i18n.getMessage(key);
 
     /**
-     * URL のクエリ（?locale=ja）で指定された言語ファイルを読み込む。
+     * URL のクエリ（?locale=ja）で指定された言語ファイルを読み込む（開発用）。
      * ブラウザの言語とは違う言語で表示を確認したいとき用の仕組みです。
+     * 指定には _locales 内のフォルダ名（例: pt_BR、zh_TW）をそのまま使います。
      *
      * 正規表現で名前を検査しているのは重要なセキュリティ対策です。
      * これが無いと「../」のような文字列で、意図しないファイルを
@@ -104,8 +110,14 @@
             const res = await fetch(api.runtime.getURL(`_locales/${name}/messages.json`));
             if (!res.ok) return;
             strings = await res.json();
-            locale = name;
-        } catch (error) { log.warn('loadLocale', error); }
+
+            // フォルダ名はアンダースコア区切り（zh_TW）ですが、<html lang> に入れる
+            // 言語タグはハイフン区切り（zh-TW）が正しい書式です。書式が崩れていると
+            // ブラウザが言語を判別できず、漢字の字形（簡体字・繁体字・日本語）を取り違えます。
+            locale = name.replaceAll('_', '-');
+        } catch (error) {
+            log.warn('loadLocale', error);
+        }
     }
 
     /**
@@ -118,7 +130,7 @@
         document.documentElement.lang = locale;
         document.title = t('appName');
 
-        // マニフェストからバージョン番号を取り出して表示（例: v1.2.0）。
+        // マニフェストからバージョン番号を取り出して表示（例: v1.3.1）。
         document.getElementById('version').textContent = `v${api.runtime.getManifest().version}`;
 
         for (const node of document.querySelectorAll('[data-msg]')) node.textContent = t(node.dataset.msg);
@@ -128,7 +140,10 @@
         // 「0.10 ~ 100.00」のような入力範囲のヒントを、schema.js の定義から自動生成します。
         for (const node of document.querySelectorAll('[data-hint]')) {
             const range = KEYS[node.dataset.hint]?.range;
-            if (!range) { log.warn('data-hint に数値設定でないキーが指定されています', node.dataset.hint); continue; }
+            if (!range) {
+                log.warn('data-hint に数値設定でないキーが指定されています', node.dataset.hint);
+                continue;
+            }
             const [min, max, step] = range;
             // 刻み幅が 1 以上なら整数、小数刻みなら小数第 2 位まで表示します。
             const digits = step >= 1 ? 0 : 2;
@@ -146,6 +161,18 @@
     const list = (value) => (value ?? '').split(' ').filter(Boolean);
 
     /**
+     * 浮かせる要素（吹き出し・ツールチップ）が画面からはみ出さないよう、座標を挟み込む。
+     *
+     * Math.max(PAD, Math.min(理想の位置, 画面の端 - 大きさ - 余白))
+     * → 理想の位置に置きつつ、はみ出すときだけ内側へ押し戻します。
+     * @param {number} ideal 理想の座標（左端または上端）
+     * @param {number} size 要素の幅または高さ
+     * @param {number} limit 画面の幅または高さ
+     * @returns {number} 実際に置く座標
+     */
+    const fit = (ideal, size, limit) => Math.max(PAD, Math.min(ideal, limit - size - PAD));
+
+    /**
      * 現在の設定値を画面に反映する（再描画）。
      * 値が変わったときは必ずこれを呼ぶことで、画面と実データのずれを防ぎます。
      * @returns {void}
@@ -157,7 +184,8 @@
         document.documentElement.dataset.site = current;
         document.getElementById('reset-site').textContent = `${t('reset')} · ${SITES[current].label}`;
 
-        // タブの選択状態を更新（ariaSelected はスクリーンリーダー向けの情報でもあります）。
+        // タブの選択状態を更新（aria-selected はスクリーンリーダー向けの情報でもあり、
+        // CSS もこの属性を見て選択中のタブを塗り分けます）。
         for (const [site, tab] of tabs) tab.ariaSelected = String(site === current);
 
         // 選択中のサイト以外の要素を隠す。
@@ -175,15 +203,17 @@
         // 行ごとの有効・無効を判定する。
         // 例: 「加速」が OFF のとき、その配下の「加速速度」はグレーアウトさせます。
         for (const row of rows) {
-            const input = row.querySelector('[data-key]');
-            if (!input) continue;
+            if (!row.querySelector('[data-key]')) continue;
 
             // every … data-needs のすべてが ON であること
             // some  … data-not のどれか 1 つでも ON なら不可
             const on = list(row.dataset.needs).every((key) => settings[key])
                 && !list(row.dataset.not).some((key) => settings[key]);
 
-            input.disabled = !on;
+            // 入力欄だけでなく「?」ボタンも無効にします。
+            // CSS の pointer-events: none はマウス操作しか止められないため、
+            // これが無いとキーボード（Tab → Enter）で無効な行の説明が開けてしまいます。
+            for (const control of row.querySelectorAll('input, button')) control.disabled = !on;
             row.classList.toggle('disabled', !on);
         }
     }
@@ -266,6 +296,7 @@
      * ここが少し複雑なのは、入力中の「打っている途中の値」を保存しないためです。
      *   input  … 文字を打つたびに発生。タイマーを毎回リセットし、
      *            手が止まって COMMIT_MS 経ってから保存する（デバウンス処理）。
+     *            確定操作をせずに画面を閉じても、打った値が残るようにするためです。
      *   change … 入力を確定した（フォーカスを外した／Enter）ときに発生。
      *            即座に保存し、値を正しい形（刻み幅に丸めた値）に整えて表示し直す。
      *
@@ -312,6 +343,17 @@
      */
     function wireInput(input) {
         const key = input.dataset.key;
+
+        // 行（<label>）と入力欄を、id と for で明示的に結び付けます。
+        //
+        // 各行の <label> の中には「?」ボタンと入力欄が並んでいます。for を指定しないと、
+        // HTML の仕様では「ラベルの中で最初に現れる操作部品」が操作対象になるため、
+        // 入力欄より手前にある「?」ボタンが選ばれてしまいます。すると行の文字を押したとき、
+        // スイッチが切り替わらずに説明の吹き出しが開く、という食い違いが起きていました。
+        input.id = `key-${key}`;
+        const label = input.closest('label');
+        if (label) label.htmlFor = input.id;
+
         if (input.type === 'checkbox') return wireSwitch(input, key);
 
         const { range } = KEYS[key];
@@ -351,6 +393,8 @@
      * 各設定行の「?」ボタンに、説明の吹き出しを割り当てる。
      *
      * popover は、ブラウザ標準の「他の要素より前面に浮かぶ小窓」機能です。
+     * popover="auto" の小窓は、外側をクリックすると自動で閉じます（ライトディスミス）。
+     *
      * 位置合わせに一手間かけているのは、
      *   1) いったん画面外（-9999px）に置いて表示する
      *   2) そこで実際の大きさを測る
@@ -366,20 +410,36 @@
             bubble.textContent = t(icon.dataset.help);
             document.body.append(bubble);
 
-            icon.addEventListener('click', () => {
-                bubble.style.left = bubble.style.top = '-9999px';
+            // 「?」ボタンを、この吹き出しの「呼び出し元（invoker）」としてブラウザへ登録します。
+            //
+            // 登録していないと、開いている吹き出しを同じ「?」で閉じようとしたとき、
+            //   1) マウスを離した瞬間に「外側のクリック」とみなされて自動で閉じる
+            //   2) 直後の click で、閉じたばかりの吹き出しをまた開いてしまう
+            // という順に処理され、何度押しても閉じられませんでした。
+            // 呼び出し元のクリックは「外側」とみなされなくなるため、この食い違いが起きません。
+            // （あわせて、支援技術にも「このボタンが吹き出しを開閉する」ことが伝わります）
+            icon.popoverTargetElement = bubble;
 
-                // togglePopover は、閉じたときに false を返します（＝2 回目の
-                // クリックで閉じる場合は、位置合わせをせずここで終了）。
-                if (!bubble.togglePopover()) return;
+            icon.addEventListener('click', (event) => {
+                // ブラウザ標準の開閉は止め、開閉と位置合わせをここで一度に行います。
+                // 標準の開閉に任せると、開いた直後の一瞬だけ、位置合わせ前の場所に
+                // 吹き出しが描かれてしまうことがあるためです。
+                event.preventDefault();
+
+                if (bubble.matches(':popover-open')) {
+                    bubble.hidePopover();
+                    return;
+                }
+
+                bubble.style.left = bubble.style.top = '-9999px';
+                bubble.showPopover();
 
                 const box = bubble.getBoundingClientRect(); // 吹き出しの大きさ
                 const at  = icon.getBoundingClientRect();   // ボタンの位置
 
-                // Math.max(PAD, Math.min(理想の位置, 画面の右端 - 幅 - 余白))
-                // → 理想の位置に置きつつ、画面からはみ出さないよう両側から挟み込みます。
-                bubble.style.left = `${Math.max(PAD, Math.min(at.right + PAD, innerWidth - box.width - PAD))}px`;
-                bubble.style.top  = `${Math.max(PAD, Math.min(at.bottom + PAD, innerHeight - box.height - PAD))}px`;
+                // ボタンの右下に置きつつ、画面からはみ出さないよう挟み込みます。
+                bubble.style.left = `${fit(at.right + PAD, box.width, innerWidth)}px`;
+                bubble.style.top  = `${fit(at.bottom + PAD, box.height, innerHeight)}px`;
             });
         }
     }
@@ -407,8 +467,8 @@
          */
         function place() {
             const box = node.getBoundingClientRect();
-            node.style.left = `${Math.max(PAD, Math.min(x + TIP_DX, innerWidth - box.width - PAD))}px`;
-            node.style.top  = `${Math.max(PAD, Math.min(y + TIP_DY, innerHeight - box.height - PAD))}px`;
+            node.style.left = `${fit(x + TIP_DX, box.width, innerWidth)}px`;
+            node.style.top  = `${fit(y + TIP_DY, box.height, innerHeight)}px`;
         }
 
         return {
@@ -471,6 +531,7 @@
      *
      * 優先順位：
      *   1) 今アクティブなタブが対応サイトなら、そのサイト
+     *      （アイコンのクリックで activeTab 権限が一時的に付くため、URL を読めます）
      *   2) content.js が記録した「最後に見ていたサイト」
      *   3) 前回この画面で選んでいたサイト
      *   4) それも無ければ先頭のサイト
@@ -481,7 +542,9 @@
             const [tab] = await api.tabs.query({ active: true, currentWindow: true });
             const site = tab?.url ? siteOf(new URL(tab.url).hostname) : null;
             if (site) return site;
-        } catch (error) { log.say('tabs.query', error); }
+        } catch (error) {
+            log.say('tabs.query', error);
+        }
 
         if (sites.includes(ui.seen)) return ui.seen;
         if (sites.includes(ui.site)) return ui.site;
@@ -492,7 +555,7 @@
     // ここからが実際の起動処理。上で定義した部品を順番に組み立てていきます。
     // =========================================================================
 
-    await loadLocale();                              // 言語ファイルの読み込み
+    await loadLocale();                              // 言語ファイルの読み込み（?locale= 指定時のみ）
     translate();                                     // 画面の文字を翻訳
     for (const input of inputs) wireInput(input);    // 入力欄に動作を割り当て
 

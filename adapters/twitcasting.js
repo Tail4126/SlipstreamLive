@@ -85,12 +85,10 @@
          *
          * 通常の動画は src に URL が入りますが、WebRTC の場合は
          * srcObject に MediaStream オブジェクトが入ります。そこを見ています。
-         * `typeof MediaStream !== 'undefined'` は、その機能が使えない環境での
-         * エラーを避けるための確認です。
+         * （MediaStream は最新の Chrome / Firefox なら必ず存在します）
          * @returns {boolean} WebRTC 配信なら true
          */
-        const webrtc = () => typeof MediaStream !== 'undefined'
-            && watcher.video?.srcObject instanceof MediaStream;
+        const webrtc = () => watcher.video?.srcObject instanceof MediaStream;
 
         /**
          * 動画の長さから「ライブ配信かどうか」を推定する。
@@ -166,7 +164,7 @@
              * バッジを差し込みたい場所（コントロールバー）を返す。
              * @returns {Element|null}
              */
-            host: () => pick(BARS, watcher.root ?? document),
+            host: () => pick(BARS, watcher.root),
         };
     }
 

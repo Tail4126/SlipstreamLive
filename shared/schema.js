@@ -14,18 +14,18 @@
  *   といった「仕様そのもの」を、このファイル 1 か所にまとめています。
  *
  * ■ なぜ 1 か所にまとめるの？
- *   設定画面（popup.js）と、実際に再生速度を変える処理（content.js 経由）は
+ *   設定画面（popup.js）と、ページへ設定を渡す処理（content.js）は
  *   別のファイルですが、両方が同じルールを知っていないと食い違いが起きます。
- *   「既定値を変えたいときはこのファイルだけ直せばよい」という状態を作るのが目的です。
+ *   「既定値を変えたいときはこのファイルだけ直せばよい」状態を作るのが目的です。
  *
  * ■ 読み込まれる場所
  *   manifest.json の content_scripts で、common.js より先に読み込まれます。
- *   また popup.html からも読み込まれます。
+ *   また popup.html からも同じ順番で読み込まれます。
  *
  * ■ 全体が (() => { ... })(); で囲まれている理由
  *   これは IIFE（即時実行関数式）と呼ばれる書き方で、「定義した瞬間に実行する
  *   使い捨ての関数」です。中で宣言した変数（FIREFOX や SITES など）が
- *   ページ側のグローバル変数と衝突しないよう、カプセル化するために使います。
+ *   同じ環境で動く他のファイルの変数と衝突しないよう、カプセル化するために使います。
  */
 (() => {
     // 'use strict' は「厳格モード」の宣言。うっかりミス（変数の宣言忘れなど）を
@@ -55,9 +55,9 @@
      * - host : そのサイトかどうかを判定する正規表現（ホスト名と照合する）
      *
      * 正規表現 `/(^|\.)twitch\.tv$/` の意味：
-     *   `(^|\.)` … 先頭、または「.」の直後（＝サブドメインを許可）
+     *   `(^|\.)`     … 先頭、または「.」の直後（＝サブドメインを許可）
      *   `twitch\.tv` … 文字としての "twitch.tv"（`\.` は「.」そのもの）
-     *   `$` … ここで文字列が終わる
+     *   `$`          … ここで文字列が終わる
      *   → "twitch.tv" と "player.twitch.tv" は一致し、"nottwitch.tv" は一致しません。
      * @type {Record<string, { label: string, host: RegExp }>}
      */
@@ -72,6 +72,7 @@
      * 例: all(true) → { youtube: true, twitch: true, twitcasting: true }
      *
      * Object.fromEntries は [キー, 値] の配列をオブジェクトに変換する関数です。
+     * SITES から鍵を起こすので、対応サイトを増やしても書き足しが要りません。
      * @param {unknown} value 全サイトに配りたい値
      * @returns {Record<string, unknown>} サイト ID をキーにしたオブジェクト
      */
@@ -159,7 +160,6 @@
         // 共通設定は def がそのまま既定値。
         if (spec.scope === 'common') return spec.def;
 
-        // `??` は「左が null / undefined のときだけ右を使う」演算子（Null 合体演算子）。
         // Firefox 用の値があればそれを、無ければ通常の既定値を採用します。
         const value = (FIREFOX ? spec.ff?.[site] : undefined) ?? spec.def[site];
         if (value !== undefined) return value;
@@ -227,8 +227,7 @@
         Object.keys(SITES).find((site) => SITES[site].host.test(host)) ?? null;
 
     // 組み立てた道具一式を、いったんグローバルの一時変数に置きます。
-    // この直後に読み込まれる common.js がこれを受け取り、変数ごと削除します
-    // （ページ側の JavaScript から見えっぱなしにしないための後始末）。
+    // この直後に読み込まれる common.js がこれを受け取り、変数ごと削除します。
     // `??=` は「左が null / undefined のときだけ代入する」演算子で、
     // 二重読み込み時に上書きしてしまうのを防いでいます。
     globalThis.__slipstreamliveSchema ??= { KEYS, SITES, fix, settingsOf, siteOf };
