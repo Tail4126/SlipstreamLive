@@ -8,6 +8,31 @@
 
 ## [未リリース]
 
+## [1.3.1] - 2026-09-28
+
+### 修正
+
+- 設定画面で、行の文字をクリックしてもスイッチが切り替わらず、「?」の説明が開いてしまう不具合を修正。各行の `<label>` の中で「?」ボタンが入力欄より前にあるため、HTML の仕様上ボタンがラベルの操作対象になっていた。`popup.js` が `data-key` から `id` / `for` を割り当て、行と入力欄を明示的に結び付けるようにした。
+- 設定画面で、「?」をもう一度押しても説明の吹き出しが閉じない不具合を修正。外側クリックによる自動クローズ（ライトディスミス）で閉じた直後に、`togglePopover()` が開き直していた。「?」ボタンを吹き出しの呼び出し元（`popoverTargetElement`）として登録し、開閉と位置合わせは `click` の中でまとめて行う。
+- 設定画面で、無効な行の「?」がキーボード操作（Tab → Enter）では開けてしまう不具合を修正。行を無効にするとき、入力欄と同時にボタンも `disabled` にする。
+- YouTube で、動画の切り替え直後にプレーヤーの応答（`getPlayerResponse()`）が前の動画のまま残っていると、前の動画のプレミア判定と遅延モードを新しい動画のものとして覚えてしまう問題を修正。プレミア公開の直後に見た本物のライブ配信を「プレミア」と取り違え、その配信のあいだ制御しなくなることがあった。`videoDetails.videoId` が現在の動画と一致する応答だけを採用し、確認できるまでは前の動画の判定を使わない。
+- プレーヤー左上の代替表示枠（shelf）を片付けるとき、一時的に書き換えた `position` を空文字で消していたため、元から `style="position: static"` を持つ要素ではページ側の CSS が表に出てレイアウトが崩れる問題を修正。書き換える前のインライン指定を控えて戻す。
+- 開発用の `popup.html?locale=zh_TW` などで、`<html lang>` にアンダースコア区切りの不正な言語タグが入り、漢字の字形選択を誤る問題を修正。ハイフン区切り（`zh-TW`）へ直して設定する。
+
+### 内部
+
+- 旧ブラウザ向けの分岐を削除した。`adapters/twitcasting.js` の `typeof MediaStream` 確認と、`inject.js` の `hijack()` にあった「プロトタイプにアクセサが無い環境」向けのダミー実装である。いずれも最新の Chrome / Firefox では常に存在する。
+- `common.js` の `msg()` を、唯一の利用者である `popup.js` の `t()` へ統合した。外から使われていなかった `store.alive` の公開もやめた（`alive()` 自体は内部で引き続き使う）。
+- `shared/util.js` の `series()` に、そこからしか使われていなかった `stats()` と `sliceWindow()` を取り込んだ。計算結果は変わらない（旧実装と 12 万回突き合わせて一致を確認）。
+- YouTube アダプターの `getPlayerResponse()` の問い合わせを、プレミア判定と遅延モードの取得で共有し、動画ごとに 1 回へまとめた。従来は応答に遅延モードが含まれない場合、`needs()` のたびに問い合わせ直していた。
+- `pick()` の呼び出し側に残っていた `?? document` を削除した（`pick()` 自身が `null` を `document` として扱う）。
+- 注釈の誤りを修正。`tracker()` を「DVR 視聴中の加速を止めるため」と説明していたが、実際には遅延バッジを `(DVR)` と表示するための判定で、制御には使っていない。巻き戻した後の追っかけ再生でも加速するのは 1.1.0 からの仕様である。あわせて `inject.js` の `GUARD_NUMBERS` に、異常時の代替値が「効果なし」の値になっている理由を書き足した。
+- デバッグ機能（`window.__slipstreamliveDebug`、`report()`、`log`）は変更していない。
+
+### ドキュメント
+
+- 取扱説明書（英日）のページ見出しにあるバージョン表記を 1.3.0 から 1.3.1 へ更新した。
+
 ## [1.3.0] - 2026-09-03
 
 ### 追加
@@ -358,7 +383,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/Tail4126/SlipstreamLive/compare/v1.1.2...v1.1.3

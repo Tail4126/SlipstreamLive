@@ -273,7 +273,7 @@
          * @returns {Element|null} ゲート要素。異常が無ければ null
          */
         function fault() {
-            const gate = pick([GATE], watcher.root ?? document);
+            const gate = pick([GATE], watcher.root);
             return gate && CODE.test(gate.textContent ?? '') ? gate : null;
         }
 
@@ -446,7 +446,7 @@
              * バッジを差し込みたい場所（コントロールバー左側）を返す。
              * @returns {Element|null}
              */
-            host: () => pick(['.player-controls__left-control-group'], watcher.root ?? document),
+            host: () => pick(['.player-controls__left-control-group'], watcher.root),
         };
     }
 

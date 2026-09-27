@@ -51,13 +51,15 @@
         /** @type {Element|null} YouTube プレーヤー本体（#movie_player） */
         let player = null;
         /** @type {HTMLVideoElement|null} 現在の video 要素 */
-        let video = null;
-        /** @type {string} 遅延モード（ULTRA_LOW / LOW / NORMAL）。一度取れたら覚えておく */
+        let video  = null;
+
+        // --- 動画ごとに 1 度だけ調べる情報（getPlayerResponse の videoDetails 由来）---
+        /** @type {string|null} 下の 2 つを確認し終えた動画の ID */
+        let checkedId    = null;
+        /** @type {boolean} その動画がプレミア公開かどうか */
+        let premiere     = false;
+        /** @type {string} その動画の遅延モード（…ULTRA_LOW / …LOW / それ以外） */
         let latencyClass = '';
-        /** @type {boolean} 現在の動画がプレミア公開かどうか */
-        let premiere   = false;
-        /** @type {string|null} premiere を判定済みの動画 ID（同じ動画で何度も調べないため） */
-        let premiereId = null;
 
         /**
          * YouTube プレーヤーの内部 API を安全に呼び出すショートカット。
@@ -67,6 +69,40 @@
          * @returns {*} 戻り値。呼べなければ undefined
          */
         const call = (name, ...args) => safeCall(player, name, undefined, ...args);
+
+        /**
+         * 動画 ID ごとに 1 度だけ videoDetails を調べ、プレミア判定と遅延モードを覚える。
+         *
+         * ■ 動画 ID を照合してから採用する理由
+         *   動画が切り替わった直後は、getVideoData() はもう新しい動画を指しているのに、
+         *   getPlayerResponse() には前の動画の応答が残っていることがあります。
+         *   それをそのまま覚えると、新しい動画の再生中ずっと前の動画の判定を使い続けます
+         *   （例：プレミア公開の直後に見た本物のライブを「プレミア」と取り違え、
+         *    その配信のあいだ一切制御しなくなる）。
+         *   そこで videoId が一致しない応答は捨て、次の呼び出しで取り直します。
+         *   videoId そのものが無い応答は照合のしようがないので、そのまま採用します。
+         *
+         * ■ 確認が取れるまでの扱い
+         *   新しい動画の情報を確認できるまでは、前の動画の判定は使わず
+         *   「プレミアではない／遅延モード不明」として扱います（初回読み込み時と同じ扱い）。
+         * @param {string|null} id 現在の動画 ID
+         * @returns {void}
+         */
+        function inspect(id) {
+            if (id === checkedId) return;
+
+            premiere     = false;
+            latencyClass = '';
+
+            const details = call('getPlayerResponse')?.videoDetails;
+            if (!details || (details.videoId ?? id) !== id) return;
+
+            checkedId    = id;
+            // isLiveContent が true = 本物のライブ配信。
+            // false なら、ライブ扱いだが中身は録画＝プレミア公開。
+            premiere     = details.isLiveContent !== true;
+            latencyClass = String(details.latencyClass ?? '');
+        }
 
         return {
             // YouTube はプレーヤー UI に速度変更メニューがあります。
@@ -83,10 +119,10 @@
 
             /**
              * 動画が切り替わったときの後始末。
-             * 遅延モードは動画ごとに違うので忘れます。
+             * 覚えていた動画ごとの情報を捨て、次の media() で調べ直させます。
              * @returns {void}
              */
-            reset() { latencyClass = ''; },
+            reset() { checkedId = null; },
 
             /**
              * プレーヤーの外枠要素を返す（バッジの表示位置の基準に使われる）。
@@ -100,14 +136,11 @@
              */
             video() {
                 // (1) 通常の視聴ページには #movie_player があります。
+                // (2) 無ければ埋め込みプレーヤーなどの代替を探します
+                //     （覚えている要素がページから消えたときだけ探し直す）。
                 const main = document.querySelector('#movie_player');
-                if (main) {
-                    // 別のプレーヤーに変わったら、覚えていた遅延モードを捨てます。
-                    if (player !== main) { player = main; latencyClass = ''; }
-                } else if (!player?.isConnected) {
-                    // (2) 埋め込みプレーヤーなど #movie_player が無いページ向けの代替探索。
-                    player = pick(['.html5-video-player']);
-                }
+                if (main) player = main;
+                else if (!player?.isConnected) player = pick(['.html5-video-player']);
 
                 // (3) 覚えていた video が消えた／プレーヤーの外に出たら探し直します。
                 if (!video?.isConnected || !player?.contains(video)) {
@@ -135,16 +168,8 @@
                 const live = !ad && data?.isLive === true;
 
                 // プレミア公開（事前に用意した動画を同時視聴するもの）の判定。
-                // 判定にコストのかかる API なので、動画が変わったときだけ調べます。
-                if (live && id !== premiereId) {
-                    const details = call('getPlayerResponse')?.videoDetails;
-                    if (details) {
-                        // isLiveContent が true = 本物のライブ配信。
-                        // false なら、ライブ扱いだが中身は録画＝プレミア公開。
-                        premiere   = details.isLiveContent !== true;
-                        premiereId = id;
-                    }
-                }
+                // 判定にコストのかかる API なので、ライブのときだけ、動画ごとに 1 度だけ調べます。
+                if (live) inspect(id);
                 return { id, live, premiere: live && premiere };
             },
 
@@ -164,6 +189,7 @@
              *
              * 統計の観測窓の長さを決めるのに使います。動画は「セグメント」という
              * 小さな塊で配信されるため、その 1 個ぶんの長さが目安になります。
+             * （inject.js はライブ再生中にだけ、media() の後で呼び出します）
              * @returns {number} 目安の秒数
              */
             needs() {
@@ -171,12 +197,10 @@
                 const segment = toNum(call('getVideoStats')?.segduration);
                 if (segment > 0) return segment;
 
-                // (2) 取れなければ配信の遅延モードから推定します。
-                // `||=` は「左が偽の値のときだけ代入」する演算子（一度取れたら再取得しない）。
-                latencyClass ||= String(call('getPlayerResponse')?.videoDetails?.latencyClass ?? '');
+                // (2) 取れなければ、media() で調べておいた遅延モードから推定します。
                 if (latencyClass.endsWith('ULTRA_LOW')) return 1; // 超低遅延
                 if (latencyClass.endsWith('LOW')) return 2;       // 低遅延
-                return 5;                                          // 通常
+                return 5;                                          // 通常（不明な場合も含む）
             },
 
             /**
@@ -189,7 +213,7 @@
                 'player-time-display .ytwPlayerTimeDisplayLiveDot', // 新 UI のライブ表示
                 '.ytp-time-display .ytp-time-wrapper',              // 時間表示の隣
                 '.ytp-chrome-controls .ytp-left-controls',          // 左側コントロール群
-            ], player ?? document),
+            ], player),
         };
     }
 

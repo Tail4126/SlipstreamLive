@@ -15,7 +15,8 @@
  *
  * ■ 受け渡しの仕組み
  *   最後に globalThis.__slipstreamliveUtil へ道具一式を置きます。
- *   inject.js がそれを受け取ったあと、変数ごと削除して痕跡を消します。
+ *   inject.js がそれを受け取ったあと、変数ごと削除して痕跡を消します
+ *   （メインワールドのグローバル変数はページ側のスクリプトからも見えるため）。
  */
 (() => {
     'use strict';
@@ -49,10 +50,11 @@
      * さらに代替」と候補を並べておき、どれか当たればよい、という設計にしています。
      *
      * scope（探す起点）で見つからなければ document 全体でも探します。
+     * scope に null を渡した場合は、最初から document 全体を探します。
      * new Set([...]) を使っているのは、scope が document だったときに
      * 同じ場所を二重に探すのを避けるためです。
      * @param {string[]} selectors 試す CSS セレクターの配列（優先度順）
-     * @param {ParentNode} [scope=document] 探す起点となる要素
+     * @param {ParentNode|null} [scope=document] 探す起点となる要素
      * @returns {Element|null} 見つかった要素。無ければ null
      */
     function pick(selectors, scope = document) {
@@ -66,55 +68,13 @@
     }
 
     /**
-     * サンプル配列から、個数・平均・標準偏差を計算する。
-     *
-     * 標準偏差（sd）は「値のばらつき具合」を表す指標です。
-     * この拡張機能では「バッファ残量がどれくらい安定しているか」を見るために使い、
-     * ばらつきが大きいときほど安全マージンを厚くとる判断に利用します。
-     * @param {{ at: number, value: number }[]} list サンプルの配列
-     * @returns {{ n: number, avg: number, sd: number }} 個数・平均・標準偏差
-     */
-    function stats(list) {
-        const n = list.length;
-        if (n === 0) return { n: 0, avg: NaN, sd: NaN };
-
-        let sum = 0;
-        let acc = 0;
-
-        // 1 周目：合計を出して平均を求める
-        for (const sample of list) sum += sample.value;
-        const avg = sum / n;
-
-        // 2 周目：平均との差を 2 乗して足す（`**` はべき乗の演算子）
-        for (const sample of list) acc += (sample.value - avg) ** 2;
-
-        // 分散（acc / n）の平方根が標準偏差
-        return { n, avg, sd: Math.sqrt(acc / n) };
-    }
-
-    /**
-     * 配列の先頭から「古すぎるサンプル」を削除する。
-     *
-     * 直近 N ミリ秒ぶんだけを残す＝スライディングウィンドウ（移動窓）の処理です。
-     * 配列は古い順に並んでいる前提なので、先頭から順に見て
-     * 何個捨てるかを数え、splice でまとめて削除します（1 個ずつ削るより高速）。
-     * @param {{ at: number, value: number }[]} list サンプル配列（直接書き換えます）
-     * @param {number} now 現在時刻（performance.now() の値）
-     * @param {number} ms 残しておきたい期間（ミリ秒）
-     * @returns {void}
-     */
-    function sliceWindow(list, now, ms) {
-        let drop = 0;
-        while (drop < list.length && now - list[drop].at > ms) drop++;
-        if (drop > 0) list.splice(0, drop);
-    }
-
-    /**
      * 時系列データを記録する「シリーズ」オブジェクトを作る。
      *
      * これはクロージャという仕組みを使った書き方です。内部の `list` は
      * 外から直接触れず、返されたメソッド経由でのみ操作できます
      * （＝うっかり壊されない、安全なデータの入れ物になる）。
+     *
+     * サンプルは必ず古い順（時刻の昇順）に push される前提です。
      * @returns {{
      *   first: () => { at: number, value: number }|undefined,
      *   last: () => { at: number, value: number }|undefined,
@@ -126,22 +86,60 @@
      * }} 時系列データ操作用のオブジェクト
      */
     function series() {
+        /** @type {{ at: number, value: number }[]} サンプルの配列（古い順） */
         const list = [];
+
         return {
             /** 最も古いサンプルを返す。 */
             first: () => list[0],
-            /** 最も新しいサンプルを返す。 */
-            last: () => list[list.length - 1],
+
+            /** 最も新しいサンプルを返す（`at(-1)` は「末尾の要素」）。 */
+            last: () => list.at(-1),
+
             /** 記録が何ミリ秒ぶん溜まっているかを返す（最新の時刻 − 最古の時刻）。 */
-            span: () => (list.length ? list[list.length - 1].at - list[0].at : 0),
+            span: () => (list.length ? list.at(-1).at - list[0].at : 0),
+
             /** すべて捨てる。動画が切り替わったときなどに使う。 */
             clear() { list.length = 0; },
+
             /** サンプルを 1 件追加する。 */
             push(at, value) { list.push({ at, value }); },
-            /** 直近 ms ミリ秒ぶんだけ残して、古いものを捨てる。 */
-            trim(now, ms) { sliceWindow(list, now, ms); },
-            /** 個数・平均・標準偏差を計算して返す。 */
-            stats: () => stats(list),
+
+            /**
+             * 直近 ms ミリ秒ぶんだけ残して、古いものを捨てる（スライディングウィンドウ）。
+             *
+             * 配列は古い順に並んでいるので、「まだ新しい」最初のサンプルの位置が
+             * そのまま「捨てる個数」になります。それを splice でまとめて削除します
+             * （1 個ずつ削るより高速）。1 つも新しいものが無ければ全部捨てます。
+             * @param {number} now 現在時刻（performance.now() の値）
+             * @param {number} ms 残しておきたい期間（ミリ秒）
+             */
+            trim(now, ms) {
+                const keep = list.findIndex((sample) => now - sample.at <= ms);
+                list.splice(0, keep === -1 ? list.length : keep);
+            },
+
+            /**
+             * 個数・平均・標準偏差を計算して返す。
+             *
+             * 標準偏差（sd）は「値のばらつき具合」を表す指標です。
+             * この拡張機能では「バッファ残量がどれくらい安定しているか」を見るために使い、
+             * ばらつきが大きいときほど安全マージンを厚くとる判断に利用します。
+             * @returns {{ n: number, avg: number, sd: number }} 個数・平均・標準偏差
+             */
+            stats() {
+                const n = list.length;
+                if (n === 0) return { n: 0, avg: NaN, sd: NaN };
+
+                // 1 周目：合計を出して平均を求める
+                const avg = list.reduce((sum, sample) => sum + sample.value, 0) / n;
+
+                // 2 周目：平均との差を 2 乗して足し、分散を求める（`**` はべき乗の演算子）
+                const variance = list.reduce((acc, sample) => acc + (sample.value - avg) ** 2, 0) / n;
+
+                // 分散の平方根が標準偏差
+                return { n, avg, sd: Math.sqrt(variance) };
+            },
         };
     }
 
@@ -149,14 +147,20 @@
      * 遅延（ライブ最前線からの遅れ）を追跡し、「今は最前線にいるか」を判定する。
      *
      * ■ 何のため？
-     *   ユーザーが自分でシークバーを戻して過去の場面を見ている（DVR 視聴）とき、
-     *   遅延を詰めようと加速するのはお節介です。それを検知するのが目的です。
+     *   遅延バッジに「(DVR)」と表示するための判定です。ユーザーが自分でシークバーを
+     *   戻して過去の場面を見ている（DVR 視聴）とき、遅延の秒数はもう「通信の遅れ」を
+     *   表さないため、数字の代わりに (DVR) と出します。
+     *
+     *   ※ この判定は表示専用で、速度制御には使っていません。巻き戻したあとの
+     *     「追っかけ再生」でも、バッファに余裕があれば加速して最前線へ戻るのが
+     *     この拡張機能の仕様です（CHANGELOG 1.1.0 の ample 近道を参照）。
      *
      * ■ 仕組み
      *   これまでに観測した「最小の遅延」を low として覚えておきます。
      *   ただし固定してしまうと配信側の変化に追従できないので、
      *   時間の経過とともに毎秒 EASE 秒ずつ緩めて（値を大きくして）いきます。
      *   現在の遅延がその low より slack 秒以上大きければ「巻き戻して見ている」と判断します。
+     *   シークしても low は残したままにするのが要点です（残すからこそ巻き戻しに気付けます）。
      * @param {number} [slack=2.5] 最前線とみなす許容差（秒）
      * @returns {{ reset: () => void, read: (latency: number) => { latency: number, atHead: boolean } }}
      */
@@ -186,7 +190,7 @@
                 }
                 // 差が slack 以内なら最前線とみなす。
                 // latency が NaN のときは比較が false になり、atHead は true になります
-                // （＝判断材料が無いときは「最前線にいる」とみなして通常動作を続ける）。
+                // （＝判断材料が無いときは「最前線にいる」とみなして通常の表示を続ける）。
                 return { latency, atHead: !(latency - low > slack) };
             },
         };
@@ -223,7 +227,9 @@
     function safeCall(target, name, fallback, ...args) {
         try {
             return typeof target?.[name] === 'function' ? target[name](...args) : fallback;
-        } catch { return fallback; }
+        } catch {
+            return fallback;
+        }
     }
 
     /**
@@ -239,7 +245,9 @@
         try {
             const ranges = video?.seekable;
             return ranges?.length ? ranges.end(ranges.length - 1) - video.currentTime : NaN;
-        } catch { return NaN; }
+        } catch {
+            return NaN;
+        }
     }
 
     /**
@@ -267,11 +275,14 @@
          * ユーザー操作によるシーク中は正常な待機なので通知しません。
          * @returns {void}
          */
-        const stalled = () => { if (video && !video.seeking) onStall?.(); };
+        const stalled = () => {
+            if (video && !video.seeking) onStall?.();
+        };
 
         return {
             /** 現在のプレーヤー外枠要素（読み取り専用）。 */
             get root() { return root; },
+
             /** 現在の video 要素（読み取り専用）。 */
             get video() { return video; },
 
@@ -288,8 +299,13 @@
                 if (!root?.isConnected || (improvised && now - retryAt >= RETRY_MS)) {
                     retryAt = now;
                     const found = pick(roots);
-                    if (found) { root = found; improvised = false; }
-                    else if (!root?.isConnected) { root = null; improvised = false; }
+                    if (found) {
+                        root       = found;
+                        improvised = false;
+                    } else if (!root?.isConnected) {
+                        root       = null;
+                        improvised = false;
+                    }
                 }
 
                 // (2) 外枠の中から video を探す。見つからなければページ全体から探す。
