@@ -27,6 +27,9 @@
     const { pick, tracker, seekableLatency, videoWatcher, registerSite,
         ENDLESS, BADGE_STYLE_PLAIN } = util;
 
+    /** 録画ページ（/ユーザー名/movie/数字）の URL を見分ける正規表現。 */
+    const MOVIE = /\/movie\/\d+/;
+
     /**
      * 「動画の長さが伸びた」と判断するのに必要な増加量（秒）。
      * 小さすぎる変化はノイズなので、これ以上増えて初めてライブと見なします。
@@ -57,6 +60,13 @@
 
         /** 遅延を追跡し、巻き戻し視聴中かどうかを判定する道具。 */
         const latency = tracker();
+
+        /**
+         * media() の結果の入れ物。制御ループから頻繁に呼ばれるので、
+         * 呼ぶたびに作らず中身だけ書き換えて返します。
+         * @type {{ id: string, live: boolean }}
+         */
+        const current = { id: '', live: false };
 
         /** @type {number} これまでに観測した動画の最大長（秒） */
         let span = NaN;
@@ -139,16 +149,17 @@
              *   3) 動画の長さが伸び続けている
              * @returns {{ id: string, live: boolean }}
              */
-            media: () => ({
-                id: location.pathname.toLowerCase(),
-                live: !webrtc()
-                    && !/\/movie\/\d+/.test(location.pathname)
-                    && endless(),
-            }),
+            media() {
+                const path   = location.pathname;
+                current.id   = path.toLowerCase();
+                current.live = !webrtc() && !MOVIE.test(path) && endless();
+                return current;
+            },
 
             /**
              * 現在の遅延と、ライブ最前線にいるかを返す。
-             * 遅延を教えてくれる API が無いため、seekable から推定します。
+             * 遅延を教えてくれる API が無いため、seekable から推定します
+             * （tracker は結果の入れ物を使い回します）。
              * @returns {{ latency: number, atHead: boolean }}
              */
             status: () => latency.read(seekableLatency(watcher.video)),

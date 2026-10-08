@@ -43,16 +43,27 @@
     if (!site) return;
 
     /** @type {string|null} data 属性に書き込む JSON 文字列。まだ未取得なら null */
-    let json     = null;
-    /** @type {MutationObserver|null} data 属性の消去・改変を監視する見張り役 */
-    let observer = null;
+    let json    = null;
+    /** @type {Element|null} 属性の見張りを仕掛け済みの <html> 要素 */
+    let watched = null;
+
+    /**
+     * DOM の変化を見張る役（MutationObserver）。見張っているのは次の 2 つです。
+     *   - <html> の data-slpstrm 属性 … ページ側のスクリプトに消されたり
+     *                                    書き換えられたりしたら書き戻すため
+     *   - document 直下の子要素       … <html> 要素そのものが差し替えられたとき
+     *                                    （document.open() など）に、新しい <html> へ
+     *                                    書き込み直して見張りも付け替えるため
+     * 変化があると write() が呼ばれます。
+     */
+    const observer = new MutationObserver(write);
+    observer.observe(document, { childList: true });
 
     /**
      * 現在の設定 JSON を <html> の data-slpstrm 属性へ書き込む。
      *
-     * あわせて MutationObserver（DOM の変化を監視する仕組み）を仕掛けます。
-     * ページ側のスクリプトが属性を消したり書き換えたりしても、変化を検知して
-     * write() が再び呼ばれ、自動的に正しい値へ書き戻される仕掛けです。
+     * ページ側のスクリプトが属性を消したり書き換えたりしても、見張り役が変化を
+     * 検知して write() が再び呼ばれ、自動的に正しい値へ書き戻される仕掛けです。
      *
      * 自分で書き込んだ変化でも見張り役は 1 回呼ばれますが、そのときは
      * 「中身が同じなら書かない」判定で素通りするため、無限ループにはなりません。
@@ -65,10 +76,14 @@
         // 中身が同じなら書き込まない。無駄な DOM 変更＝無駄な通知を防ぐためです。
         if (root.dataset.slpstrm !== json) root.dataset.slpstrm = json;
 
-        if (!observer) {
-            observer = new MutationObserver(write);
-            // attributeFilter で「data-slpstrm 属性の変化だけ」に絞り、
-            // 関係ない変更で何度も呼ばれないようにしています。
+        // <html> が初めて見つかったとき、または差し替えられたときだけ見張りを付け直します。
+        // disconnect() で古い <html> の見張りを外してから、document と新しい <html> を見張ります。
+        // attributeFilter で「data-slpstrm 属性の変化だけ」に絞り、
+        // 関係ない変更で何度も呼ばれないようにしています。
+        if (root !== watched) {
+            watched = root;
+            observer.disconnect();
+            observer.observe(document, { childList: true });
             observer.observe(root, { attributes: true, attributeFilter: ['data-slpstrm'] });
         }
     }
@@ -107,18 +122,13 @@
 
     // 設定画面で値が変更されたら、その場でページへ反映する。
     api.storage.onChanged.addListener((changes, area) => {
-        if (area === 'local' && changes.settings) apply(changes.settings.newValue ?? {});
+        if (area === 'local' && changes.settings) apply(changes.settings.newValue);
     });
 
     // タブが表示状態に戻ったら「見ているサイト」を記録し直す。
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) announce();
     });
-
-    // このスクリプトは HTML の解析開始直後（document_start）に動きます。
-    // 万一その時点で <html> がまだ無かった場合に備え、読み込み段階が進んだ時点で
-    // もう一度だけ書き込みを試みます（`once: true` は 1 回で自動解除する指定）。
-    document.addEventListener('readystatechange', write, { once: true });
 
     // 起動時に保存済み設定を読み込む。
     // `json === null` の確認は、待っている間に onChanged が先に発火して

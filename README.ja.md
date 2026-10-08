@@ -388,7 +388,7 @@ Twitch 公式の情報も参考にしてください。
 ## 🌐 対応環境
 
 * **Manifest Version:** V3
-* **Google Chrome / Chromium 系ブラウザ:** v128 以降
+* **Google Chrome / Chromium 系ブラウザ:** v148 以降
 * **Mozilla Firefox:** v140.0 以降
 * **Firefox for Android:** v142.0 以降
 
@@ -413,25 +413,27 @@ Slipstream Live は**動作中に外部との通信を一切行いません**。
 ### ファイル構成
 
 ```
-manifest.json          拡張機能マニフェスト（MV3）
+manifest.json          拡張機能マニフェスト（MV3）。Chrome / Firefox 共通で、開発時はこれを読み込む
+manifest-chrome.json   Chrome ウェブストア提出用（manifest.json から Firefox 専用の項目を除いたもの）
+manifest-firefox.json  Firefox アドオン提出用（manifest.json から Chrome 専用の項目を除いたもの）
 background.js          サービスワーカー（Chrome）／イベントページ（Firefox）: アンインストール時のアンケート URL を登録
 popup.html/.css/.js    設定画面（オプションページも兼用）
-common.js              storage / i18n API のラッパー
+common.js              storage API のラッパーとログ出力
 content.js             ISOLATED world: 設定を <html data-slpstrm="..."> へ書き出す
 inject.js              MAIN world: 制御ループ本体（バッファ→モード→速度・音量）
-adapters/              サイト別の橋渡し: youtube.js / twitch.js / twitcasting.js
+adapters/              サイト別の橋渡し: youtube.js / twitch.js / twitcasting.js（各サイトには自分の分だけを読み込む）
 shared/schema.js       設定の唯一の定義元（型・範囲・既定値）
 shared/util.js         時系列窓・統計・DOM の小さなヘルパー
 _locales/              9 言語分の UI 翻訳
 docs/                  GitHub Pages: トップページ・プライバシーポリシー・取扱説明書（英日）と images/
 ```
 
-MAIN world のスクリプトからは `chrome.storage` を触れないため、設定は `data-` 属性上の JSON 文字列として world 境界を越えます。
+MAIN world のスクリプトからは拡張機能の API（`browser.storage`）を触れないため、設定は `data-` 属性上の JSON 文字列として world 境界を越えます。
 ページ側のスクリプトがこの属性を改ざんできてしまうので、`inject.js` は読み込んだ値を独自の基準で必ず再検証します。
 
 ### サイトを追加するには
 
-`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle`（および任意で `heal()`。持たないアダプタでは `inject.js` が呼び出しを飛ばします）を備えたアダプタを 1 つ書いて登録し、`shared/schema.js` の `SITES` と `manifest.json` に対応する項目を追加すれば完了です。`inject.js` 側の変更は不要で、`KEYS` もほとんど触る必要がありません。`all()` で書かれた既定値は新しいサイトを自動で拾うため、手で埋めるのは `floorThreshold` だけです。
+`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle`（および任意で `heal()`。持たないアダプタでは `inject.js` が呼び出しを飛ばします）を備えたアダプタを 1 つ書いて登録し、`shared/schema.js` の `SITES` と 3 つのマニフェストに対応する項目を追加すれば完了です。マニフェストでは、ISOLATED world 側の対象サイトにホストを足すことに加え、そのサイト専用の MAIN world の項目（`shared/util.js`・新しいアダプタ・`inject.js` の 3 つを読み込む）を 1 つ設けます。`media()` と `status()` は、毎回同じ結果オブジェクトを書き換えて返してかまいません。`inject.js` 側の変更は不要で、`KEYS` もほとんど触る必要がありません。`all()` で書かれた既定値は新しいサイトを自動で拾うため、手で埋めるのは `floorThreshold` だけです。
 
 なおコンテンツスクリプトは全フレームへ注入されるため（`all_frames: true`）、1 つのページで複数のインスタンスが独立して起動します。
 `<video>` を持たないフレームは 1 秒周期の見張りモードに落ち着きます。1 tick あたり属性文字列の比較とセレクタ数回で終わるため、費用はごくわずかです。

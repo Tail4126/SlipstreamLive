@@ -29,7 +29,7 @@ These aren't preferences, they're hard constraints. A PR that breaks one of thes
 * **No network requests, period.** PRIVACY.md promises the extension never talks to a server. No `fetch`, no `XMLHttpRequest`, no remote fonts, no CDN links, no analytics, no telemetry.
 * **No dependencies, no build step.** The repo *is* the extension — clone it and load it unpacked, that's it. No npm, no bundler, no transpiler.
 * **No new permissions** beyond `storage` and `activeTab` without discussing it in an issue first.
-* **Manifest V3 only.** Chrome 128+ / Firefox 140.0+ (Firefox for Android 142.0+).
+* **Manifest V3 only.** Chrome 148+ / Firefox 140.0+ (Firefox for Android 142.0+). Use the `browser.*` namespace — both browsers provide it.
 * **Live playback only.** VODs, clips, and ad breaks stay untouched.
 
 ## Before writing code
@@ -55,7 +55,7 @@ To preview a UI language without touching your browser settings, open the settin
 
 ## Adding a site
 
-Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()`, plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`. Register it, then add matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `inject.js` shouldn't need any changes, and neither should most of `KEYS` — defaults written with `all()` pick the new site up on their own, leaving `floorThreshold` as the only one to fill in.
+Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()`, plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`. Register it, then add matching entries to `SITES` in `shared/schema.js` and to all three manifests (`manifest.json`, `manifest-chrome.json`, `manifest-firefox.json`): add the hosts to the ISOLATED-world entry, and give the site a MAIN-world entry of its own that loads `shared/util.js`, your adapter and `inject.js` — each site loads only its own adapter. `media()` and `status()` run up to ten times a second, so returning the same result object each time is fine (and preferred). `inject.js` shouldn't need any changes, and neither should most of `KEYS` — defaults written with `all()` pick the new site up on their own, leaving `floorThreshold` as the only one to fill in.
 
 Include the reasoning behind any site-specific defaults you pick, especially thresholds — those numbers end up in the README tables.
 
@@ -85,6 +85,7 @@ Some facts live in more than one file. Change only one and the project starts co
 | The look of the settings screen | the screenshots in `docs/images/`, in both languages |
 | Anything in `docs/style.css` that isn't scoped to a `page-*` class | check all four pages — that rule reaches every one of them |
 | What gets stored, or which permissions are used | `PRIVACY.md` — the body **and** the "Last updated" date, in the same commit · `docs/privacy-policy.html`, which mirrors it |
+| Anything in a manifest (version, permissions, matched sites, minimum browser versions…) | all three of `manifest.json`, `manifest-chrome.json` and `manifest-firefox.json`. They may differ only in `background`, `browser_specific_settings` and `minimum_chrome_version` · the requirements in `README.md` / `README.ja.md`, `docs/manual.html` / `docs/manual.ja.html` and the footer of `docs/index.html` when a minimum version changes |
 
 ## Pull requests
 
@@ -130,7 +131,7 @@ JSON ファイル（`manifest.json`、`_locales/*/messages.json`）は対象外�
 * **外部通信は一切なし。** PRIVACY.md で「どのサーバーとも通信しない」とはっきり書いています。`fetch`、`XMLHttpRequest`、外部フォント、CDN リンク、アクセス解析、テレメトリ、どれも禁止です。
 * **依存もビルド工程もなし。** リポジトリがそのまま拡張機能です。clone したものをそのまま「パッケージ化されていない拡張機能を読み込む」で使えます。npm・バンドラ・トランスパイラは入れません。
 * **`storage` と `activeTab` 以外の権限は追加しません。** 必要になったら、まず Issue で相談してください。
-* **Manifest V3 のみ。** Chrome 128 以降 / Firefox 140.0 以降（Firefox for Android は 142.0 以降）。
+* **Manifest V3 のみ。** Chrome 148 以降 / Firefox 140.0 以降（Firefox for Android は 142.0 以降）。拡張機能の API は両ブラウザ共通の `browser.*` で呼んでください。
 * **ライブ再生のみを制御。** VOD・クリップ・広告には触りません。
 
 ## コードを書く前に
@@ -156,7 +157,7 @@ window.__slipstreamliveDebug = true;
 
 ## サイトを追加する
 
-`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle` を公開するアダプタを1つ書いてください。登録したら、`shared/schema.js` の `SITES` と `manifest.json` にも対応する項目を追加します。`inject.js` は触らずに済むはずですし、`KEYS` もほとんど触らずに済みます。`all()` で書かれた既定値は新しいサイトを自動で拾うので、埋める必要があるのは `floorThreshold` だけです。
+`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle` を公開するアダプタを1つ書いてください。登録したら、`shared/schema.js` の `SITES` と 3 つのマニフェスト（`manifest.json`・`manifest-chrome.json`・`manifest-firefox.json`）にも対応する項目を追加します。マニフェストでは ISOLATED world 側の対象サイトにホストを足し、さらにそのサイト専用の MAIN world の項目（`shared/util.js`・作ったアダプタ・`inject.js` を読み込む）を 1 つ設けてください。各サイトには自分のアダプタだけを読み込む構成です。`media()` と `status()` は 1 秒に最大 10 回ほど呼ばれるので、毎回同じ結果オブジェクトを書き換えて返す形で構いません（そのほうが望ましいです）。`inject.js` は触らずに済むはずですし、`KEYS` もほとんど触らずに済みます。`all()` で書かれた既定値は新しいサイトを自動で拾うので、埋める必要があるのは `floorThreshold` だけです。
 
 サイトごとの既定値、特にしきい値を決めたときは、その根拠も書いてください。README の表に載る数字になるので。
 
@@ -186,6 +187,7 @@ GitHub Pages のサイトは `docs/` にあり、このフォルダを含む変�
 | 設定画面の見た目 | `docs/images/` のスクリーンショットを英日とも撮り直し |
 | `docs/style.css` の `page-*` を前置していないルール | 4ページすべてを確認する。そのルールは全ページに届く |
 | 保存内容、使用する権限 | `PRIVACY.md` の本文**および**「最終更新」日を、同じコミットで ・ 同じ内容を載せている `docs/privacy-policy.html` |
+| マニフェストの内容（バージョン、権限、対象サイト、対応ブラウザの下限など） | `manifest.json`・`manifest-chrome.json`・`manifest-firefox.json` の 3 つすべて。違ってよいのは `background`・`browser_specific_settings`・`minimum_chrome_version` だけです ・ 下限バージョンを変えたときは README.md / README.ja.md、`docs/manual.html` / `docs/manual.ja.html`、`docs/index.html` のフッターにある対応環境の表記 |
 
 ## プルリクエスト
 
