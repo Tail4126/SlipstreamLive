@@ -15,16 +15,19 @@
  * ■ 動くタイミング
  *   ブラウザ起動時や拡張機能のインストール／更新時など、このスクリプトが
  *   起動するたびに登録し直します。何度登録しても結果は同じなので問題ありません。
- *   登録内容はブラウザ側が覚えているため、削除後にこのコードが動く必要はありません。
+ *
+ * ■ イベントリスナーを登録していない理由（変更するときの注意）
+ *   Chrome は登録した URL をブラウザ側の設定に保存するので、一度登録すれば足ります。
+ *   一方 Firefox は URL をメモリ上にしか持たないため、ブラウザを起動するたびに
+ *   このスクリプトが動いて登録し直す必要があります。
+ *
+ *   Firefox のイベントページは「永続化されたリスナーが 1 つも無い」場合に限り、
+ *   ブラウザ起動時に自動で起動されます。ここで runtime.onInstalled などのリスナーを
+ *   足すと起動時に自動で動かなくなり、2 回目以降の起動ではアンケートが開かなく
+ *   なります。リスナーを足す場合は、必ず runtime.onStartup にもリスナーを登録して
+ *   起動時に呼ばれるようにしてください。
  */
 'use strict';
-
-/**
- * ブラウザ拡張の API 本体。
- * Firefox は `browser`、Chrome は `chrome` という名前で提供しているため、
- * 存在するほうを使います（`??` は「左が null / undefined なら右を使う」演算子）。
- */
-const api = globalThis.browser ?? globalThis.chrome;
 
 /** アンインストール時に開くアンケートフォームの URL。識別子などは一切付けません。 */
 const SURVEY_URL = 'https://forms.gle/d6kbXD7QREL1VSmk9';
@@ -32,13 +35,16 @@ const SURVEY_URL = 'https://forms.gle/d6kbXD7QREL1VSmk9';
 /**
  * アンインストール時に開く URL を登録する。
  *
+ * 拡張機能の API は、最新の Chrome（148 以降）と Firefox のどちらでも
+ * `browser` という名前で使えます（どちらも Promise を返します）。
+ *
  * 全体を async の即時実行関数で囲んでいるのは、`await` で結果を待ち、
  * 失敗（Promise の拒否）と同期的な例外の両方を 1 つの try/catch で受けるためです。
  * 失敗しても拡張機能の本来の機能には影響しないので、警告を出すだけにとどめます。
  */
 (async () => {
     try {
-        await api.runtime.setUninstallURL(SURVEY_URL);
+        await browser.runtime.setUninstallURL(SURVEY_URL);
     } catch (error) {
         console.warn('[slipstreamlive] setUninstallURL', error);
     }

@@ -25,6 +25,13 @@
  *   needs()         … このサイトが必要とするバッファの目安秒数
  *   host()          … バッジを差し込みたい場所（コントロールバー）を返す
  *
+ *   media() と status() は制御ループから頻繁に呼ばれるため、結果の入れ物（オブジェクト）を
+ *   使い回して返してかまいません。inject.js は、次に呼ぶまでの間に値を読み終えます。
+ *
+ * ■ 読み込まれ方
+ *   manifest.json は、サイトごとに「shared/util.js → そのサイトのアダプター → inject.js」
+ *   だけを読み込みます。YouTube のページに Twitch やツイキャスのアダプターは入りません。
+ *
  * ■ YouTube の特徴
  *   #movie_player 要素に、内部 API（getVideoData など）が生えています。
  *   これを呼べば遅延やライブ判定を正確に取得できるため、他サイトより有利です。
@@ -34,11 +41,28 @@
     'use strict';
 
     // shared/util.js が置いた道具箱を参照します（ここでは delete しません。
-    // 後続のアダプターと inject.js もまだ使うため、削除は inject.js が担当します）。
+    // このあと読み込まれる inject.js もまだ使うため、削除は inject.js が担当します）。
     const util = globalThis.__slipstreamliveUtil;
     if (!util) return;
 
     const { pick, toNum, safeCall, registerSite } = util;
+
+    /**
+     * getPlayerResponse() を問い合わせ直す最短間隔（ミリ秒）。
+     * 動画の切り替え直後は前の動画の応答が残っていることがあり、一致するまで
+     * 問い合わせ直します。制御ループ（20 ミリ秒ごと）のたびに呼ばないための歯止めです。
+     */
+    const INSPECT_MS = 250;
+
+    /**
+     * バッジを差し込みたい場所（コントロールバー内）の候補。上から順に試します。
+     * YouTube の UI 変更に耐えられるよう、候補を複数用意しています。
+     */
+    const BARS = [
+        'player-time-display .ytwPlayerTimeDisplayLiveDot', // 新 UI のライブ表示
+        '.ytp-time-display .ytp-time-wrapper',              // 時間表示の隣
+        '.ytp-chrome-controls .ytp-left-controls',          // 左側コントロール群
+    ];
 
     /**
      * YouTube 用アダプターを生成する。
@@ -56,10 +80,22 @@
         // --- 動画ごとに 1 度だけ調べる情報（getPlayerResponse の videoDetails 由来）---
         /** @type {string|null} 下の 2 つを確認し終えた動画の ID */
         let checkedId    = null;
+        /** @type {string|null} 確認を試みている最中の動画の ID */
+        let pendingId    = null;
+        /** @type {number} 最後に getPlayerResponse() を問い合わせた時刻 */
+        let inspectAt    = -Infinity;
         /** @type {boolean} その動画がプレミア公開かどうか */
         let premiere     = false;
         /** @type {string} その動画の遅延モード（…ULTRA_LOW / …LOW / それ以外） */
         let latencyClass = '';
+
+        // --- media() / status() の結果の入れ物 ---
+        // 制御ループから頻繁に呼ばれるので、呼ぶたびに作らず中身だけ書き換えて返します。
+        // 受け取った inject.js は、次に呼ぶまでの間に値を読み終える前提です。
+        /** @type {{ id: string|null, live: boolean, premiere: boolean }} */
+        const current = { id: null, live: false, premiere: false };
+        /** @type {{ latency: number, atHead: boolean }} */
+        const stat    = { latency: NaN, atHead: true };
 
         /**
          * YouTube プレーヤーの内部 API を安全に呼び出すショートカット。
@@ -85,14 +121,24 @@
          * ■ 確認が取れるまでの扱い
          *   新しい動画の情報を確認できるまでは、前の動画の判定は使わず
          *   「プレミアではない／遅延モード不明」として扱います（初回読み込み時と同じ扱い）。
+         *   問い合わせ直しは INSPECT_MS ごとに間引きます。
          * @param {string|null} id 現在の動画 ID
          * @returns {void}
          */
         function inspect(id) {
             if (id === checkedId) return;
 
-            premiere     = false;
-            latencyClass = '';
+            // 新しい動画の確認を始めるときだけ、前の動画の判定を捨てます。
+            if (id !== pendingId) {
+                pendingId    = id;
+                inspectAt    = -Infinity;
+                premiere     = false;
+                latencyClass = '';
+            }
+
+            const now = performance.now();
+            if (now - inspectAt < INSPECT_MS) return;
+            inspectAt = now;
 
             const details = call('getPlayerResponse')?.videoDetails;
             if (!details || (details.videoId ?? id) !== id) return;
@@ -100,7 +146,10 @@
             checkedId    = id;
             // isLiveContent が true = 本物のライブ配信。
             // false なら、ライブ扱いだが中身は録画＝プレミア公開。
-            premiere     = details.isLiveContent !== true;
+            // 「明示的に false のときだけ」プレミアとみなします。項目そのものが無い応答を
+            // プレミア扱いにすると、YouTube 側の仕様変更で項目が消えた途端、既定の設定
+            // （プレミア公開は制御しない）ではすべてのライブ配信が制御されなくなるためです。
+            premiere     = details.isLiveContent === false;
             latencyClass = String(details.latencyClass ?? '');
         }
 
@@ -122,7 +171,10 @@
              * 覚えていた動画ごとの情報を捨て、次の media() で調べ直させます。
              * @returns {void}
              */
-            reset() { checkedId = null; },
+            reset() {
+                checkedId = null;
+                pendingId = null;
+            },
 
             /**
              * プレーヤーの外枠要素を返す（バッジの表示位置の基準に使われる）。
@@ -136,9 +188,10 @@
              */
             video() {
                 // (1) 通常の視聴ページには #movie_player があります。
+                //     getElementById は ID で引く専用の手段で、querySelector より速く済みます。
                 // (2) 無ければ埋め込みプレーヤーなどの代替を探します
                 //     （覚えている要素がページから消えたときだけ探し直す）。
-                const main = document.querySelector('#movie_player');
+                const main = document.getElementById('movie_player');
                 if (main) player = main;
                 else if (!player?.isConnected) player = pick(['.html5-video-player']);
 
@@ -170,19 +223,25 @@
                 // プレミア公開（事前に用意した動画を同時視聴するもの）の判定。
                 // 判定にコストのかかる API なので、ライブのときだけ、動画ごとに 1 度だけ調べます。
                 if (live) inspect(id);
-                return { id, live, premiere: live && premiere };
+
+                current.id       = id;
+                current.live     = live;
+                current.premiere = live && premiere;
+                return current;
             },
 
             /**
              * 現在の遅延と、ライブ最前線にいるかどうかを返す。
              * YouTube は「統計情報」API から実測値を教えてくれます。
+             * （詳細統計情報の組み立ては重めなので、inject.js は 0.1 秒ごとにしか呼びません）
              * @returns {{ latency: number, atHead: boolean }}
              */
-            status: () => ({
-                latency: toNum(call('getStatsForNerds')?.live_latency_secs),
+            status() {
+                stat.latency = toNum(call('getStatsForNerds')?.live_latency_secs);
                 // isAtLiveHead が明示的に false のときだけ「巻き戻して視聴中」と判断します。
-                atHead: call('getProgressState')?.isAtLiveHead !== false,
-            }),
+                stat.atHead  = call('getProgressState')?.isAtLiveHead !== false;
+                return stat;
+            },
 
             /**
              * このサイトが必要とするバッファの目安（秒）を返す。
@@ -205,15 +264,10 @@
 
             /**
              * バッジを差し込みたい場所（コントロールバー内）を返す。
-             * 上から順に試し、最初に見つかった場所を使います。
-             * YouTube の UI 変更に耐えられるよう、候補を複数用意しています。
+             * BARS の上から順に試し、最初に見つかった場所を使います。
              * @returns {Element|null} 見つからなければ null（本体側が代替の枠を作る）
              */
-            host: () => pick([
-                'player-time-display .ytwPlayerTimeDisplayLiveDot', // 新 UI のライブ表示
-                '.ytp-time-display .ytp-time-wrapper',              // 時間表示の隣
-                '.ytp-chrome-controls .ytp-left-controls',          // 左側コントロール群
-            ], player),
+            host: () => pick(BARS, player),
         };
     }
 

@@ -3,7 +3,7 @@
 
     "name": "__MSG_appName__",
     "short_name": "__MSG_appShortName__",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "description": "__MSG_appDesc__",
 
     "default_locale": "en",
@@ -55,8 +55,6 @@
             "js": [
                 "shared/util.js",
                 "adapters/youtube.js",
-                "adapters/twitch.js",
-                "adapters/twitcasting.js",
                 "inject.js"
             ],
             "world": "MAIN",
@@ -64,18 +62,44 @@
             "matches": [
                 "https://www.youtube.com/*",
                 "https://m.youtube.com/*",
-                "https://www.youtube-nocookie.com/*",
-                "https://www.twitch.tv/*",
-                "https://player.twitch.tv/*",
-                "https://clips.twitch.tv/*",
-                "https://twitcasting.tv/*",
-                "https://*.twitcasting.tv/*"
+                "https://www.youtube-nocookie.com/*"
             ],
             "exclude_matches": [
                 "https://www.youtube.com/live_chat*",
-                "https://m.youtube.com/live_chat*",
+                "https://m.youtube.com/live_chat*"
+            ],
+            "all_frames": true
+        },
+        {
+            "js": [
+                "shared/util.js",
+                "adapters/twitch.js",
+                "inject.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_start",
+            "matches": [
+                "https://www.twitch.tv/*",
+                "https://player.twitch.tv/*",
+                "https://clips.twitch.tv/*"
+            ],
+            "exclude_matches": [
                 "https://www.twitch.tv/popout/*/chat*",
                 "https://www.twitch.tv/embed/*/chat*"
+            ],
+            "all_frames": true
+        },
+        {
+            "js": [
+                "shared/util.js",
+                "adapters/twitcasting.js",
+                "inject.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_start",
+            "matches": [
+                "https://twitcasting.tv/*",
+                "https://*.twitcasting.tv/*"
             ],
             "all_frames": true
         }

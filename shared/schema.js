@@ -36,9 +36,14 @@
      * 実行中のブラウザが Firefox かどうか。
      * Firefox は動画バッファの挙動が Chrome と少し違うため、
      * 一部の既定値だけ Firefox 用に差し替えます（後述の `ff` プロパティ）。
+     *
+     * 判定には拡張機能自身の URL の形式を使います（Firefox は moz-extension://、
+     * Chrome は chrome-extension://）。User-Agent 文字列は、ブラウザの設定や
+     * 偽装用の拡張機能で書き換えられることがあり、当てにならないためです。
+     * このファイルは拡張機能の API が使える場所（content.js と設定画面）でしか読み込まれません。
      * @type {boolean}
      */
-    const FIREFOX = navigator.userAgent.includes('Firefox');
+    const FIREFOX = globalThis.browser?.runtime?.getURL?.('').startsWith('moz-extension:') === true;
 
     /**
      * 警告ログを出すための小さなヘルパー。
@@ -67,6 +72,9 @@
         twitcasting: { label: 'TwitCasting', host: /(^|\.)twitcasting\.tv$/ },
     };
 
+    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting']）。何度も使うので 1 度だけ作ります。 */
+    const SITE_IDS = Object.keys(SITES);
+
     /**
      * 「全サイトに同じ既定値を配る」ためのヘルパー。
      * 例: all(true) → { youtube: true, twitch: true, twitcasting: true }
@@ -76,7 +84,7 @@
      * @param {unknown} value 全サイトに配りたい値
      * @returns {Record<string, unknown>} サイト ID をキーにしたオブジェクト
      */
-    const all = (value) => Object.fromEntries(Object.keys(SITES).map((site) => [site, value]));
+    const all = (value) => Object.fromEntries(SITE_IDS.map((site) => [site, value]));
 
     /**
      * 設定項目の一覧（このファイルの心臓部）。
@@ -135,6 +143,9 @@
         recover:          { def: { youtube: false, twitch: true, twitcasting: false } },
     };
 
+    /** 設定キーの一覧。settingsOf() が呼ばれるたびに作り直さないよう、1 度だけ作ります。 */
+    const KEY_NAMES = Object.keys(KEYS);
+
     /**
      * その設定キーを「どの保存先（バケット）」に入れるかを返す。
      * 共通設定なら 'common'、サイト別ならサイト ID そのものが保存先になります。
@@ -173,9 +184,9 @@
     /**
      * 保存されている値を「安全に使える正しい値」に整える。
      *
-     * 保存データはユーザーが手で書き換えたり、古いバージョンの残骸だったりする
-     * 可能性があります。そのままだと NaN や範囲外の値で誤動作するので、
-     * ここで必ず通してから使います（いわゆるサニタイズ処理）。
+     * 保存データは手で書き換えられたり、壊れていたりする可能性があります。
+     * また設定画面の入力欄の値は文字列で届きます。そのままだと NaN や範囲外の値で
+     * 誤動作するので、ここで必ず通してから使います（いわゆるサニタイズ処理）。
      *
      * 数値の場合の処理：刻み幅に丸める → 最小・最大に収める → 小数誤差を整える
      * @param {string} site サイト ID
@@ -184,8 +195,12 @@
      * @returns {number|boolean|undefined} 整えた値。未知のキーなら undefined
      */
     function fix(site, key, value) {
+        // 知らないキーは扱わない。
+        // `KEYS[key]` だけで判定すると、'toString' や 'constructor' のような
+        // 全オブジェクト共通の名前まで「定義あり」と誤認してしまうため、
+        // KEYS 自身が持つキーかどうかを Object.hasOwn で確かめます。
+        if (!Object.hasOwn(KEYS, key)) return undefined;
         const spec = KEYS[key];
-        if (!spec) return undefined; // 知らないキーは扱わない
 
         const fallback = defaultOf(site, key);
 
@@ -216,7 +231,7 @@
      * @returns {Record<string, number|boolean>} そのサイト用に整えた設定一式
      */
     const settingsOf = (data, site) => Object.fromEntries(
-        Object.keys(KEYS).map((key) => [key, fix(site, key, data?.[bucketOf(site, key)]?.[key])]));
+        KEY_NAMES.map((key) => [key, fix(site, key, data?.[bucketOf(site, key)]?.[key])]));
 
     /**
      * ホスト名から、対応サイトのどれに当たるかを判定する。
@@ -224,7 +239,7 @@
      * @returns {string|null} サイト ID。対応外なら null
      */
     const siteOf = (host = location.hostname) =>
-        Object.keys(SITES).find((site) => SITES[site].host.test(host)) ?? null;
+        SITE_IDS.find((site) => SITES[site].host.test(host)) ?? null;
 
     // 組み立てた道具一式を、いったんグローバルの一時変数に置きます。
     // この直後に読み込まれる common.js がこれを受け取り、変数ごと削除します。

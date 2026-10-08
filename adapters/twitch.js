@@ -92,6 +92,16 @@
         /** 「LIVE」表示を示す要素のセレクター。 */
         const LIVE = '[data-a-target="player-info-live-indicator"], .live-time';
 
+        /** バッジを差し込む場所（コントロールバー左側）のセレクター。 */
+        const BARS = ['.player-controls__left-control-group'];
+
+        /**
+         * media() の結果の入れ物。制御ループから頻繁に呼ばれるので、
+         * 呼ぶたびに作らず中身だけ書き換えて返します。
+         * @type {{ id: string, live: boolean }}
+         */
+        const current = { id: '', live: false };
+
         /** 遅延を追跡し、巻き戻し視聴中かどうかを判定する道具。 */
         const latency = tracker();
 
@@ -422,15 +432,15 @@
 
                 // 識別子は「URL ＋ チャンネル名」。これが変われば別の配信と判断されます。
                 const path = location.hostname === 'player.twitch.tv' ? location.search : location.pathname;
-                return {
-                    id: `${path}|${login ?? ''}`.toLowerCase(),
-                    live,
-                };
+                current.id   = `${path}|${login ?? ''}`.toLowerCase();
+                current.live = live;
+                return current;
             },
 
             /**
              * 現在の遅延と、ライブ最前線にいるかを返す。
-             * Twitch は atHead を教えてくれないので、tracker で自前に推定します。
+             * Twitch は atHead を教えてくれないので、tracker で自前に推定します
+             * （tracker も結果の入れ物を使い回します）。
              * @returns {{ latency: number, atHead: boolean }}
              */
             status: () => latency.read(toNum(ask('getLiveLatency', NaN))),
@@ -446,7 +456,7 @@
              * バッジを差し込みたい場所（コントロールバー左側）を返す。
              * @returns {Element|null}
              */
-            host: () => pick(['.player-controls__left-control-group'], watcher.root),
+            host: () => pick(BARS, watcher.root),
         };
     }
 

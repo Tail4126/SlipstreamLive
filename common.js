@@ -33,11 +33,10 @@ globalThis.SLPSTRM = (() => {
 
     /**
      * ブラウザ拡張の API 本体。
-     * Firefox は `browser`、Chrome は `chrome` という名前で提供しているため、
-     * 存在するほうを選んで、以降はブラウザの違いを意識せずに書けるようにします。
-     * （どちらのブラウザでも、Manifest V3 の API は Promise を返します）
+     * 最新の Chrome（148 以降）と Firefox は、どちらも `browser` という名前で
+     * 同じ API を提供しています（Manifest V3 の API はどちらも Promise を返します）。
      */
-    const api = globalThis.browser ?? globalThis.chrome;
+    const api = globalThis.browser;
 
     /**
      * ログ出力用のヘルパー（デバッグ用）。
@@ -56,6 +55,15 @@ globalThis.SLPSTRM = (() => {
     };
 
     /**
+     * 値が「ふつうのオブジェクト（{ ... }）」かどうかを判定する。
+     * null（typeof が 'object' になる）と配列は除外します。
+     * 保存領域から読んだ値が壊れていないかの確認に使います。
+     * @param {unknown} value 調べたい値
+     * @returns {boolean} ふつうのオブジェクトなら true
+     */
+    const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+    /**
      * 拡張機能との接続がまだ生きているかを確認する。
      * 切れているのに API を呼ぶと例外になるので、その手前で止めるための関数です。
      * try/catch で囲んでいるのは、確認する行為自体が例外を投げる場合があるためです。
@@ -72,18 +80,27 @@ globalThis.SLPSTRM = (() => {
      * 素の API との違い：
      *   - 接続が切れていたら何もせず、安全な値を返す
      *   - 例外を握りつぶして警告に変えるので、呼び出し側で try/catch が不要
-     *   - 値が無いときは undefined ではなく空オブジェクト {} を返す
+     *   - 値が無いとき・壊れているとき（オブジェクトでないとき）は空オブジェクト {} を返す
      */
     const store = {
         /**
          * 保存されている値を読み出す。
+         *
+         * 保存値がオブジェクトでない場合（手での書き換えや破損で文字列・配列などに
+         * なっている場合）は {} として扱います。そのまま返すと、呼び出し側が
+         * `{ ...value }` で展開したときに "abc" が { 0: 'a', 1: 'b', ... } のような
+         * ゴミのキーに化けて、そのまま保存し直されてしまうためです。
          * @param {string} key 'settings' や 'ui' などの保存キー
          * @returns {Promise<Record<string, unknown>>} 保存値。無ければ空オブジェクト
          */
         async get(key) {
             if (!alive()) return {};
             try {
-                return (await api.storage.local.get(key))[key] ?? {};
+                const value = (await api.storage.local.get(key))[key];
+                if (value === undefined) return {};
+                if (isRecord(value)) return value;
+                log.warn(`storage.get(${key}): 想定外の形式のため無視します`, value);
+                return {};
             } catch (error) {
                 log.warn(`storage.get(${key})`, error);
                 return {};
@@ -117,5 +134,5 @@ globalThis.SLPSTRM = (() => {
     // ここで返したオブジェクトが、そのまま globalThis.SLPSTRM になります。
     // `...schema` はスプレッド構文で、schema の中身（KEYS, SITES, fix …）を
     // このオブジェクトの直下に展開する書き方です。
-    return { api, store, log, ...schema };
+    return { api, store, log, isRecord, ...schema };
 })();

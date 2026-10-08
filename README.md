@@ -447,7 +447,7 @@ Twitch's own troubleshooting resources are worth a look too:
 ## 🌐 Requirements
 
 * **Manifest version:** V3
-* **Google Chrome / Chromium-based browsers:** v128 or later
+* **Google Chrome / Chromium-based browsers:** v148 or later
 * **Mozilla Firefox:** v140.0 or later
 * **Firefox for Android:** v142.0 or later
 
@@ -473,20 +473,22 @@ No analytics, no telemetry, no identifiers, no ads. Full details in [PRIVACY.md]
 ### Project layout
 
 ```
-manifest.json          Extension manifest (MV3)
+manifest.json          Extension manifest (MV3), shared by Chrome and Firefox — load this one when developing
+manifest-chrome.json   Same manifest trimmed for the Chrome Web Store package
+manifest-firefox.json  Same manifest trimmed for the addons.mozilla.org package
 background.js          Service worker (Chrome) / event page (Firefox): registers the uninstall survey URL
 popup.html/.css/.js    Settings UI (also serves as the options page)
-common.js              Wrapper around storage / i18n APIs
+common.js              Wrapper around the storage API, plus log helpers
 content.js             ISOLATED world: pushes settings into <html data-slpstrm="...">
 inject.js              MAIN world: the control loop (buffer → mode → speed/volume)
-adapters/              Per-site glue: youtube.js, twitch.js, twitcasting.js
+adapters/              Per-site glue: youtube.js, twitch.js, twitcasting.js (each site loads only its own)
 shared/schema.js       Single source of truth for settings (types, ranges, defaults)
 shared/util.js         Small time-series, statistics and DOM helpers
 _locales/              UI translations for 9 languages
 docs/                  GitHub Pages: landing page, privacy policy, user manual (en/ja) + images/
 ```
 
-MAIN-world scripts can't reach `chrome.storage`, so settings cross the world boundary as a JSON
+MAIN-world scripts can't reach the extension APIs (`browser.storage`), so settings cross the world boundary as a JSON
 string on a `data-` attribute. Page scripts can tamper with that attribute, so `inject.js` always
 re-validates what it reads against its own independent bounds.
 
@@ -495,7 +497,9 @@ re-validates what it reads against its own independent bounds.
 Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` /
 `reset()` plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle` (and, optionally, `heal()` —
 `inject.js` skips it on adapters that don't provide one), register it, and add
-matching entries to `SITES` in `shared/schema.js` and to `manifest.json`. `inject.js` itself
+matching entries to `SITES` in `shared/schema.js` and to all three manifests: the site's hosts go into the
+ISOLATED-world entry, plus a MAIN-world entry of its own that loads `shared/util.js`, the new adapter and
+`inject.js`. `media()` and `status()` may hand back the same result object every time. `inject.js` itself
 doesn't need to change, and neither does most of `KEYS` — defaults written with `all()` pick the
 new site up automatically, leaving `floorThreshold` as the only one to fill in by hand.
 

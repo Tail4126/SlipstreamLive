@@ -31,6 +31,14 @@
  *   Noise  … 遅延のばらつきを記録する（デバッグ表示用）
  *   tick   … 上記すべてを 20 ミリ秒ごとに呼び出す司令塔
  *
+ * ■ 速さのための約束事
+ *   tick は制御中 1 秒間に約 50 回動くので、次のことを守っています。
+ *   - 1 回の tick の中で、オブジェクトや配列をなるべく新しく作らない
+ *     （結果の入れ物は使い回し、統計は shared/util.js の series() で足し引きだけにする）
+ *   - サイトへの問い合わせ（adapter.media() / adapter.status()）は、
+ *     判断に必要な鮮度（MEDIA_MS / STATUS_MS）を保てる範囲で間引く
+ *   - 設定の属性は、変わったと分かったとき（MutationObserver の通知）だけ読み直す
+ *
  * ■ このファイルが動く場所
  *   メインワールド（ページ本体と同じ実行環境）です。そのため
  *   YouTube プレーヤーの内部 API を呼べる代わりに、拡張機能の API は使えません。
@@ -38,6 +46,17 @@
  */
 (() => {
     'use strict';
+
+    // shared/util.js とアダプターが置いた受け渡し用のグローバル変数を受け取り、
+    // すぐに変数ごと削除します（ページ側の JavaScript から見えたままにしないための後始末）。
+    //
+    // 下の二重読み込みチェックより先に行うのが要点です。Firefox は拡張機能の更新時などに、
+    // 開いているタブへこれらのスクリプトをもう一度読み込みます。チェックを先にすると、
+    // 2 回目は削除せずに終了してしまい、受け渡し用の変数がページに残り続けます。
+    const util  = globalThis.__slipstreamliveUtil;
+    const sites = globalThis.__slipstreamliveSites ?? {};
+    delete globalThis.__slipstreamliveUtil;
+    delete globalThis.__slipstreamliveSites;
 
     // 二重に読み込まれた場合の保険。すでに動いていれば何もせず終了します。
     // （2 つの制御が同時に速度を書き換えると、確実に暴走するため）
@@ -51,8 +70,26 @@
     /** 動作中の判断間隔（ミリ秒）。20ms = 1 秒間に 50 回チェックする。 */
     const TICK_MS    = 20;
 
+    /** 待機モードでの確認間隔（ミリ秒）。1 秒ごとに様子を見るだけにして負荷を抑える。 */
+    const IDLE_MS    = 1000;
+
     /** バッジの表示更新間隔（ミリ秒）。判断ほど頻繁に描き替える必要はないため間引く。 */
     const PAINT_MS   = 100;
+
+    /**
+     * 再生中のメディア（動画 ID・ライブかどうか）を問い合わせ直す間隔（ミリ秒）。
+     * 動画の切り替わりや広告の始まりを 0.1 秒以内に気付ければ十分なため、毎回は聞きません。
+     * なお、動画の読み込み開始などのイベントが届いたときは、間隔を待たずに問い合わせます。
+     */
+    const MEDIA_MS   = 100;
+
+    /**
+     * 遅延（latency）と最前線にいるか（atHead）を問い合わせ直す間隔（ミリ秒）。
+     * どちらもバッジ表示と、加速を見送っている状態からの復帰判定（0.2 秒以上の変化を見る）
+     * にしか使わないため、0.1 秒ごとで足ります。YouTube では「詳細統計情報」を組み立てる
+     * 重めの API なので、毎回呼ばないことの効果が大きい部分です。
+     */
+    const STATUS_MS  = 100;
 
     /** バッファ範囲の境界判定に使う許容誤差（秒）。わずかなズレを同一とみなす。 */
     const SLACK      = 0.1;
@@ -107,10 +144,7 @@
     /** 状態ごとのバッジの文字色（白＝平常／赤＝加速中／青＝下限モード）。 */
     const COLOR = { normal: '#eee', speedup: '#ff8983', floor: '#83c1ff' };
 
-    // shared/util.js が置いた道具箱を受け取り、すぐに変数ごと削除します
-    // （ページ側の JavaScript から見えたままにしないための後始末）。
-    const util = globalThis.__slipstreamliveUtil;
-    delete globalThis.__slipstreamliveUtil;
+    // shared/util.js の道具箱（冒頭で受け取り済み）が無ければ動けないので終了します。
     if (!util) return;
 
     const { clamp, toNum, series } = util;
@@ -119,9 +153,15 @@
      * デバッグモードかどうか。
      * 配信ページのコンソールで `window.__slipstreamliveDebug = true` と
      * 実行すると、内部状態のログが 1 秒ごとに出るようになります。
+     *
+     * この変数はページ側から自由に定義できるため、読むと例外を投げる仕掛け
+     * （getter）を置かれても制御ループが巻き込まれないよう try/catch で囲みます。
      * @returns {boolean}
      */
-    const debugging = () => window.__slipstreamliveDebug === true;
+    const debugging = () => {
+        try { return window.__slipstreamliveDebug === true; }
+        catch { return false; }
+    };
 
     /**
      * デバッグログを出力する。
@@ -130,11 +170,8 @@
      */
     const log = (...args) => { if (debugging()) console.log('[slipstreamlive]', ...args); };
 
-    // 登録済みのサイトアダプター一覧を受け取り、こちらも痕跡を消します。
-    const sites = globalThis.__slipstreamliveSites ?? {};
-    delete globalThis.__slipstreamliveSites;
-
-    // 今のホスト名に合うアダプターを探します。
+    // 今のホスト名に合うアダプターを探します（sites は冒頭で受け取った登録済みの一覧）。
+    // manifest.json でサイトごとに読み込むアダプターを分けているので、通常は 1 つだけです。
     // `([, site]) => ...` は配列の分割代入で、1 番目（ID）を読み飛ばして
     // 2 番目だけを受け取る書き方です。
     const found = Object.entries(sites).find(([, site]) => site.host.test(location.hostname));
@@ -280,6 +317,7 @@
                 }
 
                 // まだ横取りしていなければ、getter / setter を差し替えます。
+                // ページ側に消されたり差し替えられたりしても気付けるよう、毎回確かめます。
                 // configurable: true を付けるのは、あとで delete して戻せるようにするため。
                 if (Object.getOwnPropertyDescriptor(node, prop)?.get !== mine) {
                     try {
@@ -321,12 +359,16 @@
      *   1) サイト純正のコントロールバーの中（adapter.host() が返す場所）。見た目が自然。
      *   2) 見つからなければ、プレーヤーの左上に浮かべる独自の枠（shelf）。
      *
+     * ■ 要素は初めて表示するときに作る
+     *   バッジは既定でオフで、ライブ配信以外のページでは出番がありません。
+     *   そこで要素は最初に show() が呼ばれたときに作り、それまでメモリを使わないようにしています。
+     *
      * ■ pointer-events:none にしている理由
      *   バッジはあくまで表示専用なので、クリックが吸い取られて
      *   プレーヤーの操作を邪魔しないよう、マウス操作を透過させています。
      */
     const Badges = (() => {
-        /** バッジの種類。表示順もこの並び順になります。 */
+        /** バッジの種類。表示順もこの並び順になります（face のキーとも対応します）。 */
         const NAMES   = ['playbackrate', 'latency', 'health'];
 
         /** 表示場所を探し直す間隔（ミリ秒）。毎回探すと重いため間引きます。 */
@@ -356,20 +398,47 @@
             return node;
         }
 
-        /** @type {Map<string, HTMLButtonElement>} 種類名 → バッジ要素 */
-        const nodes = new Map(NAMES.map((name) => [name, build(name)]));
-
-        /** コントロールバーが見つからないときに使う、代替の浮かせ枠。 */
-        const shelf = document.createElement('div');
-        shelf.className     = '_slipstreamlive_shelf';
-        shelf.style.cssText = 'position:absolute;top:8px;left:8px;z-index:2147483000;'
-            + 'display:flex;align-items:center;gap:2px;padding:2px 4px;border-radius:6px;'
-            + 'background:#000000a6;pointer-events:none;';
+        /**
+         * 各バッジの要素と、いま表示している内容。
+         * 内容を覚えておき、変わったところだけ DOM を書き換えます。
+         * 文字は要素の中に 1 つだけ置いたテキストノード（label）の data を書き換えて更新します。
+         * textContent に代入すると、そのたびに中のノードが作り直されるためです。
+         * @type {{ name: string, node: HTMLButtonElement, label: Text, text: string|null, shown: boolean|null, color: string|null }[]|null}
+         */
+        let items = null;
+        /** @type {HTMLButtonElement[]} 各バッジの要素だけを並べた配列（append にまとめて渡す用） */
+        let nodes = [];
+        /** @type {HTMLDivElement|null} コントロールバーが見つからないときに使う、代替の浮かせ枠 */
+        let shelf = null;
 
         /** @type {HTMLElement|null} position を書き換えた要素（元に戻すために覚えておく） */
         let styled    = null;
         /** @type {string} 書き換える前のインライン指定（style 属性に無ければ空文字） */
         let styledWas = '';
+
+        /** @type {HTMLElement|null} 現在バッジを置いている場所 */
+        let host   = null;
+        /** @type {number} 次に置き場所を探し直す時刻 */
+        let slotAt = 0;
+
+        /**
+         * 要素がまだ無ければ作る（初めて表示するときに 1 回だけ）。
+         * @returns {void}
+         */
+        function ensure() {
+            if (items) return;
+            items = NAMES.map((name) => {
+                const node  = build(name);
+                const label = node.appendChild(document.createTextNode(''));
+                return { name, node, label, text: null, shown: null, color: null };
+            });
+            nodes = items.map((item) => item.node);
+            shelf = document.createElement('div');
+            shelf.className     = '_slipstreamlive_shelf';
+            shelf.style.cssText = 'position:absolute;top:8px;left:8px;z-index:2147483000;'
+                + 'display:flex;align-items:center;gap:2px;padding:2px 4px;border-radius:6px;'
+                + 'background:#000000a6;pointer-events:none;';
+        }
 
         /**
          * 書き換えた position の指定を元に戻す。
@@ -388,17 +457,17 @@
 
         /**
          * バッジを置く場所を決めて返す。
-         * @param {HTMLVideoElement|null} video 現在の video 要素
+         * @param {HTMLVideoElement|null} node 現在の video 要素
          * @returns {HTMLElement|null} 置き場所。決められなければ null
          */
-        function slot(video) {
+        function slot(node) {
             // (1) サイト純正のコントロールバーがあれば最優先。代替枠は片付けます。
             const bar = adapter.host();
             if (bar) { shelf.remove(); unstyle(); return bar; }
 
             // (2) 無ければプレーヤーの外枠、それも無ければ video の親要素に浮かべます。
             const root = adapter.root();
-            const box  = root?.isConnected ? root : video?.parentElement ?? null;
+            const box  = root?.isConnected ? root : node?.parentElement ?? null;
             if (!box?.isConnected) return null;
 
             if (shelf.parentElement !== box) {
@@ -421,27 +490,35 @@
         /**
          * バッジ 1 個の表示内容を更新する。
          *
-         * 前回と同じ内容なら何もしません。DOM の書き換えは処理コストが高く、
+         * 前回と同じ部分は書き換えません。DOM の書き換えは処理コストが高く、
          * 毎回無条件に書き替えると再描画が頻発して重くなるためです。
-         * @param {HTMLElement} node バッジ要素
+         * 文字・表示/非表示・色を別々に見て、変わったものだけを書き換えます
+         * （遅延の数字は毎回変わりますが、表示/非表示や色はめったに変わりません）。
+         * @param {{ node: HTMLElement, label: Text, text: string|null, shown: boolean|null, color: string|null }} item バッジ
          * @param {string} text 表示する文字列（空文字なら非表示）
          * @param {string} color 文字色
          * @returns {void}
          */
-        function paint(node, text, color) {
-            const stamp = `${text}|${color}`;
-            if (node._slipstreamlive === stamp) return;
-
-            node._slipstreamlive   = stamp;
-            node.style.display     = text ? 'inline-block' : 'none';
-            node.textContent       = text;
-            node.style.color       = color;
+        function paint(item, text, color) {
+            // ページ側に中身を消されていたら、文字のノードを戻してから書き直します。
+            if (item.label.parentNode !== item.node) {
+                item.node.replaceChildren(item.label);
+                item.text = null;
+            }
+            if (item.text !== text) {
+                item.text       = text;
+                item.label.data = text;
+            }
+            const shown = text !== '';
+            if (item.shown !== shown) {
+                item.shown              = shown;
+                item.node.style.display = shown ? 'inline-block' : 'none';
+            }
+            if (item.color !== color) {
+                item.color            = color;
+                item.node.style.color = color;
+            }
         }
-
-        /** @type {HTMLElement|null} 現在バッジを置いている場所 */
-        let host   = null;
-        /** @type {number} 次に置き場所を探し直す時刻 */
-        let slotAt = 0;
 
         return {
             /**
@@ -450,7 +527,8 @@
              * @returns {void}
              */
             detach() {
-                for (const node of nodes.values()) node.remove();
+                if (!items) return;
+                for (const node of nodes) node.remove();
                 shelf.remove();
                 unstyle();
                 host   = null;
@@ -459,28 +537,32 @@
 
             /**
              * バッジを表示・更新する。
-             * @param {HTMLVideoElement|null} video 現在の video 要素
+             * @param {HTMLVideoElement|null} node 現在の video 要素
              * @param {Record<string, { text: string, color: string }>} face 各バッジの表示内容
              * @returns {void}
              */
-            show(video, face) {
-                const all  = [...nodes.values()];
-                const now  = performance.now();
+            show(node, face) {
+                ensure();
+                const now = performance.now();
 
                 // isConnected が false ＝ ページの更新でバッジが消されたということ。
-                const lost = all.some((node) => !node.isConnected);
+                let lost = false;
+                for (const badge of nodes) if (!badge.isConnected) { lost = true; break; }
 
                 // 消えていたとき、または探し直しの時間になったときだけ置き場所を確認します。
                 if (lost || now >= slotAt) {
                     slotAt = now + SLOT_MS;
-                    const next = slot(video);
+                    const next = slot(node);
                     if (next && (lost || next !== host)) {
                         host = next;
-                        next.append(...all);
+                        next.append(...nodes);
                     }
                 }
 
-                for (const [name, node] of nodes) paint(node, face[name].text, face[name].color);
+                for (const item of items) {
+                    const { text, color } = face[item.name];
+                    paint(item, text, color);
+                }
             },
         };
     })();
@@ -533,9 +615,13 @@
         // 文字列の "false" などを誤って真と解釈しないための書き方です。
         for (const key of GUARD_SWITCHES) out[key] = value[key] === true;
 
+        // 数値も「本物の数値のときだけ」採用します。
+        // Number() で変換してから判定すると、null・空文字・false・[] がどれも 0 に化けて
+        // 「有効な値」として通ってしまいます（例：duckVolume が null → 0 ＝ 下限モードで消音）。
+        // それでは異常時に「効果なし」の代替値へ倒すという GUARD_NUMBERS の方針が守れません。
         for (const [key, [lo, hi, def]] of Object.entries(GUARD_NUMBERS)) {
-            const num = Number(value[key]);
-            out[key] = Number.isFinite(num) ? clamp(num, lo, hi) : def;
+            const num = value[key];
+            out[key] = typeof num === 'number' && Number.isFinite(num) ? clamp(num, lo, hi) : def;
         }
         return out;
     }
@@ -548,11 +634,21 @@
     let settings = null;
     /** @type {string|null} 前回読み取った設定 JSON。変化検出用 */
     let raw      = null;
+    /** @type {boolean} 設定の属性が変わったかもしれない（次の tick で読み直す）か */
+    let dirty    = true;
     /** @type {HTMLVideoElement|null} 現在制御している video 要素 */
     let video    = null;
+    /** @type {{ id: string|null, live: boolean, premiere?: boolean }} 最後に問い合わせたメディアの情報 */
+    let media    = { id: null, live: false, premiere: false };
     /** @type {string|null} 現在の動画の識別子。変われば別の配信とみなす */
     let mediaId  = null;
-    /** @type {boolean} 現在ライブ配信を再生中か */
+    /** @type {number} 次にメディアの情報を問い合わせる時刻 */
+    let mediaAt  = -Infinity;
+    /** @type {{ latency: number, atHead: boolean }} 最後に問い合わせた遅延の情報 */
+    let status   = { latency: NaN, atHead: true };
+    /** @type {number} 次に遅延の情報を問い合わせる時刻 */
+    let statusAt = -Infinity;
+    /** @type {boolean} 制御の対象（ライブ配信で、除外されたプレミア公開でもない）を再生中か */
     let live     = false;
     /** @type {'normal'|'speedup'|'floor'} 現在の制御状態 */
     let state    = 'normal';
@@ -562,9 +658,6 @@
     let paintAt  = 0;
     /** @type {boolean} 待機モード（ライブでない等で何もしていない状態）か */
     let idling   = true;
-
-    /** 待機モードでの確認間隔（ミリ秒）。1 秒ごとに様子を見るだけにして負荷を抑える。 */
-    const IDLE_MS  = 1000;
 
     /** @type {number|null} setInterval のタイマー ID */
     let timer  = null;
@@ -591,6 +684,11 @@
      *   誤解すると、加速するほど加速しづらくなるという矛盾が起きます。
      *   そこで自分の加速による消費量を drift として累積し、
      *   統計に入れる前に差し引いて「自分の影響を消した値」で評価しています。
+     *
+     * ■ 計算の速さ
+     *   統計は series() が足し引きだけで持ち回るので、窓が 60 秒ぶん（約 3,000 個）
+     *   埋まっていても 1 回の更新はほぼ一定の時間で済みます。結果は下の変数に
+     *   書き込むだけで、毎回オブジェクトを作り直しません。
      */
     const Auto = (() => {
         /** 短期観測窓の最小の長さ（ミリ秒）。 */
@@ -618,12 +716,6 @@
         /** 谷の履歴が有効と認める最小の蓄積時間（ミリ秒）。 */
         const TROUGH_MIN_MS = 1000;
 
-        /** データが無いときに返す初期値。NaN は「値が無い」ことを表します。 */
-        const EMPTY = {
-            n: 0, avg: NaN, sd: NaN, trough: NaN, calm: false,
-            troughN: 0, troughSpan: 0, troughAvg: NaN, troughSd: NaN,
-        };
-
         /** 短期のバッファ残量サンプル。 */
         const samples = series();
         /** 長期の「谷の推定値」の履歴。 */
@@ -635,10 +727,19 @@
         let troughMs  = AUTO_TUNING[0].troughMs;  // 現在の長期窓の長さ
         let needsAt   = -Infinity;                // 最後に needs() を呼んだ時刻
         let needsSec  = NaN;                      // サイトが報告した必要バッファ量（秒）
-        let view      = EMPTY;                    // 直近の統計結果
         let drift     = 0;                        // 自分の加速による超過消費の累積（秒）
         let driftAt   = NaN;                      // drift を最後に更新した時刻
         let settleAt  = NaN;                      // 安定判定を開始した時刻
+
+        // --- 直近の統計結果（NaN は「値が無い」ことを表します）---
+        let n          = 0;     // 短期窓のサンプル数
+        let avg        = NaN;   // 短期窓の平均（drift を差し引いた値）
+        let sd         = NaN;   // 短期窓の標準偏差
+        let calm       = false; // 安定しているか
+        let troughN    = 0;     // 谷の履歴の個数
+        let troughSpan = 0;     // 谷の履歴が溜まっている期間（ミリ秒）
+        let troughAvg  = NaN;   // 谷の平均（drift を差し引いた値）
+        let troughSd   = NaN;   // 谷の標準偏差
 
         /**
          * 自分の速度変更による超過消費を積み上げる。
@@ -675,13 +776,11 @@
             // 判定に足るだけの時間が経つまでは「まだ安定していない」と答えます。
             if (now - settleAt < SETTLE_MS) return false;
 
-            const first   = levels.first();
-            const last    = levels.last();
-            const elapsed = last.at - first.at;
+            const elapsed = levels.lastAt() - levels.firstAt();
             if (elapsed <= 0) return false;
 
             // (値の変化 ÷ 経過ミリ秒) × 1000 で「1 秒あたりの変化量」に直します。
-            return Math.abs(((last.value - first.value) / elapsed) * 1000) <= SETTLE_SLOPE;
+            return Math.abs(((levels.lastValue() - levels.firstValue()) / elapsed) * 1000) <= SETTLE_SLOPE;
         }
 
         /**
@@ -707,33 +806,37 @@
         /**
          * 短期サンプルから、平均・ばらつき・谷の推定値を計算する。
          * @param {number} now 現在時刻
-         * @returns {{ n: number, avg: number, sd: number, calm: boolean, trough: number }}
+         * @returns {number} 今回の谷の推定値。判断材料が足りなければ NaN
          */
         function measure(now) {
-            const { n, avg, sd } = samples.stats();
+            n = samples.size;
             if (n === 0) {
                 levels.clear();
                 settleAt = NaN;
-                return EMPTY;
+                avg  = NaN;
+                sd   = NaN;
+                calm = false;
+                return NaN;
             }
 
-            const calm   = steady(avg, now);
+            const mean   = samples.mean();
+            sd           = samples.sd();
+            calm         = steady(mean, now);
             const filled = samples.span() >= windowMs * COVER; // 窓が十分埋まったか
-            const mean   = avg - drift;                        // 自分の影響を差し引く
+            avg          = mean - drift;                       // 自分の影響を差し引く
 
             // 谷の推定は「サンプル数が足りる」「窓が埋まっている」「安定している」
             // の 3 つがそろったときだけ。1 つでも欠ければ NaN（＝判断材料なし）にします。
-            return { n, avg: mean, sd, calm, trough: n >= MIN_N && filled && calm ? mean - RAMP * sd : NaN };
+            return n >= MIN_N && filled && calm ? avg - RAMP * sd : NaN;
         }
 
         /**
          * 谷の推定値を長期の履歴に積み、その平均とばらつきを求める。
          * @param {number} trough 今回の谷の推定値
-         * @param {boolean} calm 安定しているか
          * @param {number} now 現在時刻
-         * @returns {{ troughN: number, troughSpan: number, troughAvg: number, troughSd: number }}
+         * @returns {void}
          */
-        function measureTrough(trough, calm, now) {
+        function measureTrough(trough, now) {
             // 不安定になったら、それまでの谷の履歴は当てにならないので全部捨てます。
             if (!calm) troughs.clear();
             // 履歴には drift を足し戻した「生の値」で保存します。こうしておくと、
@@ -741,31 +844,36 @@
             else if (Number.isFinite(trough)) troughs.push(now, trough + drift);
 
             troughs.trim(now, troughMs);
-            const { n, avg, sd } = troughs.stats();
-            return {
-                troughN: n,
-                troughSpan: troughs.span(),
-                troughAvg: avg - drift,
-                troughSd: sd,
-            };
+            troughN    = troughs.size;
+            troughSpan = troughs.span();
+            troughAvg  = troughs.mean() - drift;
+            troughSd   = troughs.sd();
         }
 
         return {
             /**
              * 観測データをすべて捨てて初期状態に戻す。
              * 配信が切り替わったときなどに呼びます。
+             * @param {boolean} [release=false] true なら統計用に確保したメモリも手放す
              * @returns {void}
              */
-            reset() {
-                samples.clear();
-                troughs.clear();
-                levels.clear();
-                needsAt  = -Infinity;
-                troughMs = AUTO_TUNING[0].troughMs;
-                view     = EMPTY;
-                drift    = 0;
-                driftAt  = NaN;
-                settleAt = NaN;
+            reset(release = false) {
+                samples.clear(release);
+                troughs.clear(release);
+                levels.clear(release);
+                needsAt    = -Infinity;
+                troughMs   = AUTO_TUNING[0].troughMs;
+                drift      = 0;
+                driftAt    = NaN;
+                settleAt   = NaN;
+                n          = 0;
+                avg        = NaN;
+                sd         = NaN;
+                calm       = false;
+                troughN    = 0;
+                troughSpan = 0;
+                troughAvg  = NaN;
+                troughSd   = NaN;
             },
 
             /**
@@ -791,8 +899,7 @@
                 if (Number.isFinite(health)) samples.push(now, health + drift);
                 samples.trim(now, windowFor(now));
 
-                const current = measure(now);
-                view = { ...current, ...measureTrough(current.trough, current.calm, now) };
+                measureTrough(measure(now), now);
             },
 
             /**
@@ -804,7 +911,7 @@
              * @param {number} k 安全係数（AUTO_TUNING の troughK）
              * @returns {number} 余裕（秒）。判断材料が足りなければ NaN
              */
-            room: (k) => (view.troughSpan >= TROUGH_MIN_MS ? view.troughAvg - view.troughSd * k : NaN),
+            room: (k) => (troughSpan >= TROUGH_MIN_MS ? troughAvg - troughSd * k : NaN),
 
             /** サイトが報告した必要バッファ量（秒）。 */
             get needs() { return needsSec; },
@@ -817,10 +924,12 @@
             shift() { troughs.clear(); },
 
             /**
-             * 現在の内部状態一式を返す（デバッグ表示用）。
+             * 現在の内部状態一式を返す（デバッグ表示用。1 秒に 1 回しか呼ばれません）。
              * @returns {object} 統計のスナップショット
              */
-            snapshot: () => ({ ...view, windowMs, troughMs, drift }),
+            snapshot: () => ({
+                n, avg, sd, calm, troughN, troughSpan, troughAvg, troughSd, windowMs, troughMs, drift,
+            }),
         };
     })();
 
@@ -877,25 +986,20 @@
         let idleLat = NaN;       // 空回り判定に入ったときの遅延
 
         /**
-         * 履歴の合計を求める（平均 × 個数）。
-         * @param {ReturnType<series>} win 対象の時系列データ
-         * @returns {number} 合計値
-         */
-        const total = (win) => { const { n, avg } = win.stats(); return n ? n * avg : 0; };
-
-        /**
          * 計測履歴を捨てる。
+         * @param {boolean} [release=false] true なら確保したメモリも手放す
          * @returns {void}
          */
-        const drop = () => { asked.clear(); got.clear(); };
+        const drop = (release = false) => { asked.clear(release); got.clear(release); };
 
         return {
             /**
              * すべての状態を初期化する。
+             * @param {boolean} [release=false] true なら確保したメモリも手放す
              * @returns {void}
              */
-            reset() {
-                drop();
+            reset(release = false) {
+                drop(release);
                 at      = NaN;
                 mark    = NaN;
                 idle    = false;
@@ -919,20 +1023,21 @@
                     // 停止中やシーク中は再生位置が不連続になるため、計測を中断します。
                     at = NaN; mark = NaN;
                 } else {
-                    const step = now - at;
+                    const position = node.currentTime;
+                    const step     = now - at;
 
                     // step が異常に大きいのは、タブが裏に回っていた等の可能性が高いので捨てます。
                     if (step > 0 && step <= MAX_STEP) {
                         // 期待値：(速度 - 1) × 経過秒数。1.25 倍速で 1 秒なら 0.25 秒。
-                        const want = ((Number.isFinite(rate) ? rate : 1) - 1) * step / 1000;
-                        if (want > 0) {
-                            asked.push(now, want);
+                        const expected = ((Number.isFinite(rate) ? rate : 1) - 1) * step / 1000;
+                        if (expected > 0) {
+                            asked.push(now, expected);
                             // 実績：再生位置の進み − 経過時間。等倍なら 0 になる差分です。
-                            got.push(now, (node.currentTime - mark) - step / 1000);
+                            got.push(now, (position - mark) - step / 1000);
                         }
                     }
                     at   = now;
-                    mark = node.currentTime;
+                    mark = position;
                 }
 
                 // 観測窓の長さは加速量に応じて伸縮させます。加速が控えめなときは
@@ -954,8 +1059,8 @@
                 }
 
                 // --- 通常時：空回りしていないかを確認します ---
-                const want = total(asked);
-                const real = total(got);
+                const want = asked.sum();
+                const real = got.sum();
 
                 // 3 つの条件がすべてそろったときだけ空回りと判定します。
                 // `!(a >= b)` という書き方は、値が NaN のときも安全に「条件を満たさない」
@@ -976,7 +1081,7 @@
              * 現在の状態を返す（デバッグ表示用）。
              * @returns {{ asked: number, got: number, futile: boolean }}
              */
-            snapshot: () => ({ asked: total(asked), got: total(got), futile: idle }),
+            snapshot: () => ({ asked: asked.sum(), got: got.sum(), futile: idle }),
         };
     })();
 
@@ -985,18 +1090,23 @@
      *
      * 制御の判断そのものには使っておらず、デバッグログで
      * 「配信がどれくらい不安定か」を確認するための情報です。
+     * 遅延を問い合わせ直したとき（STATUS_MS ごと）にだけ記録します。
      */
     const Noise = (() => {
         /** 観測窓の長さ（ミリ秒）。 */
         const WINDOW_MS = 5000;
 
         const samples = series();
-        let prev = NaN; // 前回の遅延
-        let jump = 0;   // 直近で観測した最大の変化量
+        let prev  = NaN; // 前回の遅延
+        let swing = 0;   // 直近で観測した最大の変化量（デバッグログでは jump として表示）
 
         return {
-            /** 記録を初期化する。 */
-            reset() { samples.clear(); prev = NaN; jump = 0; },
+            /**
+             * 記録を初期化する。
+             * @param {boolean} [release=false] true なら確保したメモリも手放す
+             * @returns {void}
+             */
+            reset(release = false) { samples.clear(release); prev = NaN; swing = 0; },
 
             /**
              * 遅延を 1 件記録する。
@@ -1007,7 +1117,7 @@
             update(latency, now) {
                 if (!Number.isFinite(latency)) { prev = NaN; return; }
                 samples.push(now, latency);
-                if (Number.isFinite(prev)) jump = Math.max(jump, Math.abs(latency - prev));
+                if (Number.isFinite(prev)) swing = Math.max(swing, Math.abs(latency - prev));
                 prev = latency;
                 samples.trim(now, WINDOW_MS);
             },
@@ -1018,10 +1128,9 @@
              * @returns {{ avg: number, sd: number, jump: number, n: number }}
              */
             snapshot() {
-                const { n, avg, sd } = samples.stats();
-                const peak = jump;
-                jump = 0;
-                return { avg, sd, jump: peak, n };
+                const peak = swing;
+                swing = 0;
+                return { avg: samples.mean(), sd: samples.sd(), jump: peak, n: samples.size };
             },
         };
     })();
@@ -1039,20 +1148,22 @@
      * @param {number} health 現在のバッファ残量（秒）
      * @param {number} ahead 隙間の先にある未再生バッファ（秒）
      * @param {number} now 現在時刻
-     * @param {object} tune 現在の調整パラメーター
+     * @param {object} tuned 現在の調整パラメーター（tuning() の結果）
      * @returns {void}
      */
-    function report(health, ahead, now, tune) {
-        if (!debugging() || now < logAt) return;
+    function report(health, ahead, now, tuned) {
+        // 時刻の確認を先にして、デバッグの印（ページ側の変数）を読むのは 1 秒に 1 回だけにします。
+        if (now < logAt) return;
         logAt = now + 1000;
+        if (!debugging()) return;
 
         // 桁をそろえて読みやすくするための整形ヘルパー。
-        const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : '----');
-        const cnt = (n) => String(n).padStart(4);
+        const fmt = (x) => (Number.isFinite(x) ? x.toFixed(2) : '----');
+        const cnt = (x) => String(x).padStart(4);
         const sec = (ms) => (ms / 1000).toFixed(1);
 
         const { n, avg, sd, windowMs, troughMs, calm, troughN, troughSpan, troughAvg, troughSd, drift } = Auto.snapshot();
-        const { auto, troughK, margin, ample } = tune;
+        const { auto, troughK, margin, ample } = tuned;
         const { asked, got, futile } = Gain.snapshot();
         const lat  = Noise.snapshot();
         const room = Auto.room(troughK);
@@ -1066,6 +1177,12 @@
             + ` gain=${fmt(got)}/${fmt(asked)}s${futile ? ' FUTILE' : ''}`
             + ` lat=${fmt(lat.avg)}s(sd=${fmt(lat.sd)} jump=${fmt(lat.jump)} n=${cnt(lat.n)})`);
     }
+
+    /**
+     * buffer() の結果の入れ物。毎回作らずに使い回します（中身は次の buffer() まで有効）。
+     * @type {{ health: number, ahead: number }}
+     */
+    const buf = { health: NaN, ahead: 0 };
 
     /**
      * 現在のバッファ状況を調べる（この拡張機能の一番の基礎データ）。
@@ -1084,18 +1201,22 @@
      * @returns {{ health: number, ahead: number }} 残量と、隙間の先のバッファ量（秒）
      */
     function buffer() {
+        buf.health = NaN;
+        buf.ahead  = 0;
+
         let ranges;
         let at;
 
         // 要素が壊れている・すでに外されている場合に例外が出ることがあるため囲みます。
         try { ranges = video.buffered; at = video.currentTime; }
-        catch { return { health: NaN, ahead: 0 }; }
+        catch { return buf; }
 
+        const gap  = adapter.gap;
         let health = NaN; // 現在位置から連続して再生できる秒数
         let ahead  = 0;   // 隙間の先にあるバッファの合計
         let edge   = NaN; // 現時点で health が届いている終端の時刻
 
-        for (let i = 0; i < ranges.length; i++) {
+        for (let i = 0, count = ranges.length; i < count; i++) {
             const start = ranges.start(i);
             const end   = ranges.end(i);
 
@@ -1103,7 +1224,7 @@
                 // まだ現在位置を含む範囲を見つけていない段階。
                 if (at >= start - SLACK && at <= end) { health = end - Math.max(at, start); edge = end; }
                 else if (start > at) ahead += end - start;
-            } else if (start - edge <= adapter.gap) {
+            } else if (start - edge <= gap) {
                 // 隙間が十分小さいので、つながっているとみなして加算します。
                 health += end - start;
                 edge = end;
@@ -1112,17 +1233,35 @@
                 ahead += end - start;
             }
         }
-        return { health, ahead };
+        buf.health = health;
+        buf.ahead  = ahead;
+        return buf;
     }
+
+    /**
+     * tuning() の結果の入れ物と、その結果がどの条件で計算されたかの控え。
+     * 結果が変わるのは「設定が変わったとき」と「サイトの必要量が変わったとき」だけなので、
+     * それ以外は前回の計算結果をそのまま返します。
+     */
+    const tune = { auto: 0, troughK: 0, troughMs: 0, margin: 0, ample: 0 };
+    /** @type {object|null} tune を計算したときの設定オブジェクト */
+    let tunedFor   = null;
+    /** @type {number} tune を計算したときのサイトの必要量 */
+    let tunedNeeds = NaN;
 
     /**
      * 現在の設定に応じた調整パラメーター一式を求める。
      * @returns {{ auto: number, troughK: number, troughMs: number, margin: number, ample: number }}
      */
     function tuning() {
-        // 設定値が壊れていても配列の範囲を超えないよう、必ず丸めて収めます。
-        const auto  = clamp(Math.round(settings.speedupAuto), 0, AUTO_TUNING.length - 1);
         const needs = Auto.needs;
+        // Object.is は NaN 同士も「同じ」と判定できる比較です（=== では NaN !== NaN）。
+        if (tunedFor === settings && Object.is(tunedNeeds, needs)) return tune;
+        tunedFor   = settings;
+        tunedNeeds = needs;
+
+        // 設定値が壊れていても配列の範囲を超えないよう、必ず丸めて収めます。
+        const auto = clamp(Math.round(settings.speedupAuto), 0, AUTO_TUNING.length - 1);
         const { troughK, troughMs, troughMargin } = AUTO_TUNING[auto];
 
         // margin（確保しておきたい余裕）の決め方は 3 通り。上から順に当てはまるものを使います。
@@ -1133,72 +1272,75 @@
         if (settings.floor) margin = settings.floorThreshold + troughMargin;
         else if (auto && needs > 0) margin = needs;
 
+        tune.auto     = auto;
+        tune.troughK  = troughK;
+        tune.troughMs = troughMs;
+        tune.margin   = margin;
         // ample（統計を待たずに加速してよい残量ライン）は、必ず AMPLE 秒以上になります。
-        return { auto, troughK, troughMs, margin, ample: Math.max(AMPLE, margin + AMPLE_OVER) };
+        tune.ample    = Math.max(AMPLE, margin + AMPLE_OVER);
+        return tune;
     }
 
     /**
      * 「今どの状態であるべきか」を判断する、この拡張機能の頭脳にあたる関数。
      *
      * 判断は上から順に、優先度の高いものから確認していきます。
+     * ヒステリシス（境界での往復防止）は、すでにその状態にいるときだけ基準を緩める形で
+     * 効かせます（`state === '…' ? HYSTERESIS : 0` の部分）。
      * @param {number} health 現在のバッファ残量（秒）
-     * @param {object} tune tuning() が返した調整パラメーター
+     * @param {object} tuned tuning() が返した調整パラメーター
      * @returns {'normal'|'speedup'|'floor'} あるべき状態
      */
-    function decide(health, tune) {
+    function decide(health, tuned) {
         // 残量が読めないときは、何もしないのが最も安全。
         if (!Number.isFinite(health)) return 'normal';
 
-        const { auto, troughK, margin, ample } = tune;
-
-        /**
-         * ヒステリシス（境界での往復防止）用の下駄。
-         * すでにその状態にいるときだけ基準を緩め、抜けにくくします。
-         * @param {string} name 判定対象の状態名
-         * @returns {number} 現在その状態なら HYSTERESIS、違えば 0
-         */
-        const stay = (name) => (state === name ? HYSTERESIS : 0);
-
         // (1) 最優先：バッファが尽きかけていれば、無条件で下限モードへ。
-        if (settings.floor && health <= settings.floorThreshold + stay('floor')) return 'floor';
+        if (settings.floor && health <= settings.floorThreshold + (state === 'floor' ? HYSTERESIS : 0)) return 'floor';
 
         // (2) 加速機能が切られていれば通常速度。
-        if (!settings.speedup)                                                   return 'normal';
+        if (!settings.speedup) return 'normal';
 
         // (3) 加速しても無駄と分かっているなら見送る。
-        if (Gain.futile)                                                         return 'normal';
+        if (Gain.futile) return 'normal';
+
+        const speeding = state === 'speedup';
 
         // (4) 近道：残量が十分に多ければ、統計の判断を待たずに加速してよい。
         //     抜けるときは AMPLE_KEEP 秒ぶん低い基準を使い、頻繁な切り替わりを防ぎます。
-        if (auto && health >= ample - (state === 'speedup' ? AMPLE_KEEP : 0)) return 'speedup';
+        if (tuned.auto && health >= tuned.ample - (speeding ? AMPLE_KEEP : 0)) return 'speedup';
 
         // (5) 手動モード：ユーザーが決めたしきい値と、生の残量をそのまま比較。
-        if (!auto) return health >= settings.speedupThreshold ? 'speedup' : 'normal';
+        if (!tuned.auto) return health >= settings.speedupThreshold ? 'speedup' : 'normal';
 
         // (6) 自動モード：統計から求めた「安全な余裕」が、必要な余裕を上回るかで判断。
         //     room が NaN（判断材料不足）のときは比較が false になり、加速しません。
-        return Auto.room(troughK) >= margin + HYSTERESIS - stay('speedup') ? 'speedup' : 'normal';
+        const need = tuned.margin + HYSTERESIS - (speeding ? HYSTERESIS : 0);
+        return Auto.room(tuned.troughK) >= need ? 'speedup' : 'normal';
     }
 
     /**
      * 学習してきた観測データをすべて捨てる。
+     * @param {boolean} [release=false] true なら統計用に確保したメモリも手放す
      * @returns {void}
      */
-    function purge() {
-        Auto.reset();
-        Gain.reset();
-        Noise.reset();
+    function purge(release = false) {
+        Auto.reset(release);
+        Gain.reset(release);
+        Noise.reset(release);
     }
 
     /**
      * 観測データを捨て、状態も通常へ戻す（仕切り直し）。
-     * 配信が切り替わったときなどに呼びます。
+     * 配信が切り替わったときなどに呼びます。遅延の情報も次の tick で問い合わせ直します。
+     * @param {boolean} [release=false] true なら統計用に確保したメモリも手放す
      * @returns {void}
      */
-    function restart() {
-        purge();
-        state   = 'normal';
-        stateAt = -Infinity;
+    function restart(release = false) {
+        purge(release);
+        state    = 'normal';
+        stateAt  = -Infinity;
+        statusAt = -Infinity;
     }
 
     /**
@@ -1251,11 +1393,11 @@
 
     /**
      * 遅延バッジに表示する文字列を作る。
-     * @param {{ latency: number, atHead: boolean }} status アダプターが返した遅延情報
+     * @param {{ latency: number, atHead: boolean }} stat アダプターが返した遅延情報
      * @returns {string} 表示文字列
      */
-    function latencyText(status) {
-        const { latency, atHead } = status;
+    function latencyText(stat) {
+        const { latency, atHead } = stat;
 
         // 巻き戻して視聴中なら、遅延秒数ではなく (DVR) と表示します。
         // これは表示だけの区別で、制御は止めません。巻き戻した後の「追っかけ再生」でも、
@@ -1279,32 +1421,35 @@
     }
 
     /**
+     * バッジ 3 種の表示内容の入れ物。repaint() が中身を書き換えて Badges.show() へ渡します
+     * （描くたびに作り直さないため）。キーは Badges の NAMES と対応します。
+     */
+    const faces = {
+        playbackrate: { text: '', color: COLOR.normal },
+        latency:      { text: '', color: COLOR.normal },
+        health:       { text: '', color: COLOR.normal },
+    };
+
+    /**
      * バッジ 3 種の表示内容を組み立てて更新する。
      * 3 つとも表示しない設定なら、要素ごと画面から取り除きます。
      * @param {number} health 現在のバッファ残量（秒）
      * @param {number} ahead 隙間の先のバッファ量（秒）
-     * @param {{ latency: number, atHead: boolean }} status 遅延情報
+     * @param {{ latency: number, atHead: boolean }} stat 遅延情報
      * @returns {void}
      */
-    function repaint(health, ahead, status) {
+    function repaint(health, ahead, stat) {
         const { showPlaybackRate, showLatency, showHealth } = settings;
         if (!showPlaybackRate && !showLatency && !showHealth) return Badges.detach();
 
-        Badges.show(video, {
-            playbackrate: {
-                // 内部の希望値ではなく「実際に効いている速度」を表示します。
-                text: showPlaybackRate ? `${Rate.actual(video).toFixed(2)}x` : '',
-                color: COLOR[state],
-            },
-            latency: {
-                text: showLatency ? latencyText(status) : '',
-                color: COLOR.normal,
-            },
-            health: {
-                text: showHealth ? healthText(health, ahead) : '',
-                color: COLOR[state],
-            },
-        });
+        const color = COLOR[state];
+        // 内部の希望値ではなく「実際に効いている速度」を表示します。
+        faces.playbackrate.text  = showPlaybackRate ? `${Rate.actual(video).toFixed(2)}x` : '';
+        faces.playbackrate.color = color;
+        faces.latency.text       = showLatency ? latencyText(stat) : '';
+        faces.health.text        = showHealth ? healthText(health, ahead) : '';
+        faces.health.color       = color;
+        Badges.show(video, faces);
     }
 
     /**
@@ -1322,14 +1467,26 @@
      * @returns {void}
      */
     function stalled() {
-        if (!live || !video || video.seeking) return;
-        const { health } = buffer();
+        if (!live || !video || video.seeking || !debugging()) return;
         log('stall', {
             site:        found[0],
             currentTime: video.currentTime,
             readyState:  video.readyState,
-            health,
+            health:      buffer().health,
         });
+    }
+
+    /**
+     * 定期実行を待たずに、その場で 1 回判断を走らせる。
+     *
+     * 高頻度モード（20ms ごと）で動いていて、タブも表示されているときは何もしません。
+     * 次のタイマーが 20ms 以内に来るので、割り込んでも得るものが無いためです。
+     * タブが裏に回ってタイマーが間引かれている間や、待機中は、その場で判断します。
+     * @returns {void}
+     */
+    function pump() {
+        if (period === TICK_MS && !document.hidden) return;
+        run(false);
     }
 
     /**
@@ -1337,19 +1494,13 @@
      * 学習内容を捨ててから判断をやり直します。
      * @returns {void}
      */
-    function jump() { purge(); run(false); }
-
-    /**
-     * 定期実行を待たずに、その場で 1 回判断を走らせる。
-     * @returns {void}
-     */
-    function pump() { run(false); }
+    function jump() { purge(); pump(); }
 
     /**
      * video 要素に登録するイベントと、その処理の対応表。
      *
      * タイマーによる 20ms ごとの判断に加えてイベントでも起動するのは、
-     * バッファの増減が起きた瞬間に素早く反応するためです。
+     * タブが裏に回ってタイマーが間引かれても、バッファの増減に反応するためです。
      */
     const MEDIA_HOOKS = [
         ['timeupdate', pump],    // 再生位置が進んだ
@@ -1377,11 +1528,12 @@
     /**
      * <html> の data-slpstrm 属性から最新の設定を読み取る。
      *
-     * 文字列のまま前回と比較し、変化がなければ何もしません。
-     * JSON.parse は毎回行うと無視できないコストになるためです。
+     * 呼ばれるのは、属性が変わったと見張り役（settingsObserver）が知らせたときだけです。
+     * 文字列のまま前回と比較し、変化がなければ何もしません（JSON.parse を省くため）。
      * @returns {void}
      */
     function refresh() {
+        dirty = false;
         const json = document.documentElement?.dataset.slpstrm ?? null;
         if (json === raw) return;
 
@@ -1392,6 +1544,43 @@
         // 必ず sanitize() を通してから採用します（値が壊れていても安全に動くように）。
         settings = sanitize(parsed);
         log('settings', settings);
+    }
+
+    /**
+     * 制御する video 要素を乗り換える。
+     * 古い要素の横取りとイベントを必ず解除します。これを怠ると、
+     * 画面に無い要素を操作し続けることになります。
+     * @param {HTMLVideoElement|null} next 新しい video 要素
+     * @returns {void}
+     */
+    function adopt(next) {
+        Rate.release();
+        Volume.release();
+        drive(video, false);
+        drive(next, true);
+        video    = next;
+        mediaId  = null;
+        mediaAt  = -Infinity;
+    }
+
+    /**
+     * 再生中のメディアの情報を、必要なときだけ問い合わせ直す（MEDIA_MS ごと）。
+     * 別の配信に切り替わっていたら、学習内容をすべて捨てて最初からやり直します。
+     * @param {number} now 現在時刻
+     * @returns {void}
+     */
+    function syncMedia(now) {
+        if (now < mediaAt) return;
+        mediaAt = now + MEDIA_MS;
+        media   = adapter.media();
+
+        if (media.id !== mediaId) {
+            mediaId = media.id;
+            adapter.reset();
+            restart();
+            // アダプターは結果の入れ物を使い回すので、ログには写しを渡します。
+            if (debugging()) log('media', { ...media });
+        }
     }
 
     /**
@@ -1409,23 +1598,16 @@
      * @returns {void}
      */
     function tick(sampling) {
-        refresh();
+        if (dirty) refresh();
 
         // 拡張機能が無効、または設定をまだ受け取っていなければ待機します。
         if (!settings?.enabled) return sleep(settings === null ? IDLE_MS : 0);
 
+        const now = performance.now();
+
         // --- 対象の video 要素を確認する ---
         const next = adapter.video();
-        if (next !== video) {
-            // 要素が入れ替わったら、古い要素の横取りとイベントを必ず解除します。
-            // これを怠ると、画面に無い要素を操作し続けることになります。
-            Rate.release();
-            Volume.release();
-            drive(video, false);
-            drive(next, true);
-            video   = next;
-            mediaId = null;
-        }
+        if (next !== video) adopt(next);
 
         // --- プレーヤーが落ちていないか見張る（対応するアダプターは Twitch のみ）---
         // ライブ判定より前に置くのが要点です。プレーヤーが落ちると duration も
@@ -1438,45 +1620,39 @@
             Rate.release();
             Volume.release();
             restart();
+            mediaAt = -Infinity;
             log('recover', healed);
         }
 
         if (!video) return sleep();
 
         // --- 再生中のメディアを確認する ---
-        const media = adapter.media();
-        live = media.live;
+        syncMedia(now);
 
-        // 別の配信に切り替わったら、学習内容をすべて捨てて最初からやり直します。
-        if (media.id !== mediaId) {
-            mediaId = media.id;
-            adapter.reset();
-            restart();
-            log('media', media);
-        }
-
-        // ライブ配信でなければ何もしません（録画は遅延を詰める意味がないため）。
-        if (!media.live) return sleep();
-
+        // 制御の対象になるのはライブ配信だけです（録画は遅延を詰める意味がないため）。
         // プレミア公開は、設定で明示的に許可されていない限り対象外です。
-        if (media.premiere && !settings.premiere) return sleep();
+        // live はこの 2 つをまとめた「制御の対象か」を表し、stalled() のログにも使います。
+        live = media.live && (!media.premiere || settings.premiere);
+        if (!live) return sleep();
 
         // --- ここから本格的な制御。高頻度モードへ切り替えます ---
         idling = false;
         schedule(TICK_MS);
 
-        const now  = performance.now();
-        const tune = tuning();
+        const tuned = tuning();
         const { health, ahead } = buffer();
-        const stat = adapter.status();
+        if (now >= statusAt) {
+            statusAt = now + STATUS_MS;
+            status   = adapter.status();
+            Noise.update(status.latency, now);
+        }
         const rate = Rate.actual(video);
 
         // 各観測オブジェクトへ最新の情報を渡します。
         // 再生していないときの速度は NaN として渡し、drift の計測を止めます。
-        Auto.update(health, consuming(video) ? rate : NaN, now, sampling, tune.troughMs);
-        Gain.update(video, rate, stat.latency, now);
-        Noise.update(stat.latency, now);
-        report(health, ahead, now, tune);
+        Auto.update(health, consuming(video) ? rate : NaN, now, sampling, tuned.troughMs);
+        Gain.update(video, rate, status.latency, now);
+        report(health, ahead, now, tuned);
 
         // --- ユーザーが自分で速度を変えていないかを確認する ---
         // 尊重する設定のサイトで、ページ側の希望値が 1.00 から離れていれば、
@@ -1485,12 +1661,10 @@
             Rate.release();
             settle('normal', now, true);
         } else {
-            const want = decide(health, tune);
-
-            // bail（緊急離脱）：加速中に残量が必要な余裕を割り込んだ状態。
-            // このときは様子見をせず、即座に加速をやめます。
-            const bail = state === 'speedup' && want !== 'speedup' && health < tune.margin;
-            settle(want, now, bail || !tune.auto);
+            // 様子見（DWELL_MS）が掛かるのは加速を始めるとき（通常 → 加速）だけで、
+            // 加速をやめる・下限へ逃げるといった安全側の切り替えは settle() が常に即座に行います。
+            // 手動モード（auto が 0）は設定どおりに動かすため、加速の開始も様子見しません。
+            settle(decide(health, tuned), now, !tuned.auto);
 
             // 通常速度に戻すときは、横取り自体を解除してページに完全に返します。
             if (state === 'normal' && adapter.respectUserRate) Rate.release();
@@ -1505,7 +1679,7 @@
         // --- バッジの更新（判断より低い頻度で十分）---
         if (now < paintAt) return;
         paintAt = now + PAINT_MS;
-        repaint(health, ahead, stat);
+        repaint(health, ahead, status);
     }
 
     /**
@@ -1522,6 +1696,11 @@
         catch (error) { log('tick failed', error); }
     }
 
+    /** 高頻度モードのタイマーから呼ぶ関数（統計サンプルとして採用する）。 */
+    const onFastTimer = () => run(true);
+    /** 待機モードのタイマーから呼ぶ関数（統計サンプルには採用しない）。 */
+    const onIdleTimer = () => run(false);
+
     /**
      * 実行間隔を切り替える。
      *
@@ -1535,7 +1714,7 @@
         if (timer !== null) clearInterval(timer);
 
         // 高頻度モード（TICK_MS）での呼び出しだけを統計サンプルとして扱います。
-        timer  = ms > 0 ? setInterval(() => run(ms === TICK_MS), ms) : null;
+        timer  = ms > 0 ? setInterval(ms === TICK_MS ? onFastTimer : onIdleTimer, ms) : null;
         period = ms;
         log('timer', ms ? `${ms}ms` : 'stopped');
     }
@@ -1545,6 +1724,7 @@
      *
      * 大事なのは、必ず横取りを解除してから離れることです。
      * これを忘れると、拡張機能が手を引いたのに速度が変わったままになります。
+     * 統計用に確保したメモリも、このときに手放します。
      * @param {number} [ms=IDLE_MS] 待機中の確認間隔。0 ならタイマーを完全に止める
      * @returns {void}
      */
@@ -1555,7 +1735,7 @@
             Rate.release();
             Volume.release();
             Badges.detach();
-            restart();
+            restart(true);
             paintAt = 0;
             live    = false;
         }
@@ -1577,6 +1757,17 @@
         run(false);
     }
 
+    /**
+     * 動画の読み込みや再生開始が起きたときの処理。
+     * メディアが切り替わった可能性があるので、次の判断では間隔（MEDIA_MS）を待たずに
+     * メディアの情報を問い合わせ直します。
+     * @returns {void}
+     */
+    function onMediaEvent() {
+        mediaAt = -Infinity;
+        wake();
+    }
+
     // =========================================================================
     // イベントの登録（ここから実際に動き始めます）
     // =========================================================================
@@ -1586,22 +1777,42 @@
     // これらのイベントは通常は上位要素へ伝わらない（バブリングしない）ため、
     // document でまとめて受け取るにはこの指定が必要になります。
     for (const type of ['loadstart', 'loadedmetadata', 'durationchange', 'play', 'playing']) {
-        document.addEventListener(type, wake, true);
+        document.addEventListener(type, onMediaEvent, true);
     }
 
+    /** @type {Element|null} 設定属性の見張りを仕掛け済みの <html> 要素 */
+    let watched = null;
+
     /**
-     * 設定の変更（data-slpstrm 属性の書き換え）を監視する。
+     * 設定の変更（data-slpstrm 属性の書き換え）を見張る役。
+     * 変化があれば「読み直しが必要」の印を付け、見張り先を確認し直したうえで、
+     * 判断を 1 回走らせます。
+     */
+    const settingsObserver = new MutationObserver(() => {
+        dirty = true;
+        watchSettings();
+        wake();
+    });
+
+    /**
+     * 設定属性の見張りを仕掛ける（<html> が差し替えられていれば付け替える）。
      *
-     * このスクリプトは HTML の解析開始直後に動くため、<html> がまだ
-     * 存在しない場合があります。そのときは DOMContentLoaded を待って
-     * 自分自身をもう一度呼び出します（名前付き関数にしているのはこのため）。
+     * 見張るのは <html> の data-slpstrm 属性と、document 直下の子要素の 2 つです。
+     * 後者は <html> 要素そのものが差し替えられた（document.open() など）ときに、
+     * 新しい <html> へ見張りを付け替えるためです。content.js も同じ仕組みで
+     * 新しい <html> へ設定を書き込み直します。
      * @returns {void}
      */
-    (function observeSettings() {
+    function watchSettings() {
         const root = document.documentElement;
-        if (root) new MutationObserver(wake).observe(root, { attributes: true, attributeFilter: ['data-slpstrm'] });
-        else document.addEventListener('DOMContentLoaded', observeSettings, { once: true });
-    })();
+        if (root === watched) return;
+        watched = root;
+        settingsObserver.disconnect();
+        settingsObserver.observe(document, { childList: true });
+        if (root) settingsObserver.observe(root, { attributes: true, attributeFilter: ['data-slpstrm'] });
+    }
+
+    watchSettings();
 
     // タブが表示状態に戻ったとき。裏に回っている間はタイマーの精度が落ちるため、
     // 戻ってきた時点で最新の状況を確認し直します。

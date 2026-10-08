@@ -29,12 +29,13 @@
  *
  * ■ 全体が async の即時実行関数になっている理由
  *   設定の読み込み（await store.get）を待ってから画面を描くためです。
+ *   入力欄の操作を受け付けるのも、読み込みが終わってからにしています（末尾の起動処理を参照）。
  */
 (async () => {
     'use strict';
 
     // common.js が用意した道具箱から必要なものを取り出します。
-    const { api, store, log, KEYS, SITES, siteOf, settingsOf, fix } = globalThis.SLPSTRM ?? {};
+    const { api, store, log, isRecord, KEYS, SITES, siteOf, settingsOf, fix } = globalThis.SLPSTRM ?? {};
     if (!KEYS || !SITES) {
         console.warn('[slipstreamlive] shared/schema.js が読み込まれていません');
         return;
@@ -61,17 +62,30 @@
     /** サイトごとに表示を切り替える要素（選択中のサイトのものだけ表示する）。 */
     const scoped = [...document.querySelectorAll('#scopes [data-site]')];
 
+    /** サイト別設定の「リセット」ボタン（文言に選択中のサイト名が入るため、描画のたびに書き換える）。 */
+    const resetSite = document.getElementById('reset-site');
+
     /**
      * 画面上のすべての入力欄。
      * `[...document.querySelectorAll(...)]` は、querySelectorAll が返す
      * NodeList を本物の配列に変換する書き方（スプレッド構文）です。
      * filter で、schema.js に定義の無い data-key は警告して除外しています。
+     * （Object.hasOwn を使うのは、'toString' のような全オブジェクト共通の名前を
+     *   「定義あり」と誤認しないためです）
      */
     const inputs = [...document.querySelectorAll('[data-key]')].filter((input) => {
-        if (KEYS[input.dataset.key]) return true;
+        if (Object.hasOwn(KEYS, input.dataset.key)) return true;
         log.warn('unknown data-key', input.dataset.key);
         return false;
     });
+
+    /**
+     * 数値入力欄の「保存待ち」の処理（入力欄 → すぐに保存する関数）。
+     * 打ち終わるのを待っている間に画面が閉じられても値を失わないよう、
+     * 閉じる直前に flush() でまとめて保存するために控えておきます。
+     * @type {Map<HTMLInputElement, () => void>}
+     */
+    const pending = new Map();
 
     /** @type {string} 現在選択中のサイト ID */
     let current = sites[0];
@@ -130,7 +144,7 @@
         document.documentElement.lang = locale;
         document.title = t('appName');
 
-        // マニフェストからバージョン番号を取り出して表示（例: v1.3.1）。
+        // マニフェストからバージョン番号を取り出して表示（例: v1.3.2）。
         document.getElementById('version').textContent = `v${api.runtime.getManifest().version}`;
 
         for (const node of document.querySelectorAll('[data-msg]')) node.textContent = t(node.dataset.msg);
@@ -182,7 +196,7 @@
 
         // CSS 側でサイトごとの色分けをするための目印。
         document.documentElement.dataset.site = current;
-        document.getElementById('reset-site').textContent = `${t('reset')} · ${SITES[current].label}`;
+        resetSite.textContent = `${t('reset')} · ${SITES[current].label}`;
 
         // タブの選択状態を更新（aria-selected はスクリーンリーダー向けの情報でもあり、
         // CSS もこの属性を見て選択中のタブを塗り分けます）。
@@ -242,7 +256,11 @@
      */
     function save(key, value, site = current) {
         const scope = KEYS[key].scope === 'common' ? 'common' : site;
-        commit(scope, { ...data[scope], [key]: value });
+        // 保存先が壊れている（オブジェクトでない）場合は空から作り直します。
+        // 文字列や配列をそのまま `...` で展開すると、"abc" が { 0: 'a', 1: 'b', ... } の
+        // ようなゴミのキーに化けて保存されてしまうためです。
+        const bucket = isRecord(data[scope]) ? data[scope] : {};
+        commit(scope, { ...bucket, [key]: value });
     }
 
     /**
@@ -253,6 +271,16 @@
      * @returns {void}
      */
     const reset = (scope) => commit(scope === 'common' ? 'common' : current, {});
+
+    /**
+     * 保存待ち（デバウンス中）の数値入力を、すべてその場で保存する。
+     * 画面が閉じられる直前や、裏に回ったときに呼びます。
+     * @returns {void}
+     */
+    function flush() {
+        // 各関数は実行時に自分自身を pending から外すので、先に配列へ写してから回します。
+        for (const commitNow of [...pending.values()]) commitNow();
+    }
 
     /**
      * 入力欄の文字列を、範囲内の数値として解釈する。
@@ -297,6 +325,7 @@
      *   input  … 文字を打つたびに発生。タイマーを毎回リセットし、
      *            手が止まって COMMIT_MS 経ってから保存する（デバウンス処理）。
      *            確定操作をせずに画面を閉じても、打った値が残るようにするためです。
+     *            待っている間に画面が閉じられた場合は、flush() がその場で保存します。
      *   change … 入力を確定した（フォーカスを外した／Enter）ときに発生。
      *            即座に保存し、値を正しい形（刻み幅に丸めた値）に整えて表示し直す。
      *
@@ -310,16 +339,30 @@
     function wireNumber(input, key, range) {
         let timer = 0;
 
-        input.addEventListener('input', () => {
+        /**
+         * 保存待ちを取り消す（タイマーと pending の両方から外す）。
+         * @returns {void}
+         */
+        const cancel = () => {
             clearTimeout(timer);
+            pending.delete(input);
+        };
+
+        input.addEventListener('input', () => {
+            cancel();
             // 範囲外や入力途中（"1." など）の値は、まだ保存しません。
             if (parse(input, range) === null) return;
             const site = current;
-            timer = setTimeout(() => save(key, fix(site, key, input.value), site), COMMIT_MS);
+            const commitNow = () => {
+                cancel();
+                save(key, fix(site, key, input.value), site);
+            };
+            pending.set(input, commitNow);
+            timer = setTimeout(commitNow, COMMIT_MS);
         });
 
         input.addEventListener('change', () => {
-            clearTimeout(timer);
+            cancel();
             const site = current;
 
             // 空欄などで数値にならない場合は、保存されている値に戻します。
@@ -500,6 +543,15 @@
                 if (!key) return this.hide();
                 node.textContent = t(key);
                 node.hidden      = false;
+
+                // キーボードで操作しているとき（マウスがスライダーの上に無いとき）は、
+                // 最後に記録したマウス位置（画面のどこか、未記録なら左上の隅）ではなく、
+                // スライダーのすぐ下に出します。
+                if (!input.matches(':hover')) {
+                    const box = input.getBoundingClientRect();
+                    x = box.left - TIP_DX;
+                    y = box.bottom + 4 - TIP_DY;
+                }
                 place();
             },
 
@@ -527,25 +579,33 @@
     }
 
     /**
+     * 今アクティブなタブが対応サイトなら、そのサイト ID を返す。
+     * （アイコンのクリックで activeTab 権限が一時的に付くため、URL を読めます）
+     * @returns {Promise<string|null>} サイト ID。対応サイトでなければ null
+     */
+    async function activeSite() {
+        try {
+            const [tab] = await api.tabs.query({ active: true, currentWindow: true });
+            return tab?.url ? siteOf(new URL(tab.url).hostname) : null;
+        } catch (error) {
+            log.say('tabs.query', error);
+            return null;
+        }
+    }
+
+    /**
      * 最初に開くタブ（サイト）を決める。
      *
      * 優先順位：
      *   1) 今アクティブなタブが対応サイトなら、そのサイト
-     *      （アイコンのクリックで activeTab 権限が一時的に付くため、URL を読めます）
      *   2) content.js が記録した「最後に見ていたサイト」
      *   3) 前回この画面で選んでいたサイト
      *   4) それも無ければ先頭のサイト
-     * @returns {Promise<string>} サイト ID
+     * @param {string|null} site activeSite() の結果
+     * @returns {string} サイト ID
      */
-    async function detect() {
-        try {
-            const [tab] = await api.tabs.query({ active: true, currentWindow: true });
-            const site = tab?.url ? siteOf(new URL(tab.url).hostname) : null;
-            if (site) return site;
-        } catch (error) {
-            log.say('tabs.query', error);
-        }
-
+    function detect(site) {
+        if (site) return site;
         if (sites.includes(ui.seen)) return ui.seen;
         if (sites.includes(ui.site)) return ui.site;
         return sites[0];
@@ -554,6 +614,17 @@
     // =========================================================================
     // ここからが実際の起動処理。上で定義した部品を順番に組み立てていきます。
     // =========================================================================
+
+    // 保存済みの設定を読み込み終わるまでは、画面の操作を一切受け付けません。
+    // inert は「この要素の中身をクリックもフォーカスもできなくする」指定です。
+    // 読み込みの前にスイッチを押されると、まだ空の data を土台にして保存してしまい、
+    // 他のサイトの設定まで消えてしまうためです。
+    document.body.inert = true;
+
+    // ブラウザへの問い合わせ（画面の状態・設定・アクティブなタブ）は、
+    // 待ち時間が重ならないよう最初にまとめて出しておき、その間に画面を組み立てます。
+    // 1 つずつ順番に待つと、問い合わせの往復の時間がそのまま足し算になるためです。
+    const loading = Promise.all([store.get('ui'), store.get('settings'), activeSite()]);
 
     await loadLocale();                              // 言語ファイルの読み込み（?locale= 指定時のみ）
     translate();                                     // 画面の文字を翻訳
@@ -567,16 +638,30 @@
     buildTabs();                                     // サイト切り替えタブを生成
     buildHelp();                                     // 「?」の吹き出しを生成
 
-    ui      = await store.get('ui');                 // 画面の状態を読み込み
-    data    = await store.get('settings');           // 設定を読み込み
-    current = await detect();                        // 開くタブを決定
+    const [savedUi, savedData, activeId] = await loading;
+    ui      = savedUi;                               // 画面の状態
+    data    = savedData;                             // 設定
+    current = detect(activeId);                      // 開くタブを決定
     render();                                        // 画面に反映
 
     // 他の場所（別ウィンドウの設定画面など）で設定が変わったら、この画面も追従させます。
+    // ui も追いかけるのは、設定画面をタブで開いたままにしている間に content.js が
+    // 書き込んだ「最後に見ていたサイト」（ui.seen）を、古い値で上書きしないためです。
     api.storage.onChanged.addListener((changes, area) => {
-        if (area === 'local' && changes.settings) {
-            data = changes.settings.newValue ?? {};
+        if (area !== 'local') return;
+        if (changes.ui) ui = isRecord(changes.ui.newValue) ? changes.ui.newValue : {};
+        if (changes.settings) {
+            data = isRecord(changes.settings.newValue) ? changes.settings.newValue : {};
             render();
         }
     });
+
+    // 画面が閉じられる直前（pagehide）や裏に回ったときは、
+    // 打ち終わりを待っている数値入力をその場で保存します。
+    addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) flush();
+    });
+
+    document.body.inert = false;                     // 準備完了。操作を受け付ける
 })();
