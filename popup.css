@@ -21,6 +21,16 @@
             … 2 つの色を指定した割合で混ぜる関数。ここでは「透明」と混ぜることで、
             1 つのテーマ色から薄い背景色や境界線の色を自動生成しています。
 
+    ■ 左右は「始まり側／終わり側」で書く
+        アラビア語のように右から左へ書く言語では、popup.js が <html dir="rtl"> を付けて
+        画面全体を鏡写しにします。そのため左右の余白や線は margin-left / border-left ではなく、
+        margin-inline-start / border-inline-start のような「論理プロパティ」で書いています。
+            inline-start … 文字を書き始める側（横書きの日本語・英語なら左、アラビア語なら右）
+            inline-end   … 文字を書き終える側（横書きの日本語・英語なら右、アラビア語なら左）
+        日本語や英語での見た目は、margin-left などで書いた場合とまったく同じです。
+        新しく規則を足すときも、left / right ではなくこちらを使ってください。
+        表示の確認は、設定画面を popup.html?locale=ar で開くとできます。
+
     ■ ブレースの書き方について
         このファイルは「{ を次の行に置く」スタイル（Allman 記法）で統一しています。
 */
@@ -124,7 +134,7 @@
     ポップアップの幅は「中身に合わせて自動で決める」方針です。
     width: max-content は「折り返さずに収まる最小幅」。
     min-width: 100% は、逆に中身が少ないときに親より狭くなりすぎないための下限です。
-    9 言語対応で文字の長さが大きく変わるため、固定幅にしていません。
+    19 言語対応で文字の長さが大きく変わるため、固定幅にしていません。
 */
 html
 {
@@ -201,12 +211,14 @@ body
 }
 
 /*
-    margin-left: auto は flex 配置での定番の書き方で、
-    「左側の余白を可能な限り広げる」＝右端へ寄せる、という意味になります。
+    margin-inline-start: auto は flex 配置での定番の書き方で、
+    「始まり側の余白を可能な限り広げる」＝終わり側の端へ寄せる、という意味になります。
+    横書きの日本語や英語では margin-left: auto と同じく右端へ、
+    右から左へ書く言語では左端へ寄ります（冒頭の「左右は始まり側／終わり側で書く」を参照）。
 */
 #header .row
 {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 /* --- 設定パネルの並び --- */
@@ -340,10 +352,10 @@ body
     user-select: none;
 }
 
-/* 行の中に置かれた場合は右端へ寄せます。 */
+/* 行の中に置かれた場合は終わり側の端（横書きの日本語・英語なら右端）へ寄せます。 */
 .row > .chip
 {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 /* パネルの見出しに置かれた場合は、タブと釣り合う大きさにします。 */
@@ -406,10 +418,10 @@ body
     max-width: 250px;
 }
 
-/* 入力欄はすべて右端に寄せてそろえます（前述の margin-left: auto の応用）。 */
+/* 入力欄はすべて終わり側の端（横書きの日本語・英語なら右端）に寄せてそろえます（前述の margin-inline-start: auto の応用）。 */
 .row > input
 {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 /* --- まとまりの見出しになる行 --- */
@@ -441,10 +453,11 @@ body
     ~ は「同じ親を持ち、後ろに並んでいる要素」を指す記号です。
     見出し行より後ろにある行の文字を字下げして、
     「この見出しに属する項目である」という関係を見た目で示しています。
+    字下げは始まり側（横書きの日本語・英語なら左）に入れます。
 */
 .row.head ~ .row > span
 {
-    padding-left: 12px;
+    padding-inline-start: 12px;
 }
 
 /* 入力可能範囲の表示（例: 1.05 ~ 4.00）。 */
@@ -491,13 +504,23 @@ body
     padding: 5px 8px;
     max-width: 270px;
 
-    /* 現在の強調色をごく薄く敷き、左端に少し濃い線を引いた引用風の見た目です。 */
+    /*
+        現在の強調色をごく薄く敷き、始まり側の端（横書きの日本語・英語なら左端）に
+        少し濃い線を引いた引用風の見た目です。
+    */
     background-color: color-mix(in srgb, var(--ui-accent) 6%, transparent);
     color: var(--muted);
-    border-left: 2px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
+    border-inline-start: 2px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
 
-    /* 角丸は右側の 2 か所だけ（左端は線をまっすぐ見せたいため）。 */
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    /*
+        角丸は終わり側の 2 か所だけ（線を引いた側はまっすぐ見せたいため）。
+        border-start-end-radius は「上（ブロックの始まり）× 終わり側」の角、
+        border-end-end-radius は「下（ブロックの終わり）× 終わり側」の角で、
+        横書きの日本語・英語ならそれぞれ右上と右下になります。
+    */
+    border-radius: 0;
+    border-start-end-radius: var(--radius-sm);
+    border-end-end-radius: var(--radius-sm);
     font-size: 11px;
     line-height: 1.5;
 }
@@ -548,6 +571,21 @@ body
 {
     background-color: var(--ui-accent);
     background-position: 14px 0;
+}
+
+/*
+    右から左へ書く言語では、スイッチも鏡写しにします。
+    OFF のつまみは右端に置き、ON で左端へ動かします（Chrome や Android の設定画面と同じ向き）。
+    :dir(rtl) は「文字の向きが右から左の要素」だけに当てはまる指定で、
+    popup.js が <html dir="rtl"> を付けたときに効きます。
+*/
+.switch:dir(rtl)
+{
+    background-position: 14px 0;
+}
+.switch:dir(rtl):checked
+{
+    background-position: 0 0;
 }
 .switch:focus-visible
 {
@@ -795,7 +833,7 @@ body
 .footer
 {
     display: flex;
-    justify-content: flex-end;   /* 中身を右端に寄せる */
+    justify-content: flex-end;   /* 中身を終わり側の端（横書きの日本語・英語なら右端）に寄せる */
     padding: 2px 2px 0;
 }
 .reset

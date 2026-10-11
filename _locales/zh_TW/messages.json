@@ -1,4 +1,5 @@
 {
+    "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — 自動檢測並微調直播延遲" },
     "appShortName": { "message": "Slipstream Live" },
     "appDesc": { "message": "自動檢測 YouTube、Twitch 與 TwitCasting 直播延遲，智慧調整播放速度，時刻追上最新直播畫面（即時）。" },
