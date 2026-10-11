@@ -41,7 +41,7 @@ Slipstream Live は、その見張りを 1 秒間に約 50 回、自動で行い
 * 🔊 **音量の自動ダッキング** — 極端なスロー再生で歪んだ音声を、一時的に絞って和らげます。
 * 📊 **プレイヤー上のバッジ表示** — 再生速度・遅延秒数・バッファ残量（既定はオフ）。
 * 🩹 **Twitch のエラーから自動復帰** — 「エラー #3000」でプレイヤーが止まったとき、Twitch 自身の再読み込みボタンを代わりに押し、ページを読み込み直さずに 1 秒ほどで再生を戻します。
-* 🌍 **9 言語の UI** — 日本語・English・한국어・Deutsch・Español・Français・Português (BR)・简体中文・繁體中文。
+* 🌍 **19 言語の UI** — 日本語・English・한국어・Deutsch・Español・Français・Português (BR)・Português (PT)・Polski・Čeština・Slovenčina・Русский・Українська・Bahasa Indonesia・Bahasa Melayu・हिन्दी・العربية・简体中文・繁體中文。アラビア語では画面全体が右から左の配置に切り替わります。
 * 🔒 **通信なし・追跡なし** — 詳しくは [PRIVACY.md](PRIVACY.md) へ。
 
 ---
@@ -424,7 +424,7 @@ inject.js              MAIN world: 制御ループ本体（バッファ→モー
 adapters/              サイト別の橋渡し: youtube.js / twitch.js / twitcasting.js（各サイトには自分の分だけを読み込む）
 shared/schema.js       設定の唯一の定義元（型・範囲・既定値）
 shared/util.js         時系列窓・統計・DOM の小さなヘルパー
-_locales/              9 言語分の UI 翻訳
+_locales/              19 言語分の UI 翻訳
 docs/                  GitHub Pages: トップページ・プライバシーポリシー・取扱説明書（英日）と images/
 ```
 
@@ -451,7 +451,7 @@ window.__slipstreamliveDebug = true;
 バッファ関連の数値が `----` になっている場合は `health` が `NaN` であることを意味し、多くは `video.buffered` が空であることが原因です。
 `calm=NO` が続く場合は定常でないと判定されており、谷の履歴が貯まらないため `room` も `----` になります。ただし残量が `ample` を超えている間は、その状態でも加速します。
 
-また、ブラウザの言語設定を変えずに各言語の表示を確認したい場合は、設定画面を `popup.html?locale=de` のようにクエリ付きで開けます。
+また、ブラウザの言語設定を変えずに各言語の表示を確認したい場合は、設定画面を `popup.html?locale=de` のようにクエリ付きで開けます。`popup.html?locale=ar` で開くと、右から左へ鏡写しにした配置を確認できます。
 
 ---
 

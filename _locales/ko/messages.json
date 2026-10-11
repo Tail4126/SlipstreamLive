@@ -1,4 +1,5 @@
 {
+    "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — 라이브 스트리밍의 지연 시간을 자동으로 감지 및 조절" },
     "appShortName": { "message": "Slipstream Live" },
     "appDesc": { "message": "YouTube, Twitch, TwitCasting 라이브 스트리밍의 지연을 자동 감지하고 재생 속도를 스마트하게 조절하여 항상 최신 라이브 시점에 맞춥니다." },

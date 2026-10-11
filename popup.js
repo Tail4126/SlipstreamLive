@@ -45,7 +45,7 @@
     const COMMIT_MS = 400;
     /** 吹き出しを画面の端から離す余白（ピクセル）。 */
     const PAD       = 8;
-    /** ツールチップをマウス位置から右へずらす量（ピクセル）。 */
+    /** ツールチップをマウス位置から右へ（右から左へ書く言語では左へ）ずらす量（ピクセル）。 */
     const TIP_DX    = 12;
     /** ツールチップをマウス位置から下へずらす量（ピクセル）。 */
     const TIP_DY    = 18;
@@ -142,9 +142,22 @@
      */
     function translate() {
         document.documentElement.lang = locale;
+
+        // 文字を書く向き（ltr は左から右、rtl は右から左）。
+        // アラビア語のように右から左へ書く言語では <html dir="rtl"> にします。これだけで
+        // 行の並びや句読点の位置が鏡写しになり、popup.css の論理プロパティ
+        // （margin-inline-start など）も左右が自動で入れ替わります。
+        //
+        // ブラウザ標準の @@bidi_dir を使わず、言語ファイルの dir キーで決めているのは、
+        // @@bidi_dir が「ブラウザの表示言語」の向きを返すためです。この拡張機能が訳していない
+        // 言語（ヘブライ語など）のブラウザでは文言が英語にフォールバックするのに、向きだけ
+        // rtl になってしまいます。dir キーなら、実際に表示している文言と必ず一致します
+        // （?locale= で言語を指定したときも同じです）。
+        document.documentElement.dir = t('dir') === 'rtl' ? 'rtl' : 'ltr';
+
         document.title = t('appName');
 
-        // マニフェストからバージョン番号を取り出して表示（例: v1.3.2）。
+        // マニフェストからバージョン番号を取り出して表示（例: v1.4.0）。
         document.getElementById('version').textContent = `v${api.runtime.getManifest().version}`;
 
         for (const node of document.querySelectorAll('[data-msg]')) node.textContent = t(node.dataset.msg);
@@ -185,6 +198,15 @@
      * @returns {number} 実際に置く座標
      */
     const fit = (ideal, size, limit) => Math.max(PAD, Math.min(ideal, limit - size - PAD));
+
+    /**
+     * 右から左へ書く言語（アラビア語など）で表示しているかどうか。
+     * translate() が <html dir> に書き込んだ値を見ます。
+     * 浮かせる要素（吹き出し・ツールチップ）を、読み進める向きに合わせて
+     * 左右反対側へ出すために使います。
+     * @returns {boolean} 右から左なら true
+     */
+    const rtl = () => document.documentElement.dir === 'rtl';
 
     /**
      * 現在の設定値を画面に反映する（再描画）。
@@ -480,8 +502,9 @@
                 const box = bubble.getBoundingClientRect(); // 吹き出しの大きさ
                 const at  = icon.getBoundingClientRect();   // ボタンの位置
 
-                // ボタンの右下に置きつつ、画面からはみ出さないよう挟み込みます。
-                bubble.style.left = `${fit(at.right + PAD, box.width, innerWidth)}px`;
+                // ボタンの右下（右から左へ書く言語では左下）に置きつつ、画面からはみ出さないよう挟み込みます。
+                const left = rtl() ? at.left - PAD - box.width : at.right + PAD;
+                bubble.style.left = `${fit(left, box.width, innerWidth)}px`;
                 bubble.style.top  = `${fit(at.bottom + PAD, box.height, innerHeight)}px`;
             });
         }
@@ -510,7 +533,9 @@
          */
         function place() {
             const box = node.getBoundingClientRect();
-            node.style.left = `${fit(x + TIP_DX, box.width, innerWidth)}px`;
+            // 右から左へ書く言語では、マウスの左側に出します（吹き出しと同じく鏡写しにする）。
+            const left = rtl() ? x - TIP_DX - box.width : x + TIP_DX;
+            node.style.left = `${fit(left, box.width, innerWidth)}px`;
             node.style.top  = `${fit(y + TIP_DY, box.height, innerHeight)}px`;
         }
 
@@ -549,7 +574,9 @@
                 // スライダーのすぐ下に出します。
                 if (!input.matches(':hover')) {
                     const box = input.getBoundingClientRect();
-                    x = box.left - TIP_DX;
+                    // place() がずらす TIP_DX を先に打ち消して、スライダーの端にそろえます
+                    // （左から右へ書く言語では左端、右から左へ書く言語では右端）。
+                    x = rtl() ? box.right + TIP_DX : box.left - TIP_DX;
                     y = box.bottom + 4 - TIP_DY;
                 }
                 place();

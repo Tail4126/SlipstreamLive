@@ -1,4 +1,5 @@
 {
+    "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Détecter et ajuster automatiquement la latence du direct" },
     "appShortName": { "message": "Slipstream Live" },
     "appDesc": { "message": "Détecte la latence sur YouTube, Twitch et TwitCasting et ajuste la vitesse de lecture pour rattraper le direct en temps réel." },

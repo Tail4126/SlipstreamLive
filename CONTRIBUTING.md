@@ -61,9 +61,14 @@ Include the reasoning behind any site-specific defaults you pick, especially thr
 
 ## Adding or fixing a translation
 
-Start from `_locales/en/messages.json`. Translate only the `message` values, leave keys and any `__MSG_*__` placeholders alone. All nine locales need to carry the same key set.
+Start from `_locales/en/messages.json`. Translate only the `message` values, leave keys and any `__MSG_*__` placeholders alone. All nineteen locales need to carry the same key set.
 
-One key is not a phrase: **`manualUrl`** holds the URL the popup's bottom-right link opens. Leave it pointing at `https://tail4126.github.io/SlipstreamLive/manual.html` unless a manual actually exists in your language — a translated label on a link to a page that doesn't exist is worse than an English label. If you do translate the manual itself, add `docs/manual.<lang>.html` alongside the existing pages and point `manualUrl` at it.
+Two keys are not phrases:
+
+* **`dir`** is the writing direction of your language — `ltr`, or `rtl` for a right-to-left script such as Arabic. The popup copies it into `<html dir>`, and with `rtl` the whole settings screen mirrors itself. It's a key of its own rather than the browser's built-in `@@bidi_dir` because that one follows the browser's UI language, not the strings actually shown: on a Hebrew browser the strings fall back to English, yet `@@bidi_dir` still says `rtl`.
+* **`manualUrl`** holds the URL the popup's bottom-right link opens. Leave it pointing at `https://tail4126.github.io/SlipstreamLive/manual.html` unless a manual actually exists in your language — a translated label on a link to a page that doesn't exist is worse than an English label. If you do translate the manual itself, add `docs/manual.<lang>.html` alongside the existing pages and point `manualUrl` at it.
+
+Because the layout can flip, `popup.css` writes left/right spacing and borders with logical properties (`margin-inline-start`, `border-inline-start`, …) instead of `left` / `right`. Keep it that way in new rules, and check the mirrored screen with `popup.html?locale=ar`.
 
 ## Documentation
 
@@ -80,7 +85,7 @@ Some facts live in more than one file. Change only one and the project starts co
 | If you change… | Also update… |
 | :--- | :--- |
 | A control mode, or a badge colour | `inject.js` (`COLOR` and the control states) · `_locales/*/messages.json` (`showPlaybackRateDesc`) · the mode tables in `README.md` / `README.ja.md` · the mode tables and `.dot` swatches in `docs/manual.html` / `docs/manual.ja.html` · `CHANGELOG.md` |
-| A setting, its range, or a default | `shared/schema.js` · the row markup in `popup.html` · `inject.js` (`GUARD_SWITCHES` / `GUARD_NUMBERS` — its bounds must still cover `KEYS.range`) · the settings tables in `README.md` / `README.ja.md` · the settings tables in `docs/manual.html` / `docs/manual.ja.html` · the label and description in `_locales/*/messages.json`, all nine of them |
+| A setting, its range, or a default | `shared/schema.js` · the row markup in `popup.html` · `inject.js` (`GUARD_SWITCHES` / `GUARD_NUMBERS` — its bounds must still cover `KEYS.range`) · the settings tables in `README.md` / `README.ja.md` · the settings tables in `docs/manual.html` / `docs/manual.ja.html` · the label and description in `_locales/*/messages.json`, all nineteen of them |
 | A UI label | `_locales/*/messages.json` · every place the manual quotes that label — the two manual pages spell the labels out as they appear on screen |
 | The look of the settings screen | the screenshots in `docs/images/`, in both languages |
 | Anything in `docs/style.css` that isn't scoped to a `page-*` class | check all four pages — that rule reaches every one of them |
@@ -163,9 +168,14 @@ window.__slipstreamliveDebug = true;
 
 ## 翻訳の追加・修正
 
-起点は `_locales/en/messages.json` です。`message` の値だけ訳して、キーと `__MSG_*__` プレースホルダはそのままにしてください。9 言語すべて、キーの集合を揃える必要があります。
+起点は `_locales/en/messages.json` です。`message` の値だけ訳して、キーと `__MSG_*__` プレースホルダはそのままにしてください。19 言語すべて、キーの集合を揃える必要があります。
 
-1つだけ、文言ではないキーがあります。**`manualUrl`** はポップアップ右下のリンクが開く URL です。その言語の取扱説明書が実在しない限り、`https://tail4126.github.io/SlipstreamLive/manual.html` のままにしてください。存在しないページへのリンクだけ訳されている状態は、英語表記のままより悪いので。取扱説明書自体を訳す場合は、既存のページと並べて `docs/manual.<言語コード>.html` を追加し、`manualUrl` をそこへ向けてください。
+文言ではないキーが 2 つあります。
+
+* **`dir`** はその言語を書く向きです。`ltr`、アラビア語のように右から左へ書く文字なら `rtl` にしてください。ポップアップがこの値を `<html dir>` へ写し、`rtl` なら設定画面全体が鏡写しになります。ブラウザ標準の `@@bidi_dir` を使わずに専用のキーを設けているのは、`@@bidi_dir` が実際に表示している文言ではなく、ブラウザの表示言語に従うためです。ヘブライ語のブラウザでは文言が英語にフォールバックするのに、`@@bidi_dir` は `rtl` のままになります。
+* **`manualUrl`** はポップアップ右下のリンクが開く URL です。その言語の取扱説明書が実在しない限り、`https://tail4126.github.io/SlipstreamLive/manual.html` のままにしてください。存在しないページへのリンクだけ訳されている状態は、英語表記のままより悪いので。取扱説明書自体を訳す場合は、既存のページと並べて `docs/manual.<言語コード>.html` を追加し、`manualUrl` をそこへ向けてください。
+
+配置が左右反転することがあるため、`popup.css` は左右の余白や線を `left` / `right` ではなく論理プロパティ（`margin-inline-start`、`border-inline-start` など）で書いています。新しい規則もこの書き方にそろえ、鏡写しの画面は `popup.html?locale=ar` で確認してください。
 
 ## ドキュメント
 
@@ -182,7 +192,7 @@ GitHub Pages のサイトは `docs/` にあり、このフォルダを含む変�
 | 変更する対象 | 一緒に更新するもの |
 | :--- | :--- |
 | 制御モード、バッジの色 | `inject.js` の `COLOR` と制御状態 ・ `_locales/*/messages.json` の `showPlaybackRateDesc` ・ README.md / README.ja.md の制御モード表 ・ `docs/manual.html` / `docs/manual.ja.html` の制御モード表と色見本 `.dot` ・ `CHANGELOG.md` |
-| 設定項目、その範囲、既定値 | `shared/schema.js` ・ `popup.html` の行の記述 ・ `inject.js` の `GUARD_SWITCHES` / `GUARD_NUMBERS`（範囲は `KEYS.range` を包含したままにすること） ・ README.md / README.ja.md の設定一覧表 ・ `docs/manual.html` / `docs/manual.ja.html` の設定一覧表 ・ `_locales/*/messages.json` 9 言語ぶんの文言と説明文 |
+| 設定項目、その範囲、既定値 | `shared/schema.js` ・ `popup.html` の行の記述 ・ `inject.js` の `GUARD_SWITCHES` / `GUARD_NUMBERS`（範囲は `KEYS.range` を包含したままにすること） ・ README.md / README.ja.md の設定一覧表 ・ `docs/manual.html` / `docs/manual.ja.html` の設定一覧表 ・ `_locales/*/messages.json` 19 言語ぶんの文言と説明文 |
 | UI の文言 | `_locales/*/messages.json` ・ 取扱説明書でその文言を引用している箇所すべて（2ページとも、画面に出る文言をそのまま書いています） |
 | 設定画面の見た目 | `docs/images/` のスクリーンショットを英日とも撮り直し |
 | `docs/style.css` の `page-*` を前置していないルール | 4ページすべてを確認する。そのルールは全ページに届く |

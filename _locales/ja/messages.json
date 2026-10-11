@@ -1,4 +1,5 @@
 {
+    "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — ライブ配信のタイムラグを自動で検知・調整" },
     "appShortName": { "message": "Slipstream Live" },
     "appDesc": { "message": "YouTube・Twitch・ツイキャスの配信遅延を自動検知。再生速度をスマートに調整し、常に最先端（リアルタイム）へ追いつく拡張機能" },

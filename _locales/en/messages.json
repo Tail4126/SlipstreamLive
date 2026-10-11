@@ -1,4 +1,5 @@
 {
+    "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Detect and Adjust Live Stream Latency Automatically" },
     "appShortName": { "message": "Slipstream Live" },
     "appDesc": { "message": "Detects stream latency on YouTube, Twitch, and TwitCasting, and adjusts playback speed to catch up to the live edge in real time." },

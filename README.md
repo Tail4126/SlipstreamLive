@@ -45,7 +45,7 @@ Slipstream Live does that watching for you, about 50 times per second.
 * 🔊 **Volume ducking** — quiets the distorted audio that extreme slow-motion produces.
 * 📊 **Optional on-screen badges** — current speed, live latency, and buffer health, right in the player.
 * 🩹 **Twitch error recovery** — when the player stops with a numbered error such as #3000, it presses Twitch's own reload button, so playback returns in about a second without reloading the page.
-* 🌍 **9 UI languages** — English, 日本語, 한국어, Deutsch, Español, Français, Português (BR), 简体中文, 繁體中文.
+* 🌍 **19 UI languages** — English, 日本語, 한국어, Deutsch, Español, Français, Português (BR), Português (PT), Polski, Čeština, Slovenčina, Русский, Українська, Bahasa Indonesia, Bahasa Melayu, हिन्दी, العربية, 简体中文, 繁體中文. Arabic gets a fully mirrored right-to-left layout.
 * 🔒 **No network access, no tracking** — see [PRIVACY.md](PRIVACY.md).
 
 ---
@@ -484,7 +484,7 @@ inject.js              MAIN world: the control loop (buffer → mode → speed/v
 adapters/              Per-site glue: youtube.js, twitch.js, twitcasting.js (each site loads only its own)
 shared/schema.js       Single source of truth for settings (types, ranges, defaults)
 shared/util.js         Small time-series, statistics and DOM helpers
-_locales/              UI translations for 9 languages
+_locales/              UI translations for 19 languages
 docs/                  GitHub Pages: landing page, privacy policy, user manual (en/ja) + images/
 ```
 
@@ -525,7 +525,8 @@ stationarity gate is rejecting samples, so no trough history builds up and `room
 well — but a speed-up can still happen while buffer health is above `ample`.
 
 To preview any UI language without changing your browser settings, open the settings page with a
-query string, e.g. `popup.html?locale=de`.
+query string, e.g. `popup.html?locale=de`. `popup.html?locale=ar` shows the mirrored right-to-left
+layout.
 
 ---
 
