@@ -33,7 +33,7 @@
     ■ 画面の構造
         ヘッダー（ロゴ＋全体の ON/OFF）
         └ #scopes
-            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting のタブで切り替え）
+            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok のタブで切り替え）
             └ #common … 全サイト共通設定（画面上のバッジ表示）
         フッター（取扱説明書へのリンク）
 -->
@@ -238,6 +238,19 @@
                         <span data-msg="recover"></span>
                         <button class="help-icon" type="button" data-help="recoverDesc">?</button>
                         <input class="switch" type="checkbox" data-key="recover" />
+                    </label>
+                </div>
+
+                <!--
+                    TikTok でしか意味を持たない設定のまとまり。
+                    Chrome の TikTok LIVE は、そのままでは再生速度を変えられない方式で再生されるため、
+                    速度を変えられる方式を選ばせるかどうかを切り替えます（adapters/tiktok.js の冒頭を参照）。
+                -->
+                <div class="group" data-site="tiktok">
+                    <label class="row" data-needs="enabled">
+                        <span data-msg="forceMse"></span>
+                        <button class="help-icon" type="button" data-help="forceMseDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="forceMse" />
                     </label>
                 </div>
             </div>

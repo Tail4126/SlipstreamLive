@@ -571,7 +571,13 @@
     // 設定の受け取りと検証
     // =========================================================================
 
-    /** ON/OFF として扱う設定キーの一覧。 */
+    /**
+     * ON/OFF として扱う設定キーの一覧。
+     *
+     * forceMse（TikTok の再生方式の切り替え）はここに含めません。使うのは adapters/tiktok.js で、
+     * ページのスクリプトより先、このファイルが設定を受け取るより前の時点で必要になるため、
+     * あちらが data-slpstrm 属性を直接読み、同じ「厳密に true のときだけ有効」の基準で検証します。
+     */
     const GUARD_SWITCHES = [
         'enabled', 'showPlaybackRate', 'showLatency', 'showHealth',
         'speedup', 'floor', 'duck', 'premiere', 'recover',

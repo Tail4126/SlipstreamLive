@@ -50,7 +50,7 @@
     /** ツールチップをマウス位置から下へずらす量（ピクセル）。 */
     const TIP_DY    = 18;
 
-    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting']）。 */
+    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok']）。 */
     const sites  = Object.keys(SITES);
 
     /** 設定 1 行ぶんの要素（有効/無効の切り替えに使う）。 */
@@ -157,7 +157,7 @@
 
         document.title = t('appName');
 
-        // マニフェストからバージョン番号を取り出して表示（例: v1.4.0）。
+        // マニフェストからバージョン番号を取り出して表示（例: v1.5.0）。
         document.getElementById('version').textContent = `v${api.runtime.getManifest().version}`;
 
         for (const node of document.querySelectorAll('[data-msg]')) node.textContent = t(node.dataset.msg);

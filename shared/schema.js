@@ -70,14 +70,15 @@
         youtube:     { label: 'YouTube',     host: /(^|\.)(youtube\.com|youtube-nocookie\.com)$/ },
         twitch:      { label: 'Twitch',      host: /(^|\.)twitch\.tv$/ },
         twitcasting: { label: 'TwitCasting', host: /(^|\.)twitcasting\.tv$/ },
+        tiktok:      { label: 'TikTok',      host: /(^|\.)tiktok\.com$/ },
     };
 
-    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting']）。何度も使うので 1 度だけ作ります。 */
+    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok']）。何度も使うので 1 度だけ作ります。 */
     const SITE_IDS = Object.keys(SITES);
 
     /**
      * 「全サイトに同じ既定値を配る」ためのヘルパー。
-     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true }
+     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true }
      *
      * Object.fromEntries は [キー, 値] の配列をオブジェクトに変換する関数です。
      * SITES から鍵を起こすので、対応サイトを増やしても書き足しが要りません。
@@ -110,6 +111,8 @@
      *   duckVolume       … 下げたときの音量（％）
      *   premiere         … YouTube のプレミア公開でも動作させるか
      *   recover          … Twitch のプレイヤーがエラーで止まったとき、自動で復帰させるか
+     *   forceMse         … Chrome の TikTok で、速度を変えられる再生方式（MSE）を選ばせるか
+     *                      （仕組みは adapters/tiktok.js の冒頭を参照）
      * @type {Record<string, { scope?: string, def: unknown, range?: number[], ff?: Record<string, number> }>}
      */
     const KEYS = {
@@ -128,9 +131,11 @@
 
         // floorThreshold だけはサイトごとに最適値が違うため、個別に既定値を持たせています。
         // さらに Firefox の Twitch はバッファの読み取り方が異なるので ff で上書きします。
+        // TikTok は映像が HTTP-FLV で 0.05〜0.2 秒刻みに途切れなく届き、バッファがほとんど
+        // 波打たないため、ツイキャス（0.3）と YouTube（0.8）の間の 0.5 にしています。
         floorThreshold: {
             range: [0, 10, 0.1],
-            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3 },
+            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5 },
             ff:  { twitch: 0.5 },
         },
 
@@ -140,7 +145,11 @@
 
         // recover は Twitch のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // （heal() を持たないサイトでは、ON にしても何も起きません。）
-        recover:          { def: { youtube: false, twitch: true, twitcasting: false } },
+        recover:          { def: { youtube: false, twitch: true, twitcasting: false, tiktok: false } },
+
+        // forceMse は TikTok のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
+        // TikTok では既定 ON です。OFF のままだと、Chrome（6 コア以上）では速度をまったく変えられないためです。
+        forceMse:         { def: { youtube: false, twitch: false, twitcasting: false, tiktok: true } },
     };
 
     /** 設定キーの一覧。settingsOf() が呼ばれるたびに作り直さないよう、1 度だけ作ります。 */

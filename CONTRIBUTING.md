@@ -96,7 +96,7 @@ Some facts live in more than one file. Change only one and the project starts co
 
 * One logical change per PR.
 * Add an entry under `## [未リリース]` in `CHANGELOG.md`, using the existing headings (`追加` / `変更` / `非推奨` / `削除` / `修正` / `セキュリティ`). English is fine for the entries.
-* Say which browsers and which of the three sites you actually tested on. "Chrome only" is a fine answer — just say so.
+* Say which browsers and which of the four sites you actually tested on. "Chrome only" is a fine answer — just say so.
 * Match the surrounding style: plain modern JavaScript, no framework, no clever abstractions for their own sake.
 
 ## Security
@@ -203,7 +203,7 @@ GitHub Pages のサイトは `docs/` にあり、このフォルダを含む変�
 
 * 1つのプルリクエストにつき、意味のある変更は1つに。
 * `CHANGELOG.md` の `## [未リリース]` 配下に、既存の見出し（`追加` / `変更` / `非推奨` / `削除` / `修正` / `セキュリティ`）を使って追記してください。本文は英語でも構いません。
-* どのブラウザと、3サイトのうちどれで実際に動かして確認したかを書いてください。「Chrome だけ」でも問題ありません、そう書いてあれば十分です。
+* どのブラウザと、4サイトのうちどれで実際に動かして確認したかを書いてください。「Chrome だけ」でも問題ありません、そう書いてあれば十分です。
 * 周りのコードのスタイルに合わせてください。素の現代的な JavaScript、フレームワークなし、抽象化のための抽象化もなしで。
 
 ## セキュリティ
