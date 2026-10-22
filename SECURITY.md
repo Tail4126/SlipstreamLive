@@ -21,7 +21,7 @@ This creates a private advisory that only you and I can see.
 It helps if you include:
 
 * Extension version, browser + version, and OS.
-* Which of the three supported sites (YouTube, Twitch, TwitCasting) it affects, if it's site-specific.
+* Which of the four supported sites (YouTube, Twitch, TwitCasting, TikTok) it affects, if it's site-specific.
 * Steps to reproduce, and what an attacker could actually pull off.
 * A proof of concept, if you have one.
 
@@ -47,7 +47,7 @@ Haven't heard anything after two weeks? Feel free to nudge the advisory thread.
 
 **Out of scope**
 
-* Bugs in YouTube, Twitch, TwitCasting, or the browser itself — report those to whoever makes them.
+* Bugs in YouTube, Twitch, TwitCasting, TikTok, or the browser itself — report those to whoever makes them.
 * Breakage from one of those sites changing their DOM. That's a normal bug, not a security issue — use the [issue tracker](../../issues) for that.
 * Anything that already assumes arbitrary code execution on your machine, or a malicious extension running alongside this one.
 * Issues that only show up in a fork or a modified build.
@@ -80,7 +80,7 @@ Give me a reasonable amount of time to ship a fix before you publish details. On
 書いてもらえると助かるのは次のあたりです。
 
 * 拡張機能のバージョン、ブラウザとそのバージョン、OS
-* サイト固有の問題なら、対象サイト（YouTube / Twitch / ツイキャス）
+* サイト固有の問題なら、対象サイト（YouTube / Twitch / ツイキャス / TikTok）
 * 再現手順と、悪用されたときに何ができてしまうか
 * 実証コードがあればそれも
 
@@ -106,7 +106,7 @@ Give me a reasonable amount of time to ship a fix before you publish details. On
 
 **対象外**
 
-* YouTube・Twitch・ツイキャス、またはブラウザ自体のバグ。それぞれの開発元に報告してください
+* YouTube・Twitch・ツイキャス・TikTok、またはブラウザ自体のバグ。それぞれの開発元に報告してください
 * サイト側の DOM 変更で動かなくなる不具合。これは普通のバグなので [Issue](../../issues) にお願いします
 * 端末上ですでに任意コード実行が成立している、または悪意のある別の拡張機能が同居していることが前提のもの
 * フォークや改変版でしか起きないもの

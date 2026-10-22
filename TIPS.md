@@ -80,7 +80,7 @@ speedup  rate=1.25 now=8.32+0.00 health2.0s(avg=7.84 sd=1.20 n= 100) trough30.0s
 | ログ内容 | 出るタイミング／意味 |
 | :--- | :--- |
 | `settings {...}` | `data-slpstrm` 属性経由で設定の変化を検出した時。現在有効な設定一式を表示 |
-| `media {...}` | 再生中のメディア（動画ID）が切り替わった時。`live` フラグを含み、YouTube のみ `premiere` フラグも含む |
+| `media {...}` | 再生中のメディア（動画ID）が切り替わった時。`live` フラグを含み、YouTube のみ `premiere` フラグも含む。TikTok の ID は `パス#番号` の形で、番号は同じ `<video>` の再生ソースが入れ替わるたび（LIVE フィードで次の配信へ移ったときなど）に増える |
 | `stall {...}` | ライブ再生中にバッファ枯渇（`waiting` イベント）が発生した時。サイト名・再生位置・`readyState`・`health` を記録 |
 | `speedup is futile; standing down {...}` | `FUTILE` 状態に入った瞬間。要求量・実績・判定に使った窓の長さを添える |
 | `speedup re-armed { recover }` | `FUTILE` で見送っていた加速を再開した時。`recover` はその時に使った復帰しきい値（秒） |
@@ -89,6 +89,7 @@ speedup  rate=1.25 now=8.32+0.00 health2.0s(avg=7.84 sd=1.20 n= 100) trough30.0s
 | `tick failed <error>` | メインループが例外を投げた時（サイト側の仕様変更などが原因になりうる） |
 | `timer <ms>ms` / `timer stopped` | 監視周期が変わった時。**`timer stopped` は機能をOFFにしたことを意味し、再生中に現れることは想定されていない** — もし再生中にこれが出ていたら不具合の手がかりになる |
 | `adapter <name> <url>` | ページ読み込み時に、どのサイト用アダプタが適用されたか（前述のとおり通常は見えません） |
+| `tiktok: the WebCodecs player is in use, …` | TikTok がそのページを WebCodecs 方式で再生していて、速度を変えられない時（ページごとに 1 回だけ）。Chrome で TikTok タブの「Chrome での速度変更を有効にする」がオフ、またはオンにしたあとページを再読み込みしていない状態。直後の `media {...}` は `live: false` になる |
 
 ---
 
@@ -100,6 +101,7 @@ speedup  rate=1.25 now=8.32+0.00 health2.0s(avg=7.84 sd=1.20 n= 100) trough30.0s
 | 最低速度（0.15x）に入りすぎる | `trough` の `sd` が大きくないか。大きければ谷が暴れており、`auto=` を1段階「安定」寄りへ |
 | 加速するがすぐ戻る | `gain=` に `FUTILE` が付いていないか。付いていれば仕様どおりの動作 |
 | YouTube のプレミア公開で何も起きない | `media {... premiere: true}` の直後に `timer 1000ms` が出ていれば、設定で対象外にしているため意図的に手を引いた状態。`YouTube` タブの「プレミア公開も制御する」を確認 |
+| TikTok で何も起きない | `tiktok: the WebCodecs player is in use` の行が出ていないか。出ていれば速度を変えられない再生方式なので、`TikTok` タブの「Chrome での速度変更を有効にする」を確認してページを再読み込み。`media {...}` の行自体が出ない場合は、LIVE のページ（`/live`・`/@ユーザー名/live`）ではない可能性 |
 | 再生中に `timer stopped` が出る | 想定外。Issue での報告に役立つ手がかり |
 
 Issueで不具合報告する際も、この `timer stopped` が再生中に出ていないか、`gain=` に `FUTILE` が付いているか、`calm` の状態がどうかを見ると原因の切り分けがしやすくなります。

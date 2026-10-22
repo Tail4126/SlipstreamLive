@@ -1,6 +1,6 @@
 # Privacy Policy / プライバシーポリシー
 
-**Last updated / 最終更新:** 2026-08-17
+**Last updated / 最終更新:** 2026-10-23
 
 > **Note on Language / 言語に関する注記**
 > このポリシーは英語で書いたものが正式版で、日本語訳は参考用です。両者の内容にズレがあった場合は英語版を優先します。
@@ -41,11 +41,11 @@ The Extension runs entirely on your device. It doesn't collect, transmit, store 
 
 | Item | Example | Why |
 | :--- | :--- | :--- |
-| Per-site settings | Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting | So your preferences apply on each site |
+| Per-site settings | Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting / TikTok | So your preferences apply on each site |
 | Global settings | Master switch, badge display | So your preferences apply everywhere |
-| Popup tab state | `youtube`, `twitch`, or `twitcasting` | So the popup opens on the right tab next time |
+| Popup tab state | `youtube`, `twitch`, `twitcasting`, or `tiktok` | So the popup opens on the right tab next time |
 
-The "popup tab state" is just a short label for which of the three supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. And for any site outside the supported three, nothing is recorded at all.
+The "popup tab state" is just a short label for which of the four supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. And for any site outside the supported four, nothing is recorded at all.
 
 #### 1.2 Only ever in memory (never saved)
 
@@ -66,7 +66,7 @@ Two permissions, nothing more:
 | Permission | Why |
 | :--- | :--- |
 | **`storage`** | To save and load your settings via `chrome.storage.local` / `browser.storage.local`. Local rather than synced, on purpose — so your settings stay on your device. |
-| **`activeTab`** | Used only when you open the popup, to check the active tab's hostname and pick the right settings panel. The hostname itself is discarded immediately; only the three-way site label (see §1.1) might get saved. |
+| **`activeTab`** | Used only when you open the popup, to check the active tab's hostname and pick the right settings panel. The hostname itself is discarded immediately; only the site label (see §1.1) might get saved. |
 
 Content scripts only run on these sites — nowhere else:
 
@@ -75,9 +75,12 @@ https://www.youtube.com/*          https://www.twitch.tv/*
 https://m.youtube.com/*            https://player.twitch.tv/*
 https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
 https://twitcasting.tv/*           https://*.twitcasting.tv/*
+https://www.tiktok.com/*
 ```
 
 Live-chat frames are excluded on purpose. On these pages, the Extension only looks at the video player's buffer state and adjusts speed/volume. It doesn't touch page content, form inputs, cookies, credentials, or account info.
+
+One more thing happens on TikTok, in Chromium-based browsers only: the Extension caps the CPU core count that TikTok's pages can read (`navigator.hardwareConcurrency`) at 4. TikTok uses that number to choose how it plays LIVE video, and with fewer than 6 cores it picks the standard method whose speed can be changed. This only changes what TikTok's own pages see; nothing is read from them or sent anywhere because of it. It can be switched off with **Allow speed changes in Chrome** on the **TikTok** tab.
 
 ---
 
@@ -105,7 +108,7 @@ Opening it is an ordinary navigation, exactly as if you had typed the address in
 
 There's nothing to share, sell, or hand over, because nothing is collected or transmitted in the first place — including in a business transfer scenario.
 
-The Extension also isn't acting as a data processor for YouTube, Twitch, or TwitCasting. Using those sites is still governed by their own privacy policies.
+The Extension also isn't acting as a data processor for YouTube, Twitch, TwitCasting, or TikTok. Using those sites is still governed by their own privacy policies.
 
 ---
 
@@ -157,11 +160,11 @@ For how the Extension actually works, see the [user manual](https://tail4126.git
 
 | 内容 | 例 | 理由 |
 | :--- | :--- | :--- |
-| サイト別設定 | YouTube / Twitch / ツイキャスごとの再生速度、しきい値、機能のオン・オフ | 各サイトで設定を反映させるため |
+| サイト別設定 | YouTube / Twitch / ツイキャス / TikTok ごとの再生速度、しきい値、機能のオン・オフ | 各サイトで設定を反映させるため |
 | 全体設定 | マスタースイッチ、バッジ表示 | どのサイトでも設定を反映させるため |
-| ポップアップのタブ状態 | `youtube` / `twitch` / `twitcasting` | 次回ポップアップを開いたとき同じタブを表示するため |
+| ポップアップのタブ状態 | `youtube` / `twitch` / `twitcasting` / `tiktok` | 次回ポップアップを開いたとき同じタブを表示するため |
 
-「ポップアップのタブ状態」は、対応3サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。
+「ポップアップのタブ状態」は、対応4サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。
 
 #### 1.2 メモリ上だけで扱うもの（保存しない）
 
@@ -182,7 +185,7 @@ For how the Extension actually works, see the [user manual](https://tail4126.git
 | 権限 | 理由 |
 | :--- | :--- |
 | **`storage`** | 設定を `chrome.storage.local` / `browser.storage.local` に保存・読み込みするため。設定を端末外に出さないよう、あえて同期ストレージではなくローカルストレージを使っています。 |
-| **`activeTab`** | ポップアップを開いた瞬間だけ使い、アクティブなタブのホスト名を見て該当する設定パネルを選びます。ホスト名自体はすぐ破棄され、保存されうるのは3択のサイトラベル（§1.1参照）だけです。 |
+| **`activeTab`** | ポップアップを開いた瞬間だけ使い、アクティブなタブのホスト名を見て該当する設定パネルを選びます。ホスト名自体はすぐ破棄され、保存されうるのはサイトラベル（§1.1参照）だけです。 |
 
 コンテンツスクリプトが動くのは以下のサイトだけです。
 
@@ -191,9 +194,12 @@ https://www.youtube.com/*          https://www.twitch.tv/*
 https://m.youtube.com/*            https://player.twitch.tv/*
 https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
 https://twitcasting.tv/*           https://*.twitcasting.tv/*
+https://www.tiktok.com/*
 ```
 
 ライブチャットのフレームはあえて対象外にしています。これらのページで行うのは、プレイヤーのバッファ状態を見て速度・音量を調整することだけです。ページ内容やフォーム入力、Cookie、認証情報、アカウント情報には触れません。
+
+TikTok では、Chromium 系ブラウザの場合に限り、もう 1 つだけ行うことがあります。TikTok のページから読める CPU のコア数（`navigator.hardwareConcurrency`）を最大 4 にすることです。TikTok はこの数で LIVE の再生方式を選んでおり、6 コア未満なら速度を変えられる標準の方式を選びます。変わるのは TikTok のページから見える値だけで、これによってページから何かを読み取ったり、どこかへ送ったりすることはありません。**TikTok** タブの **「Chrome での速度変更を有効にする」** でオフにできます。
 
 ---
 
@@ -221,7 +227,7 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*
 
 そもそも何も収集・送信していないので、渡せるものがありません。事業譲渡があった場合も同じです。
 
-また本拡張機能はYouTube・Twitch・ツイキャスの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。
+また本拡張機能はYouTube・Twitch・ツイキャス・TikTokの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。
 
 ---
 
