@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User manual — Slipstream Live</title>
-<meta name="description" content="Installation, settings reference, badge guide and troubleshooting for Slipstream Live, the live-stream latency extension for YouTube Live, Twitch and TwitCasting.">
+<meta name="description" content="Installation, settings reference, badge guide and troubleshooting for Slipstream Live, the live-stream latency extension for YouTube Live, Twitch, TwitCasting and TikTok LIVE.">
 <link rel="canonical" href="https://tail4126.github.io/SlipstreamLive/manual.html">
 <link rel="alternate" hreflang="ja" href="https://tail4126.github.io/SlipstreamLive/manual.ja.html">
 <link rel="alternate" hreflang="en" href="https://tail4126.github.io/SlipstreamLive/manual.html">
 <meta property="og:type" content="article">
 <meta property="og:title" content="User manual — Slipstream Live">
-<meta property="og:description" content="Installation, settings reference, badge guide and troubleshooting for Slipstream Live, the live-stream latency extension for YouTube Live, Twitch and TwitCasting.">
+<meta property="og:description" content="Installation, settings reference, badge guide and troubleshooting for Slipstream Live, the live-stream latency extension for YouTube Live, Twitch, TwitCasting and TikTok LIVE.">
 <meta property="og:image" content="https://tail4126.github.io/SlipstreamLive/images/slipstreamlive.jpg">
 <meta property="og:url" content="https://tail4126.github.io/SlipstreamLive/manual.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="User manual — Slipstream Live">
-<meta name="twitter:description" content="Installation, settings reference, badge guide and troubleshooting for Slipstream Live, the live-stream latency extension for YouTube Live, Twitch and TwitCasting.">
+<meta name="twitter:description" content="Installation, settings reference, badge guide and troubleshooting for Slipstream Live, the live-stream latency extension for YouTube Live, Twitch, TwitCasting and TikTok LIVE.">
 <meta name="twitter:image" content="https://tail4126.github.io/SlipstreamLive/images/slipstreamlive.jpg">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
@@ -49,8 +49,8 @@
         <h1>User manual</h1>
         <p class="lede">Slipstream Live watches how much video your browser has loaded ahead and nudges the playback speed so you stay close to the live edge — without the video stopping to buffer. This manual covers installation, every setting, and what to do when something looks wrong.</p>
         <div class="page-meta">
-            <span>Version 1.4.0</span>
-            <span>YouTube Live ・ Twitch ・ TwitCasting</span>
+            <span>Version 1.5.0</span>
+            <span>YouTube Live ・ Twitch ・ TwitCasting ・ TikTok LIVE</span>
         </div>
     </div>
 
@@ -101,7 +101,7 @@
                     <tr><td>Chrome / Edge / Brave and other Chromium browsers</td><td>v148 or later</td></tr>
                     <tr><td>Mozilla Firefox</td><td>v140.0 or later</td></tr>
                     <tr><td>Firefox for Android</td><td>v142.0 or later</td></tr>
-                    <tr><td>Supported sites</td><td>YouTube (including <code>m.youtube.com</code> and <code>youtube-nocookie.com</code>), Twitch (including <code>player.twitch.tv</code>), TwitCasting</td></tr>
+                    <tr><td>Supported sites</td><td>YouTube (including <code>m.youtube.com</code> and <code>youtube-nocookie.com</code>), Twitch (including <code>player.twitch.tv</code>), TwitCasting, TikTok LIVE (the LIVE pages on <code>www.tiktok.com</code>)</td></tr>
                     <tr><td>UI languages</td><td>English, 日本語, 한국어, Deutsch, Español, Français, Português (BR), Português (PT), Polski, Čeština, Slovenčina, Русский, Українська, Bahasa Indonesia, Bahasa Melayu, हिन्दी, العربية, 简体中文, 繁體中文 — follows your browser's language setting</td></tr>
                 </tbody>
             </table>
@@ -158,7 +158,7 @@
 
         <h3>3.4 Verifying the installation</h3>
         <ol>
-            <li>Open a <strong>live</strong> stream on YouTube, Twitch, or TwitCasting. A VOD or clip will not work.</li>
+            <li>Open a <strong>live</strong> stream on YouTube, Twitch, TwitCasting, or TikTok LIVE. A VOD or clip will not work.</li>
             <li>Click the Slipstream Live toolbar icon.</li>
             <li>In the <span class="ui">All sites</span> panel, turn on <span class="ui">Show playback rate</span>.</li>
             <li>A small <code>1.00x</code> appears in the player's control bar, changing colour as Slipstream Live works.</li>
@@ -183,7 +183,7 @@
                 <tbody>
                     <tr><td class="num">1</td><td>Icon and title</td><td>Clicking the icon opens the project page. The version number is shown next to the name.</td></tr>
                     <tr><td class="num">2</td><td><span class="ui">Change playback speed</span></td><td>The master switch. Turning it off stops all control and all badges. Marked <span class="ui">All sites</span>.</td></tr>
-                    <tr><td class="num">3</td><td>Site tabs</td><td>YouTube / Twitch / TwitCasting. Each site stores its own values, and the tab for the site you are currently on is selected automatically.</td></tr>
+                    <tr><td class="num">3</td><td>Site tabs</td><td>YouTube / Twitch / TwitCasting / TikTok. Each site stores its own values, and the tab for the site you are currently on is selected automatically.</td></tr>
                     <tr><td class="num">4</td><td><span class="ui">Site settings</span> panel</td><td>Speed-up settings and maximum-slowdown settings for the selected site.</td></tr>
                     <tr><td class="num">5</td><td><span class="ui">?</span> buttons</td><td>Opens a plain-language explanation of that row.</td></tr>
                     <tr><td class="num">6</td><td><span class="ui">Reset · (site name)</span></td><td>Restores only the currently selected site's settings to their defaults.</td></tr>
@@ -195,7 +195,8 @@
         <ul>
             <li>Changes take effect immediately. There is no Save button.</li>
             <li>Rows that are not currently in use are greyed out. For example, <span class="ui">Speed-up buffer threshold (sec)</span> is disabled while <span class="ui">Auto-adjust buffer threshold</span> is set to anything other than Off.</li>
-            <li>On the Twitch tab only, an explanatory note about that site's larger default threshold appears at the bottom of the panel, along with a <span class="ui">Recover from player errors</span> switch that has no equivalent on the other two sites.</li>
+            <li>On the Twitch tab only, an explanatory note about that site's larger default threshold appears at the bottom of the panel, along with a <span class="ui">Recover from player errors</span> switch that has no equivalent on the other sites.</li>
+            <li>On the TikTok tab only, an <span class="ui">Allow speed changes in Chrome</span> switch appears at the bottom of the panel (see <a href="#tiktok">“TikTok LIVE on Chrome”</a> in section 6).</li>
         </ul>
         <figure class="fig-wide">
             <img src="images/Fig_3-en.png" alt="The settings screen with the Twitch tab selected" loading="lazy" width="831" height="750">
@@ -216,7 +217,7 @@
                 <thead><tr><th>Badge</th><th>Example</th><th>Meaning</th></tr></thead>
                 <tbody>
                     <tr><td>Playback rate</td><td><code>1.25x</code></td><td>The actual current speed. The text colour shows which mode is active.</td></tr>
-                    <tr><td>Latency</td><td><code>1.50s</code></td><td>How far behind the live edge you are. While you are watching behind the live edge (DVR), the number is replaced by <code>(DVR)</code>, because a latency figure has no meaning there.</td></tr>
+                    <tr><td>Latency</td><td><code>1.50s</code></td><td>How far behind the live edge you are. While you are watching behind the live edge (DVR), the number is replaced by <code>(DVR)</code>, because a latency figure has no meaning there. TikTok doesn't report how far behind the broadcaster you are, so there it shows how far playback trails the newest video received (usually the same number as buffer health).</td></tr>
                     <tr><td>Buffer health</td><td><code>2.50s</code></td><td>Seconds of video loaded ahead of you. A <code>+9s</code> suffix means more video is loaded beyond a gap.</td></tr>
                 </tbody>
             </table>
@@ -261,12 +262,17 @@
         <h3>Recovering from a dead player</h3>
         <p>On Twitch the player occasionally stops outright with a numbered error — #3000 is the common one. The usual cure is a page reload, which costs you the chat and your place in it. Slipstream Live watches for that error and presses Twitch's own reload button instead, so playback comes back in about a second with the page untouched. It waits a moment first in case the player rights itself, tries a few times at widening intervals, and then stops rather than hammering a stream that has simply ended. This is on by default and can be switched off on the <span class="ui">Twitch</span> tab.</p>
 
+        <h3 id="tiktok">TikTok LIVE on Chrome</h3>
+        <p>TikTok picks one of two playback methods when the page opens. On Chrome 122 or later with 6 or more CPU cores (Edge excluded), it decodes the video itself and only shows the result in the <code>&lt;video&gt;</code> element as a MediaStream. That always plays at 1.0x by definition, so its speed cannot be changed by any means. Everywhere else — Firefox, Edge, Chrome with fewer cores — TikTok uses ordinary playback whose speed can be changed just as on YouTube.</p>
+        <p>So, before any of TikTok's own scripts run, Slipstream Live has TikTok pages see at most 4 CPU cores, and TikTok picks the same standard method it uses on Firefox and Edge. This only happens on TikTok's own pages in Chromium browsers and doesn't reach other sites. It is on by default; switch <span class="ui">Allow speed changes in Chrome</span> off on the <span class="ui">TikTok</span> tab to let TikTok choose on its own. The choice is made when the page loads, so reload the page after changing the setting.</p>
+
         <h3>What Slipstream Live leaves alone</h3>
         <ul>
             <li><strong>Archived videos (VODs), clips, and ad breaks</strong> are never touched. Only live playback is controlled.</li>
             <li><strong>YouTube premieres</strong> are skipped by default. A premiere plays a pre-recorded video on a live schedule, and while one is running it is indistinguishable from a live stream — but the point of a premiere is that everyone watches the same moment together, so catching up only puts you ahead of the chat. Turn <span class="ui">Control premieres</span> on at the bottom of the <span class="ui">YouTube</span> tab to have them treated like any other live stream.</li>
             <li><strong>TwitCasting low-latency streams</strong> are out of scope. They arrive over WebRTC, which has no read-ahead buffer to measure and ignores playback-rate changes entirely. Such streams are already close to real time, so there is nothing to catch up on.</li>
-            <li><strong>On YouTube and TwitCasting</strong>, if <em>you</em> choose a speed other than 1.00x in the player's own menu, Slipstream Live hands control back to you and stops adjusting. Set the speed back to normal to resume automatic control. Twitch has no such menu, so Slipstream Live stays in charge there — and also suppresses Twitch's own built-in catch-up so the two don't fight.</li>
+            <li><strong>On TikTok</strong>, only LIVE pages (<code>/live</code> and <code>/@name/live</code>) are watched. Videos in the feed are never touched.</li>
+            <li><strong>On YouTube and TwitCasting</strong>, if <em>you</em> choose a speed other than 1.00x in the player's own menu, Slipstream Live hands control back to you and stops adjusting. Set the speed back to normal to resume automatic control. Twitch and TikTok LIVE have no such menu, so Slipstream Live stays in charge there — and on Twitch it also suppresses Twitch's own built-in catch-up so the two don't fight.</li>
         </ul>
     </section>
 
@@ -277,24 +283,26 @@
         <h3>7.1 Site settings (stored separately per site)</h3>
         <div class="table-scroll">
             <table>
-                <thead><tr><th>Setting</th><th>Range / step</th><th class="num">YouTube</th><th class="num">Twitch</th><th class="num">TwitCasting</th><th>Description</th></tr></thead>
+                <thead><tr><th>Setting</th><th>Range / step</th><th class="num">YouTube</th><th class="num">Twitch</th><th class="num">TwitCasting</th><th class="num">TikTok</th><th>Description</th></tr></thead>
                 <tbody>
-                    <tr><td><span class="ui">Speed up when delayed</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for catching up.</td></tr>
-                    <tr><td><span class="ui">Speed-up playback rate</span></td><td>1.05x–4.00x / 0.05</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td>How fast to catch up. Higher catches up sooner but consumes buffer faster.</td></tr>
-                    <tr><td><span class="ui">Speed-up buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. Speeds up once this much video is loaded ahead.</td></tr>
-                    <tr><td><span class="ui">Auto-adjust buffer threshold</span></td><td>Off / Stable / Standard / Aggressive</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td>Lets Slipstream Live decide when speeding up is safe. <strong>Recommended.</strong></td></tr>
-                    <tr><td><span class="ui">Maximum slowdown on buffer depletion</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for the 0.15x emergency brake.</td></tr>
-                    <tr><td><span class="ui">Maximum slowdown threshold (sec)</span></td><td>0.0–10.0 / 0.1</td><td class="num">0.80</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.30</td><td>Drops to 0.15x while buffer health stays below this.</td></tr>
-                    <tr><td><span class="ui">Lower volume during maximum slowdown</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Ducks the audio while at 0.15x.</td></tr>
-                    <tr><td><span class="ui">Volume during maximum slowdown (%)</span></td><td>0–100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td>A percentage of <em>your</em> current volume. 100 = no change, 0 = mute.</td></tr>
-                    <tr><td><span class="ui">Control premieres</span></td><td>ON / OFF</td><td class="num">OFF</td><td class="num">—</td><td class="num">—</td><td>Whether premieres count as live streams. Left off, they are not touched at all. YouTube has no equivalent on the other two sites, so this row only appears on the YouTube tab.</td></tr>
-                    <tr><td><span class="ui">Recover from player errors</span></td><td>ON / OFF</td><td class="num">—</td><td class="num">ON</td><td class="num">—</td><td>Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so this row appears on the Twitch tab alone.</td></tr>
+                    <tr><td><span class="ui">Speed up when delayed</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for catching up.</td></tr>
+                    <tr><td><span class="ui">Speed-up playback rate</span></td><td>1.05x–4.00x / 0.05</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td>How fast to catch up. Higher catches up sooner but consumes buffer faster.</td></tr>
+                    <tr><td><span class="ui">Speed-up buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. Speeds up once this much video is loaded ahead.</td></tr>
+                    <tr><td><span class="ui">Auto-adjust buffer threshold</span></td><td>Off / Stable / Standard / Aggressive</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td>Lets Slipstream Live decide when speeding up is safe. <strong>Recommended.</strong></td></tr>
+                    <tr><td><span class="ui">Maximum slowdown on buffer depletion</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for the 0.15x emergency brake.</td></tr>
+                    <tr><td><span class="ui">Maximum slowdown threshold (sec)</span></td><td>0.0–10.0 / 0.1</td><td class="num">0.80</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.30</td><td class="num">0.50</td><td>Drops to 0.15x while buffer health stays below this.</td></tr>
+                    <tr><td><span class="ui">Lower volume during maximum slowdown</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Ducks the audio while at 0.15x.</td></tr>
+                    <tr><td><span class="ui">Volume during maximum slowdown (%)</span></td><td>0–100 / 5</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td class="num">30</td><td>A percentage of <em>your</em> current volume. 100 = no change, 0 = mute.</td></tr>
+                    <tr><td><span class="ui">Control premieres</span></td><td>ON / OFF</td><td class="num">OFF</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>Whether premieres count as live streams. Left off, they are not touched at all. The other sites have no equivalent, so this row only appears on the YouTube tab.</td></tr>
+                    <tr><td><span class="ui">Recover from player errors</span></td><td>ON / OFF</td><td class="num">—</td><td class="num">ON</td><td class="num">—</td><td class="num">—</td><td>Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so this row appears on the Twitch tab alone.</td></tr>
+                    <tr><td><span class="ui">Allow speed changes in Chrome</span></td><td>ON / OFF</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">ON</td><td>Has TikTok pages see at most 4 CPU cores, so Chrome plays TikTok LIVE through the standard method whose speed can be changed (see <a href="#tiktok">“TikTok LIVE on Chrome”</a> in section 6). Takes effect after a page reload, and does nothing on Firefox. TikTok only, so this row appears on the TikTok tab alone.</td></tr>
                 </tbody>
             </table>
         </div>
         <p>FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only site where it differs.</p>
         <div class="note">
             <p><strong>Why is Twitch's threshold so much higher?</strong> Twitch sometimes stops delivering video for around 10 seconds at a time. On Chrome that ends in error #3000 and needs a reload, so the default is set higher. Firefox recovers on its own, so it keeps the normal default.</p>
+            <p><strong>And TikTok's 0.50?</strong> TikTok LIVE arrives in small pieces every 0.05–0.2 seconds, so its buffer hardly saw-tooths at all. 0.50 sits between TwitCasting's 0.30 and YouTube's 0.80.</p>
         </div>
 
         <h3>7.2 The four auto-adjust levels</h3>
@@ -380,6 +388,11 @@
         <div class="qa">
             <h3>Nothing happens on TwitCasting.</h3>
             <p>Check whether the stream is playing in low-latency mode. Low-latency streams arrive over WebRTC and are outside Slipstream Live's scope — turn low latency off in the player settings if you want Slipstream Live to manage the stream.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Nothing happens on TikTok.</h3>
+            <p>Make sure you're on a LIVE page (<code>tiktok.com/live</code> or <code>tiktok.com/@name/live</code>) — videos in the feed are left alone. On Chrome, check that <span class="ui">Allow speed changes in Chrome</span> is ON on the <span class="ui">TikTok</span> tab, then reload the page: TikTok picks its playback method when the page loads, so switching the setting on doesn't affect a page that's already open. With the debug log on, a line starting with <code>tiktok: the WebCodecs player is in use</code> means the page is still on the method that can't be sped up.</p>
         </div>
 
         <div class="qa">

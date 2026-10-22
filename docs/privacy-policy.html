@@ -32,7 +32,7 @@
     <div class="page-head">
         <h1>プライバシーポリシー</h1>
         <div class="page-meta">
-            <span>最終更新: 2026-08-17</span>
+            <span>最終更新: 2026-10-23</span>
         </div>
         <div class="lang-note">
             <strong>言語について。</strong>
@@ -67,11 +67,11 @@
             <p><strong style="color:var(--ink)">1.1 Saved to local storage</strong></p>
             <table class="data-table">
                 <tr><th>Item</th><th>Example</th><th>Why</th></tr>
-                <tr><td>Per-site settings</td><td>Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting</td><td>So your preferences apply on each site</td></tr>
+                <tr><td>Per-site settings</td><td>Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting / TikTok</td><td>So your preferences apply on each site</td></tr>
                 <tr><td>Global settings</td><td>Master switch, badge display</td><td>So your preferences apply everywhere</td></tr>
-                <tr><td>Popup tab state</td><td><code>youtube</code>, <code>twitch</code>, or <code>twitcasting</code></td><td>So the popup opens on the right tab next time</td></tr>
+                <tr><td>Popup tab state</td><td><code>youtube</code>, <code>twitch</code>, <code>twitcasting</code>, or <code>tiktok</code></td><td>So the popup opens on the right tab next time</td></tr>
             </table>
-            <p>The "popup tab state" is just a short label for which of the three supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. For any site outside the supported three, nothing is recorded at all.</p>
+            <p>The "popup tab state" is just a short label for which of the four supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. For any site outside the supported four, nothing is recorded at all.</p>
             <p><strong style="color:var(--ink)">1.2 Only ever in memory (never saved)</strong></p>
             <table class="data-table">
                 <tr><th>Item</th><th>Why</th></tr>
@@ -88,14 +88,16 @@
             <table class="data-table">
                 <tr><th>Permission</th><th>Why</th></tr>
                 <tr><td><code>storage</code></td><td>To save and load your settings via <code>chrome.storage.local</code> / <code>browser.storage.local</code>. Local rather than synced, on purpose — so your settings stay on your device.</td></tr>
-                <tr><td><code>activeTab</code></td><td>Used only when you open the popup, to check the active tab's hostname and pick the right settings panel. The hostname itself is discarded immediately; only the three-way site label (see §1.1) might get saved.</td></tr>
+                <tr><td><code>activeTab</code></td><td>Used only when you open the popup, to check the active tab's hostname and pick the right settings panel. The hostname itself is discarded immediately; only the site label (see §1.1) might get saved.</td></tr>
             </table>
             <p>Content scripts only run on these sites — nowhere else:</p>
             <div class="host-list">https://www.youtube.com/*          https://www.twitch.tv/*
 https://m.youtube.com/*            https://player.twitch.tv/*
 https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
-https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
+https://twitcasting.tv/*           https://*.twitcasting.tv/*
+https://www.tiktok.com/*</div>
             <p>Live-chat frames are excluded on purpose. On these pages, the Extension only looks at the video player's buffer state and adjusts speed/volume. It doesn't touch page content, form inputs, cookies, credentials, or account info.</p>
+            <p>One more thing happens on TikTok, in Chromium-based browsers only: the Extension caps the CPU core count that TikTok's pages can read (<code>navigator.hardwareConcurrency</code>) at 4. TikTok uses that number to choose how it plays LIVE video, and with fewer than 6 cores it picks the standard method whose speed can be changed. This only changes what TikTok's own pages see; nothing is read from them or sent anywhere because of it. It can be switched off with <strong>Allow speed changes in Chrome</strong> on the <strong>TikTok</strong> tab.</p>
         </div>
 
         <div class="policy-section">
@@ -114,7 +116,7 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
         <div class="policy-section">
             <h2><span class="num">4</span> Third parties</h2>
             <p>There's nothing to share, sell, or hand over, because nothing is collected or transmitted in the first place — including in a business transfer scenario.</p>
-            <p>The Extension also isn't acting as a data processor for YouTube, Twitch, or TwitCasting. Using those sites is still governed by their own privacy policies.</p>
+            <p>The Extension also isn't acting as a data processor for YouTube, Twitch, TwitCasting, or TikTok. Using those sites is still governed by their own privacy policies.</p>
         </div>
 
         <div class="policy-section">
@@ -158,11 +160,11 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
             <p><strong style="color:var(--ink)">1.1 ローカルストレージに保存するもの</strong></p>
             <table class="data-table">
                 <tr><th>内容</th><th>例</th><th>理由</th></tr>
-                <tr><td>サイト別設定</td><td>YouTube / Twitch / ツイキャスごとの再生速度、しきい値、機能のオン・オフ</td><td>各サイトで設定を反映させるため</td></tr>
+                <tr><td>サイト別設定</td><td>YouTube / Twitch / ツイキャス / TikTok ごとの再生速度、しきい値、機能のオン・オフ</td><td>各サイトで設定を反映させるため</td></tr>
                 <tr><td>全体設定</td><td>マスタースイッチ、バッジ表示</td><td>どのサイトでも設定を反映させるため</td></tr>
-                <tr><td>ポップアップのタブ状態</td><td><code>youtube</code> / <code>twitch</code> / <code>twitcasting</code></td><td>次回ポップアップを開いたとき同じタブを表示するため</td></tr>
+                <tr><td>ポップアップのタブ状態</td><td><code>youtube</code> / <code>twitch</code> / <code>twitcasting</code> / <code>tiktok</code></td><td>次回ポップアップを開いたとき同じタブを表示するため</td></tr>
             </table>
-            <p>「ポップアップのタブ状態」は、対応3サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。</p>
+            <p>「ポップアップのタブ状態」は、対応4サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。</p>
             <p><strong style="color:var(--ink)">1.2 メモリ上だけで扱うもの（保存しない）</strong></p>
             <table class="data-table">
                 <tr><th>内容</th><th>理由</th></tr>
@@ -179,14 +181,16 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
             <table class="data-table">
                 <tr><th>権限</th><th>理由</th></tr>
                 <tr><td><code>storage</code></td><td>設定を <code>chrome.storage.local</code> / <code>browser.storage.local</code> に保存・読み込みするため。設定を端末外に出さないよう、あえて同期ストレージではなくローカルストレージを使っています。</td></tr>
-                <tr><td><code>activeTab</code></td><td>ポップアップを開いた瞬間だけ使い、アクティブなタブのホスト名を見て該当する設定パネルを選びます。ホスト名自体はすぐ破棄され、保存されうるのは3択のサイトラベル（§1.1参照）だけです。</td></tr>
+                <tr><td><code>activeTab</code></td><td>ポップアップを開いた瞬間だけ使い、アクティブなタブのホスト名を見て該当する設定パネルを選びます。ホスト名自体はすぐ破棄され、保存されうるのはサイトラベル（§1.1参照）だけです。</td></tr>
             </table>
             <p>コンテンツスクリプトが動くのは以下のサイトだけです。</p>
             <div class="host-list">https://www.youtube.com/*          https://www.twitch.tv/*
 https://m.youtube.com/*            https://player.twitch.tv/*
 https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
-https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
+https://twitcasting.tv/*           https://*.twitcasting.tv/*
+https://www.tiktok.com/*</div>
             <p>ライブチャットのフレームはあえて対象外にしています。これらのページで行うのは、プレイヤーのバッファ状態を見て速度・音量を調整することだけです。ページ内容やフォーム入力、Cookie、認証情報、アカウント情報には触れません。</p>
+            <p>TikTok では、Chromium 系ブラウザの場合に限り、もう 1 つだけ行うことがあります。TikTok のページから読める CPU のコア数（<code>navigator.hardwareConcurrency</code>）を最大 4 にすることです。TikTok はこの数で LIVE の再生方式を選んでおり、6 コア未満なら速度を変えられる標準の方式を選びます。変わるのは TikTok のページから見える値だけで、これによってページから何かを読み取ったり、どこかへ送ったりすることはありません。<strong>TikTok</strong> タブの<strong>「Chrome での速度変更を有効にする」</strong>でオフにできます。</p>
         </div>
 
         <div class="policy-section">
@@ -205,7 +209,7 @@ https://twitcasting.tv/*           https://*.twitcasting.tv/*</div>
         <div class="policy-section">
             <h2><span class="num">4</span> 第三者への提供</h2>
             <p>そもそも何も収集・送信していないので、渡せるものがありません。事業譲渡があった場合も同じです。</p>
-            <p>また本拡張機能はYouTube・Twitch・ツイキャスの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。</p>
+            <p>また本拡張機能はYouTube・Twitch・ツイキャス・TikTokの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。</p>
         </div>
 
         <div class="policy-section">

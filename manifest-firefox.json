@@ -3,7 +3,7 @@
 
     "name": "__MSG_appName__",
     "short_name": "__MSG_appShortName__",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "__MSG_appDesc__",
 
     "default_locale": "en",
@@ -41,7 +41,8 @@
                 "https://player.twitch.tv/*",
                 "https://clips.twitch.tv/*",
                 "https://twitcasting.tv/*",
-                "https://*.twitcasting.tv/*"
+                "https://*.twitcasting.tv/*",
+                "https://www.tiktok.com/*"
             ],
             "exclude_matches": [
                 "https://www.youtube.com/live_chat*",
@@ -100,6 +101,19 @@
             "matches": [
                 "https://twitcasting.tv/*",
                 "https://*.twitcasting.tv/*"
+            ],
+            "all_frames": true
+        },
+        {
+            "js": [
+                "shared/util.js",
+                "adapters/tiktok.js",
+                "inject.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_start",
+            "matches": [
+                "https://www.tiktok.com/*"
             ],
             "all_frames": true
         }

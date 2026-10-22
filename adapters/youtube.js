@@ -30,7 +30,7 @@
  *
  * ■ 読み込まれ方
  *   manifest.json は、サイトごとに「shared/util.js → そのサイトのアダプター → inject.js」
- *   だけを読み込みます。YouTube のページに Twitch やツイキャスのアダプターは入りません。
+ *   だけを読み込みます。YouTube のページに Twitch・ツイキャス・TikTok のアダプターは入りません。
  *
  * ■ YouTube の特徴
  *   #movie_player 要素に、内部 API（getVideoData など）が生えています。

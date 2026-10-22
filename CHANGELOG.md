@@ -8,6 +8,43 @@
 
 ## [未リリース]
 
+## [1.5.0] - 2026-10-23
+
+### 追加
+
+- **TikTok LIVE に対応した。** 4 つ目の対応サイトとして、`www.tiktok.com` の LIVE のページ（`/live`・`/live/…`・`/@ユーザー名/live`）を制御する。アダプター `adapters/tiktok.js` を追加し、`shared/schema.js` の `SITES` と 3 つのマニフェスト（ISOLATED world の対象ホストと、TikTok 専用の MAIN world の項目）に TikTok を加えた。設定画面には TikTok のタブが増える。
+  - **Chrome では、TikTok に速度を変えられる再生方式を選ばせる。** TikTok は Chrome 122 以降・CPU 6 コア以上・Windows 10 以降（または Windows 以外）・Edge 以外の環境でだけ、Worker 内で WebCodecs により自前でデコードした映像を `MediaStreamTrackGenerator` で、音声を AudioWorklet 経由で `<video>` に流す方式（WebCodecs 方式）を使う。この `<video>` は MediaStream を映しているだけなので、`playbackRate` は仕様上無視され、`buffered` も空になる。TikTok 内部のプレーヤーにも速度の口（プロキシ経由で Worker へ `up_playbackrate` を送る）はあるが、Worker 側は値を控えるだけで、映像が同期している AudioWorklet の時計は 1 倍のまま進む。それ以外の環境（Firefox・Edge・6 コア未満の Chrome）では MSE 方式（`MSEHandle` / `MSENew`）で再生され、速度を変えられる。そこで `adapters/tiktok.js` は document_start の時点で `Navigator.prototype.hardwareConcurrency` の getter を Proxy で包み、TikTok のページから見えるコア数を最大 4 にする。4 にしたのは、WebCodecs 方式の条件（6 以上）を外しつつ、TikTok が H.265 の配信を選ぶ条件（4 以上）は満たしたままにするためである。いずれも 2026 年 10 月に Chrome 156（8 コア）で確かめた。そのままでは WebCodecs 方式になり、TikTok 内部のプレーヤーの `playbackRate` を 1.5 にしても再生位置は 1.002 倍でしか進まなかった。コア数を 4 に見せると MSE 方式（`srcObject` が `MediaSourceHandle`）に切り替わり、`<video>` に 1.5 を指定すると実際に 1.488 倍で進んでバッファが減った。この変更を組み込んだコードを実際の TikTok LIVE で動かすと、1.25 倍で加速してバッファ（受信済みの末尾との差）を約 3 秒から約 1 秒まで詰め、バッジもコントロールバーの再生／再読み込みボタンの隣に並んだ。
+  - **見せかけるのは必要なときだけ。** Chromium 系ブラウザ（UA に `chrome/` を含む）の最上位のページで、実際のコア数が 4 より多く、拡張機能全体と新しい設定 `forceMse` がどちらも有効なときに限る。iframe・Firefox・他のサイト・Worker の中の値には触れない。設定は `inject.js` と同じく `<html>` の `data-slpstrm` 属性を直接読み、`sanitize()` と同じ「厳密に `true` のときだけ有効」の基準で判定する。属性がまだ無いページ読み込みの直後は既定値（有効）として扱う。TikTok が方式を決めるのはプレーヤーの部品を読み込み終えたあとなので、実際にはほぼ必ず設定が届いてから判定される。
+  - **getter は新しい関数で置き換えず、本来の getter を Proxy で包む。** 関数の名前（`get hardwareConcurrency`）・引数の数・文字列化した姿（`[native code]`）・誤った `this` で呼んだときの `TypeError` が本来のまま保たれ、`navigator` 自身にも独自のプロパティは生えない。ページ側の不正検知などが書き換えられた関数とみなして、普通の視聴者を誤って疑うことがないようにするためである。
+  - TikTok タブにだけ表示される設定 **「Chrome での速度変更を有効にする」**（`forceMse`、**既定は ON**）を追加した。
+  - **ライブ判定の条件は 3 つ。** LIVE のページにいること、WebCodecs 方式でない（`srcObject` が `MediaStream` でない）こと、動画の長さが無限（読み込み中で不明な場合を含む）であること。LIVE 以外のページでは `video()` が `null` を返すので、フィードの通常の動画には触らない。
+  - **LIVE フィードの切り替わりは再生ソースで知る。** `/live` は URL を変えずに、同じ `<video>` のまま次の配信へ切り替わる。そこで再生ソース（`srcObject` のオブジェクト、無ければ `currentSrc` の文字列）が入れ替わるたびに `media()` の `id` を変え、統計を捨てて学び直す。
+  - **遅延は「受信済みの末尾 − 再生位置」とした。** TikTok は配信元からの総遅延を教えてくれないためである。TikTok LIVE には巻き戻し（DVR）が無いので、`atHead` は常に `true` を返す。
+  - バッジは、コントロールバー左側の再生／再読み込みボタン（`data-e2e="play-icon"` / `"replay-icon"`）が並ぶ箱に足す。クラス名は自動生成で変わるため、テスト用の `data-e2e` 属性を目印にし、`<video>` から近い祖先の順に探して別のプレーヤーと取り違えないようにした。配信ルームのコントロールバーはマウスを乗せたときだけ表示されるので、バッジも一緒に現れたり隠れたりする。
+  - TikTok LIVE には速度変更のメニューが無いため、`respectUserRate` は `false`（Twitch と同じ）。
+  - **最低速度にする閾値の TikTok の既定値は 0.5 秒。** TikTok LIVE は HTTP-FLV で、映像が 0.05〜0.2 秒刻みの小さな塊で途切れなく届き（実測）、バッファがほとんど波打たないため、ツイキャス（0.3）と YouTube（0.8）の間にした。同じ理由で `needs()` は統計の窓の下限と同じ 1 秒、`gap` は 0.5 秒にした。
+- `_locales/*/messages.json`（19 言語）にキー `forceMse` と `forceMseDesc` を追加した。
+
+### 変更
+
+- ストアの概要（`appDesc`）に TikTok を加えた（19 言語）。132 文字の上限に収めるため、一部の言語では「配信の」「リアルタイムに」にあたる語を省いた。
+- 設定画面に TikTok のテーマ色（ライト `#00807a` / ダーク `#00a3a3`）を加えた。ロゴの水色（`#25f4ee`）を基にした青緑である。水色そのままでは ON のスイッチの白いつまみとのコントラスト比が 1.4:1 しかなく、つまみが背景に溶けるため、つまみとの差が 3:1 以上（ライト 4.8:1・ダーク 3.1:1）になる濃さまで落とした。選択中のタブの文字も 4.5:1 以上を保つ。ロゴの赤は YouTube の赤と見分けにくいため使っていない。
+- `shared/schema.js` の `recover` の既定値に `tiktok: false` を加えた。`forceMse` は TikTok 以外では既定 OFF で、`heal()` と同じく実装のあるアダプター（`adapters/tiktok.js`）でしか働かない。
+
+### 移行に関する注意
+
+- **ブラウザが新しいサイトへのアクセスの許可を求める。** 対象サイトに `https://www.tiktok.com/*` が加わるためである。Chrome では、許可するまで拡張機能が無効になることがある。
+- **既定が ON のため、更新すると Chrome の TikTok で自動的に働きはじめる。** TikTok の再生方式を TikTok 自身に任せたい場合は、ポップアップの **TikTok** タブで「Chrome での速度変更を有効にする」をオフにすること。方式はページを開いたときに決まるため、切り替えはページを再読み込みすると反映される。
+- **TikTok のページ全体で、見えるコア数が変わる。** TikTok が方式の判定結果をページの読み込み中ずっと使い続けるため、LIVE のページだけでなく TikTok のページ全体（最上位のページ）で値を差し替える。おすすめフィードなどから LIVE へページを読み込み直さずに移ったときにも、MSE 方式で再生させるためである。コア数を基に TikTok が決めている他の処理（画質の補正など）も変わる可能性がある。
+
+### ドキュメント
+
+- `README.md` / `README.ja.md` の紹介文・主な機能・動作確認・設定一覧表（TikTok の列と「Chrome での速度変更を有効にする」の行）・困ったときは を TikTok に合わせて更新し、Chrome の TikTok LIVE で何をしているかを説明する節を設けた。
+- `PRIVACY.md` と `docs/privacy-policy.html` の対象サイト・保存内容の説明に TikTok を加えた。
+- 取扱説明書（英日）とトップページの対応サイトの記述、設定一覧表、困ったときは を更新した。設定画面のスクリーンショット（Fig_3 / Fig_5 / Fig_6）はタブが 3 つのままなので、撮り直しが必要である。
+- `TIPS.md` に、TikTok が速度を変えられない方式で再生しているときのログ行を加えた。
+- 取扱説明書（英日）のページ見出しにあるバージョン表記を 1.4.0 から 1.5.0 へ更新した。
+
 ## [1.4.0] - 2026-10-12
 
 ### 追加
@@ -474,7 +511,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.4.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.0...v1.3.1
