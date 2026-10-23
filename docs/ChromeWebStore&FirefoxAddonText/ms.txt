@@ -1,0 +1,47 @@
+Mengesan kelewatan di YouTube, Twitch, TwitCasting dan TikTok, lalu melaraskan kelajuan main balik untuk mengejar siaran langsung.
+
+Antara ketika penstrim bercakap dengan ketika anda melihatnya, sentiasa ada kelewatan beberapa saat. Kelewatan ini bertambah setiap kali sambungan tersekat-sekat, dan tidak akan berkurang dengan sendirinya.
+
+Anda boleh mengejarnya dengan menukar kelajuan kepada 1.25x secara manual, tetapi anda pula perlu sentiasa memerhati baki penimbal dan memperlahankan semula sebelum ia habis. Jika terlupa, video akan beku dengan ikon pemuatan yang berpusing.
+
+Slipstream Live mengambil alih tugas memerhati itu untuk anda, kira-kira 50 kali sesaat. Menyokong YouTube Live, Twitch, TwitCasting dan TikTok LIVE. Pasang sahaja, selepas itu tiada apa-apa lagi yang perlu dilakukan.
+
+■ Tidak beku, tidak keterlaluan. Mengutamakan kestabilan
+
+Slipstream Live hanya mempercepatkan sedikit apabila penimbal benar-benar mencukupi (lalai 1.25x), dan sejurus sebelum penimbal habis, ia memperlahankan secara beransur-ansur hingga serendah 0.15x — sambil merendahkan kelantangan. Oleh sebab brek sentiasa bertindak sesaat sebelum ikon pemuatan muncul, video tidak akan beku akibat terlalu laju.
+
+Sebaik sahaja anda berjaya mengejar, percepatan dihentikan sepenuhnya. Video langsung hanya dihasilkan dalam masa nyata, jadi jika kelajuan tinggi dikekalkan selepas mencapai titik siaran langsung, main balik akan mendahului ketibaan setiap segmen dan tersekat sepecah saat berulang kali — akhirnya lebih perlahan daripada tidak berbuat apa-apa. Oleh itu, Slipstream Live membandingkan bilangan saat yang sepatutnya dikejar oleh percepatan dengan bilangan saat yang benar-benar dikejar, lalu menangguhkan percepatan sebaik sahaja didapati ia tidak berkesan. Apabila kelewatan sebenar terkumpul semula, ia terus kembali mengejar.
+
+Supaya kelajuan tidak berubah-ubah tepat pada ambang, terdapat sedikit kelonggaran (histerisis) di sempadannya. Sebaik sahaja anda menukar kelajuan sendiri dalam pemain, Slipstream Live terus menyerahkan kawalan kepada anda (Twitch dan TikTok LIVE tiada menu kelajuan, jadi di situ kawalan kekal pada Slipstream Live). Perendahan kelantangan juga hanya sementara — tetapan kelantangan sebenar anda tidak pernah ditulis ganti.
+
+■ Di sebalik tabir, ia agak serius: meramal “lembah” penimbal secara statistik
+
+Video tiba dalam ketulan (segmen) sepanjang beberapa saat, jadi paras penimbal membentuk “gelombang gigi gergaji” — naik, kemudian turun, berulang-ulang. Jika secara kebetulan puncaknya yang diukur lalu kelajuan dinaikkan, penimbal boleh habis pada lembah seterusnya dan video beku.
+
+Oleh itu, Slipstream Live tidak mempercayai satu bacaan sahaja, sebaliknya menganggar kedudukan lembah itu sendiri secara statistik daripada purata dan sisihan piawai jangka pendek.
+
+　lembah = purata − √3 × sisihan piawai
+
+Berkat sifat taburan seragam, kedudukan lembah dapat ditemui tanpa perlu mengetahui panjang segmen siaran.
+
+　margin keselamatan (room) = purata lembah − K × serakan lembah
+
+Selagi data belum mencukupi, room menjadi “NaN” secara automatik dan keputusan sentiasa cenderung kepada “tidak”. Dalam erti kata lain, prinsip “jika ragu-ragu, jangan buat apa-apa” dijamin oleh logik itu sendiri, bukan sekadar janji.
+
+“Laraskan ambang penimbal secara automatik” mempunyai empat tahap: Mati / Stabil / Standard / Agresif. Pada sambungan yang tidak stabil, percepatan menjadi lebih berhati-hati dengan sendirinya; pada siaran yang stabil, anda dibawa dengan pasti hingga ke titik siaran langsung.
+
+■ Disesuaikan dengan ragam setiap platform
+
+Oleh sebab data video Twitch boleh terputus selama kira-kira 10 saat, ambang kelajuan minimumnya ditetapkan lebih longgar; penimbal TwitCasting memang cetek secara semula jadi, jadi ambangnya ditetapkan lebih nipis; Firefox melaporkan paras penimbal dengan cara yang berbeza, jadi ia diberi nilai lalai tersendiri — begitulah semuanya ditala mengikut platform. Siaran yang memang tidak dapat dikawal dengan cara ini — seperti siaran kependaman rendah (WebRTC) TwitCasting — dikecualikan secara automatik. VOD, klip dan iklan juga tidak pernah disentuh. Di TikTok, ia hanya berfungsi pada halaman LIVE; video dalam suapan anda tidak pernah disentuh. Tayangan perdana YouTube juga tidak dikawal secara lalai: tayangan perdana wujud supaya semua orang menyaksikan detik yang sama bersama-sama, jadi mengejar di situ hanya bermakna mendahului sembang. Sesiapa yang mahu boleh menghidupkannya.
+
+Di Twitch, pemain kadangkala berhenti sepenuhnya dengan ralat bernombor seperti “Ralat #3000”. Slipstream Live mengesannya dan menekan butang muat semula Twitch sendiri bagi pihak anda (hidup secara lalai). Halaman itu tidak dimuat semula, jadi anda tidak kehilangan kedudukan tontonan mahupun aliran sembang — hanya video yang kembali dalam kira-kira sesaat.
+
+Dalam Chrome pada komputer dengan 6 teras CPU atau lebih, TikTok LIVE dimainkan melalui enjin milik TikTok sendiri yang mengabaikan perubahan kelajuan sama sekali. Oleh itu, sebelum skrip TikTok berjalan, Slipstream Live menjadikan halaman TikTok hanya melihat paling banyak 4 teras CPU, jadi TikTok memilih enjin standard yang digunakannya dalam Firefox dan Edge, yang kelajuannya boleh dilaraskan (hidup secara lalai). Perubahan ini terhad kepada halaman TikTok sendiri dan tiada apa-apa yang dibaca atau dihantar kerananya, walaupun sesetengah pemprosesan TikTok, seperti penambahbaikan gambar, mungkin berubah. Jika anda mahu menyerahkan pilihan kepada TikTok, matikan “Benarkan ubah kelajuan dalam Chrome” pada tab TikTok dan muat semula halaman.
+
+■ Tiada komunikasi rangkaian semasa berjalan
+
+Semasa anda menonton, Slipstream Live tidak pernah bersambung ke pelayan luar, walau sekali pun. Tiada analitik, tiada telemetri, tiada pengecam, tiada iklan. Ia hanya memerlukan dua kebenaran: “storage” untuk menyimpan tetapan pada peranti anda, dan “activeTab” untuk mengenal pasti sama ada tab semasa ialah tapak yang disokong apabila anda membuka tetingkap timbul. Akses tapak juga terhad kepada empat platform yang disokong (YouTube, Twitch, TwitCasting, TikTok), dan tetapan tidak disegerakkan ke mana-mana; semuanya disimpan secara setempat pada peranti anda sahaja. Satu-satunya pengecualian ialah semasa nyahpasang, apabila pelayar membuka borang maklum balas pilihan. Slipstream Live hanya mendaftarkan URL tetap lebih awal — tanpa pengecam, tanpa tetapan dan tanpa sebarang maklumat tentang apa yang anda tonton.
+
+Turut disertakan lencana paparan pilihan (mati secara lalai) yang menunjukkan kelajuan main balik, kelewatan dalam saat dan baki penimbal, skrin tetapan dalam 19 bahasa, bantuan “?” pada setiap tetapan, serta butang tetapkan semula untuk setiap bahagian.
+
+Terus ikuti “saat ini” siaran — tanpa perlu memerhatinya sendiri. Cubalah Slipstream Live.

@@ -1,0 +1,47 @@
+Détecte la latence sur YouTube, Twitch, TwitCasting et TikTok et ajuste la vitesse de lecture pour rattraper le direct.
+
+Entre le moment où le streamer parle et le moment où tu le vois, il y a toujours quelques secondes de décalage. Ce décalage s'accroît à chaque fois que la connexion a un accroc, et il ne se résorbe jamais tout seul.
+
+Tu peux rattraper ce retard en passant manuellement en vitesse x1,25, mais il faut alors surveiller toi-même le niveau de ton buffer et ralentir avant qu'il ne se vide. Si tu oublies, la vidéo se fige sur la petite roue de chargement.
+
+Slipstream Live fait cette surveillance à ta place, environ 50 fois par seconde. Compatible avec YouTube Live, Twitch, TwitCasting et TikTok LIVE. Une fois installé, tu n'as plus rien à faire.
+
+■ Ça ne se fige pas, ça ne s'emballe pas. Une obsession pour la stabilité
+
+L'extension n'accélère que lorsqu'il y a vraiment de la marge dans le buffer (x1,25 par défaut), et ralentit jusqu'à x0,15 juste avant qu'il ne se vide, en baissant le volume en même temps. Comme le frein s'active toujours juste avant l'apparition de la roue de chargement, tu évites de te figer pour avoir trop accéléré.
+
+Et une fois le retard rattrapé, l'extension cesse d'accélérer. La vidéo en direct ne se fabrique qu'en temps réel : garder une vitesse élevée au-delà du direct fait que la lecture double l'arrivée des segments et se fige quelques fractions de seconde, encore et encore — au final, plus lent que de ne rien faire. Slipstream Live compare donc les secondes que l'accélération aurait dû rattraper à celles réellement rattrapées, et renonce à accélérer dès qu'elle constate que cela ne sert à rien. Dès qu'un vrai retard réapparaît, elle s'y remet aussitôt.
+
+Pour éviter que la vitesse ne bascule sans cesse pile au seuil, une marge de tolérance (hystérésis) est prévue aux limites. Dès que tu changes la vitesse toi-même dans le lecteur, Slipstream Live te rend immédiatement le contrôle (Twitch et TikTok LIVE n'ayant pas de menu de vitesse, l'extension y garde la main). Le « ducking » du volume reste lui aussi temporaire : il ne réécrit jamais ton réglage de volume réel.
+
+■ Sous le capot, ça devient sérieux : prédire statistiquement les « creux » du buffer
+
+La vidéo arrive par blocs (segments) de quelques secondes, donc le niveau du buffer dessine une « onde en dents de scie » qui monte et descend sans cesse. Si l'extension mesure par hasard un pic et accélère, le buffer peut s'épuiser dès le creux suivant et la vidéo se fige.
+
+C'est pourquoi Slipstream Live ne se fie jamais à une seule mesure : elle estime statistiquement la position du creux à partir d'une moyenne et d'un écart-type calculés sur une courte période.
+
+　creux = moyenne − √3 × écart-type
+
+Grâce à une propriété de la loi uniforme, cela permet de trouver la position du creux sans même connaître la durée des segments du stream.
+
+　marge de sécurité = moyenne des creux − K × variabilité des creux
+
+Tant qu'il n'y a pas assez de données, cette marge devient automatiquement « NaN », et la décision penche toujours du côté négatif. Autrement dit, « ne rien faire en cas de doute » est garanti par la logique elle-même.
+
+« Ajuster automatiquement le seuil de tampon » propose quatre niveaux : désactivé / stable / standard / agressif. Sur une connexion instable, l'accélération reste naturellement prudente ; sur un stream stable, l'extension te ramène de façon fiable jusqu'au direct.
+
+■ Calibré jusque dans les manies de chaque plateforme
+
+Comme le flux vidéo de Twitch peut couper pendant environ 10 secondes, son seuil de décélération maximale est réglé plus large ; le buffer de TwitCasting est naturellement peu profond, donc réglé plus fin ; Firefox rapporte les niveaux de buffer différemment, donc il a ses propres valeurs par défaut — tout est ainsi calibré plateforme par plateforme. Les streams où ce type de contrôle ne peut tout simplement pas fonctionner — comme les streams à faible latence (WebRTC) de TwitCasting — sont automatiquement exclus. L'extension ne touche jamais non plus aux VOD, aux clips ou aux publicités. Sur TikTok, elle n'agit que sur les pages LIVE ; les vidéos de ton fil ne sont jamais touchées. Les premières YouTube sont elles aussi laissées de côté par défaut : une première sert à ce que tout le monde vive le même moment ensemble, donc rattraper le retard y reviendrait seulement à prendre de l'avance sur le chat. Libre à toi de l'activer si tu le souhaites.
+
+Sur Twitch, le lecteur s'arrête parfois complètement sur une erreur numérotée, comme « Erreur #3000 ». Slipstream Live la repère et appuie à ta place sur le bouton de rechargement de Twitch lui-même (activé par défaut). La page, elle, n'est pas rechargée : tu gardes ta position et le fil du chat, et seule la vidéo revient, en une seconde environ.
+
+Dans Chrome, sur les ordinateurs dotés de 6 cœurs de processeur ou plus, TikTok LIVE passe par un moteur propre à TikTok, qui ignore complètement les changements de vitesse. Avant même que les scripts de TikTok ne s'exécutent, Slipstream Live fait donc en sorte que ses pages ne voient que 4 cœurs au maximum, et TikTok choisit alors le moteur standard qu'il utilise dans Firefox et Edge, où la vitesse se règle (activé par défaut). Ce changement reste cantonné aux pages de TikTok et n'entraîne aucune lecture ni aucun envoi de données ; certains traitements de TikTok, comme l'amélioration de l'image, peuvent toutefois changer. Pour laisser TikTok choisir, désactive « Permettre de changer la vitesse dans Chrome » dans l'onglet TikTok, puis recharge la page.
+
+■ Aucune communication réseau pendant le fonctionnement
+
+Pendant que tu regardes, l'extension ne se connecte jamais à un serveur externe, pas une seule fois. Pas d'analytique, pas de télémétrie, pas d'identifiants, pas de publicité. Elle ne nécessite que deux permissions : « storage », pour conserver tes réglages sur ton appareil, et « activeTab », pour savoir si l'onglet ouvert est un site pris en charge quand tu ouvres la fenêtre des réglages. L'accès aux sites reste limité aux quatre plateformes prises en charge (YouTube, Twitch, TwitCasting, TikTok), et les réglages ne sont pas synchronisés : ils restent stockés uniquement sur ton appareil. Seule exception, la désinstallation : le navigateur ouvre alors un questionnaire facultatif. L'extension se contente d'enregistrer à l'avance une URL fixe, sans identifiant, sans tes réglages et sans rien sur ce que tu regardais.
+
+Elle inclut aussi un badge d'affichage optionnel (désactivé par défaut) indiquant la vitesse de lecture, le retard en secondes et le niveau du buffer, une interface de réglages disponible en 19 langues, ainsi qu'une aide « ? » sur chaque option et un bouton de réinitialisation par section.
+
+Continue à suivre le « maintenant » du stream, sans avoir à le surveiller toi-même. N'hésite pas à essayer Slipstream Live.

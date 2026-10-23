@@ -1,0 +1,47 @@
+Detects stream latency on YouTube, Twitch, TwitCasting, and TikTok, and adjusts playback speed to catch up to the live edge.
+
+There's always a delay of a few seconds between the moment a streamer speaks and the moment you see it. That delay grows every time the connection hiccups, and it never shrinks back on its own.
+
+You can catch up by manually switching to 1.25x speed, but then you're stuck watching your own buffer level and have to slow back down before it runs dry. Forget, and the video freezes on that spinning buffering icon.
+
+Slipstream Live takes over that watch duty for you, checking about 50 times a second. Works with YouTube Live, Twitch, TwitCasting, and TikTok LIVE. Install it, and you're done — nothing else to do.
+
+■ Never freezes, never overreacts. Built for stability
+
+It speeds up only when there's real headroom in the buffer (1.25x by default), and eases down to as low as 0.15x — turning the volume down with it — right before the buffer runs out. Because the brakes always kick in a moment before the spinner would, you never get frozen out from overshooting.
+
+Once you're caught up, it stops speeding up at all. Live video is only ever made in real time, so holding a higher rate past the live edge just makes playback outrun the arrival of each segment, stalling for a fraction of a second over and over — slower, in the end, than leaving it alone. So Slipstream Live weighs the seconds the speedup should have recovered against the seconds it actually recovered, and backs off the moment it can tell the speedup isn't working. As soon as real delay builds up again, it goes right back to catching up.
+
+To stop the speed from flip-flopping right at the threshold, there's some built-in give (hysteresis) around the edges. The moment you change the speed yourself in the player, Slipstream Live hands control straight back to you (Twitch and TikTok LIVE have no speed menu, so it simply stays in charge there). Volume ducking is temporary too — it never rewrites your actual volume setting.
+
+■ Under the hood, it gets pretty serious: predicting the buffer's "valleys" statistically
+
+Video arrives in chunks (segments) a few seconds long, so the buffer level traces a sawtooth wave — up, then down, over and over. Catch a peak by chance and speed up, and the buffer can run dry at the very next valley and freeze.
+
+So instead of trusting any single reading, Slipstream Live statistically estimates the valley itself, from a short-term average and standard deviation.
+
+　trough = average − √3 × standard deviation
+
+Thanks to a property of the uniform distribution, this finds the valley without ever needing to know the stream's segment length.
+
+　room (safety margin) = average of the valleys − K × how much the valleys vary
+
+Whenever there isn't enough data yet, this room automatically becomes "NaN," and the decision always defaults to false. In other words, "do nothing when unsure" is guaranteed by the logic itself, not just a promise.
+
+"Auto-adjust buffer threshold" has four settings: off / stable / standard / aggressive. On shaky connections it naturally stays conservative about speeding up; on stable streams it reliably gets you all the way to the live edge.
+
+■ Tuned for every platform's quirks
+
+Since Twitch's video feed can drop out for about 10 seconds at a time, its max-deceleration threshold is set more generously; TwitCasting's buffer runs shallow by nature, so it's set thinner; Firefox reports buffer levels differently under the hood, so it gets its own dedicated defaults — tuned platform by platform like that. Streams where this kind of control simply can't work — like TwitCasting's low-latency (WebRTC) streams — are automatically excluded. It never touches VODs, clips, or ads, either. On TikTok, it only works on LIVE pages; the videos in your feed are never touched. YouTube premieres are left alone by default too: a premiere exists so everyone shares the same moment, so catching up there would only mean running ahead of the chat. It's there if you want it, off until you say otherwise.
+
+On Twitch, the player sometimes dies outright with a numbered error like "Error #3000." Slipstream Live spots that and presses Twitch's own reload button for you (on by default). The page itself never reloads, so you keep your place and the chat keeps flowing — only the video comes back, in about a second.
+
+In Chrome on computers with 6 or more CPU cores, TikTok LIVE plays through TikTok's own engine, which ignores speed changes entirely. So before TikTok's scripts run, Slipstream Live lets TikTok's pages see at most 4 CPU cores, and TikTok picks the standard engine it uses in Firefox and Edge, where speed changes work (on by default). The change stays on TikTok's own pages and nothing is read or sent because of it, though some of TikTok's processing, such as picture enhancement, may change. To leave the choice to TikTok, turn off "Allow speed changes in Chrome" on the TikTok tab and reload the page.
+
+■ Zero network activity while it runs
+
+While you're watching, it never connects to an external server — not once. No analytics, no telemetry, no identifiers, no ads. It needs just two permissions: "storage," to keep your settings on your device, and "activeTab," to tell whether the tab you're on is a supported site when you open the popup. Site access stays limited to the four platforms it supports (YouTube, Twitch, TwitCasting, TikTok), and settings aren't synced anywhere; they're stored locally on your device only. The one exception is uninstalling, when your browser opens an optional feedback form. All the extension does is register a fixed URL in advance — no identifier, no settings, nothing about what you were watching is ever attached.
+
+It also comes with an optional on-screen badge (off by default) showing playback speed, delay in seconds, and buffer level, a settings UI available in 19 languages, a "?" help tooltip on every setting, and a reset button for each section.
+
+Keep chasing the stream's "now" — without having to keep watch yourself. Give Slipstream Live a try.

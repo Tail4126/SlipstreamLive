@@ -153,15 +153,22 @@
                     </label>
 
                     <!--
-                        手動しきい値。
+                        手動しきい値（加速を開始する残量・加速を終了する残量の 2 本）。
                         data-not="speedupAuto" … 自動調整が ON（0 以外）のときは、この値が
                         使われないため、行ごとグレーアウトさせます。
                         設定どうしの関係を HTML 側に書いておける、という点がこの仕組みの利点です。
+                        終了の値は開始の値を超えられません（schema.js の cap を参照）。
                     -->
                     <label class="row" data-needs="enabled speedup" data-not="speedupAuto">
                         <span data-msg="speedupThreshold"></span>
                         <button class="help-icon" type="button" data-help="speedupThresholdDesc">?</button>
                         <input class="number" type="number" data-key="speedupThreshold" />
+                    </label>
+
+                    <label class="row" data-needs="enabled speedup" data-not="speedupAuto">
+                        <span data-msg="speedupStopThreshold"></span>
+                        <button class="help-icon" type="button" data-help="speedupStopThresholdDesc">?</button>
+                        <input class="number" type="number" data-key="speedupStopThreshold" />
                     </label>
 
                     <!--

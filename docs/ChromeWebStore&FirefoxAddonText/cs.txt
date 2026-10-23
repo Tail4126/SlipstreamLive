@@ -1,0 +1,47 @@
+Zjišťuje zpoždění přenosů na YouTube, Twitchi, TwitCastingu a TikToku a úpravou rychlosti přehrávání dohání živé vysílání.
+
+Mezi okamžikem, kdy streamer promluví, a okamžikem, kdy to uvidíte, vždy uplyne několik sekund. Toto zpoždění roste při každém zaškobrtnutí připojení a samo od sebe se už nezmenší.
+
+Dohnat ho můžete ručním přepnutím na rychlost 1,25x, jenže pak musíte sami hlídat, kolik zbývá v bufferu, a včas zpomalit, než dojde. Když zapomenete, obraz zamrzne na točícím se kolečku načítání.
+
+Slipstream Live tohle hlídání převezme za vás a kontroluje stav zhruba 50krát za sekundu. Funguje s YouTube Live, Twitchem, TwitCastingem a TikTok LIVE. Stačí ho nainstalovat a víc nemusíte dělat nic.
+
+■ Nezamrzá a neblázní. Důraz na stabilitu
+
+Zrychluje jen tehdy, když je v bufferu skutečná rezerva (ve výchozím stavu 1,25x), a těsně předtím, než buffer dojde, plynule zpomalí až na 0,15x – a s tím ztlumí i zvuk. Brzda vždy zabere chvilku předtím, než by se objevilo kolečko načítání, takže obraz nezamrzne kvůli přehnanému zrychlení.
+
+A jakmile zpoždění doženete, zrychlování úplně ustane. Živé video vzniká jen v reálném čase, takže kdyby se vyšší rychlost držela i po dosažení aktuálního okamžiku vysílání, přehrávání by předbíhalo příchod jednotlivých segmentů a znovu a znovu se na zlomek sekundy zastavovalo – nakonec by to bylo pomalejší, než nedělat nic. Slipstream Live proto porovnává, kolik sekund mělo zrychlení dohnat, s tím, kolik jich doopravdy dohnalo, a se zrychlováním přestane, jakmile pozná, že nepomáhá. Jakmile se znovu nahromadí skutečné zpoždění, hned se k dohánění vrátí.
+
+Aby rychlost na samé hranici prahu neskákala sem a tam, mají meze zabudovanou vůli (hysterezi). Jakmile rychlost v přehrávači změníte sami, Slipstream Live vám ovládání okamžitě přenechá (Twitch ani TikTok LIVE nabídku rychlosti nemají, takže tam vše zůstává v rukou rozšíření). Ztlumení zvuku je také jen dočasné – vaše skutečné nastavení hlasitosti nikdy nepřepíše.
+
+■ Pod kapotou to bere vážně: statistická předpověď „údolí“ bufferu
+
+Video přichází po kouscích (segmentech) dlouhých několik sekund, takže stav bufferu kreslí „pilovitou vlnu“ – stoupá, klesá a zase dokola. Pokud se náhodou změří vrchol a zrychlí se, buffer může dojít hned v nejbližším údolí a obraz zamrzne.
+
+Slipstream Live proto nevěří jedinému měření, ale polohu samotného údolí odhaduje statisticky z krátkodobého průměru a směrodatné odchylky.
+
+　údolí = průměr − √3 × směrodatná odchylka
+
+Díky vlastnosti rovnoměrného rozdělení lze údolí najít, aniž by bylo nutné znát délku segmentů přenosu.
+
+　bezpečnostní rezerva (room) = průměr údolí − K × rozptyl údolí
+
+Dokud není dost dat, má room automaticky hodnotu „NaN“ a rozhodnutí vždy vyzní jako „ne“. Jinými slovy, zásada „v pochybnostech nic nedělat“ je zaručena samotnou logikou, nejen slíbena.
+
+Nastavení „Automaticky upravovat práh bufferu“ má čtyři úrovně: Vypnuto / Stabilní / Standardní / Agresivní. Při nestabilním připojení je zrychlování samo od sebe zdrženlivější, u stabilních přenosů vás spolehlivě dovede až k aktuálnímu okamžiku vysílání.
+
+■ Vyladěno na zvláštnosti každé platformy
+
+Protože na Twitchi mohou video data vypadnout asi na 10 sekund, je práh maximálního zpomalení nastaven velkoryseji; TwitCasting má buffer od přírody mělký, a proto je práh nižší; Firefox hlásí stav bufferu jinak, takže má vlastní výchozí hodnoty – takto je vše vyladěno pro každou platformu zvlášť. Přenosy, u kterých takové ovládání vůbec nemůže fungovat – například přenosy TwitCastingu s nízkou latencí (WebRTC) –, jsou automaticky vyloučeny. Na VOD, klipy ani reklamy rozšíření nikdy nesahá. Na TikToku pracuje jen na stránkách LIVE; videí ve vašem feedu se nikdy nedotkne. Premiéry na YouTube jsou ve výchozím stavu také vynechány: premiéra je tu proto, aby všichni prožili stejný okamžik společně, a dohánění by tam znamenalo jen předbíhat chat. Kdo chce, může si to zapnout.
+
+Na Twitchi se přehrávač někdy úplně zastaví s očíslovanou chybou, třeba „Chyba #3000“. Slipstream Live to rozpozná a stiskne za vás vlastní tlačítko Twitche pro opětovné načtení (ve výchozím stavu zapnuto). Samotná stránka se znovu nenačítá, takže zůstanete tam, kde jste, a chat běží dál – zhruba za sekundu se vrátí jen obraz.
+
+V Chromu na počítačích se 6 a více jádry procesora přehrává TikTok LIVE vlastním přehrávacím jádrem, které změny rychlosti úplně ignoruje. Proto Slipstream Live ještě předtím, než se spustí skripty TikToku, zařídí, aby stránky TikToku viděly nejvýše 4 jádra procesora, a TikTok pak zvolí standardní jádro, které používá ve Firefoxu a Edgi a u kterého lze rychlost upravovat (ve výchozím stavu zapnuto). Změna se týká jen stránek samotného TikToku a nic se kvůli ní nečte ani neodesílá; některé úpravy od TikToku, například vylepšení obrazu, se ale mohou změnit. Pokud chcete volbu nechat na TikToku, vypněte na kartě TikTok nastavení „Umožnit změnu rychlosti v Chromu“ a stránku znovu načtěte.
+
+■ Za provozu žádná síťová komunikace
+
+Během sledování se rozšíření ani jednou nepřipojí k externímu serveru. Žádná analytika, telemetrie, identifikátory ani reklamy. Potřebuje jen dvě oprávnění: „storage“, aby mohlo ukládat vaše nastavení do zařízení, a „activeTab“, aby po otevření vyskakovacího okna poznalo, zda je v aktuální kartě podporovaný web. Přístup k webům je omezen na čtyři podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a nastavení se nikam nesynchronizují – ukládají se pouze místně ve vašem zařízení. Jedinou výjimkou je odinstalace: prohlížeč tehdy otevře nepovinný dotazník. Rozšíření pouze předem zaregistruje pevnou adresu URL – bez identifikátoru, bez nastavení a bez jakýchkoli informací o sledovaném obsahu.
+
+K tomu volitelný ukazatel na obrazovce (ve výchozím stavu vypnutý) s rychlostí přehrávání, zpožděním v sekundách a rezervou bufferu, nastavení v 19 jazycích, nápověda „?“ u každé volby a tlačítko pro reset v každé sekci.
+
+Zůstaňte u „teď“ přenosu – bez neustálého hlídání. Vyzkoušejte Slipstream Live.

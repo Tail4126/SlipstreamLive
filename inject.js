@@ -120,8 +120,37 @@
      */
     const HYSTERESIS = 0.2;
 
+    /**
+     * 手動モードで加速を新しく始めるとき、残量が「最低速度にする閾値」から最低限どれだけ
+     * 上にあればよいか（秒）。下限モードから抜ける線（閾値 + HYSTERESIS）より、さらに
+     * HYSTERESIS ぶん上に置いています。
+     *
+     * 「加速を開始するバッファ閾値」を下限モードから抜ける線以下にしていると、
+     * 加速してすぐ下限モードへ落ち、抜けた瞬間にまた加速する、という 1.25 倍と 0.15 倍の往復が
+     * 1 秒ほどの周期で続き、音量のダッキングも付いたり消えたりします。それを防ぐための下限です。
+     */
+    const FLOOR_CLEAR = HYSTERESIS * 2;
+
     /** 加速を始めるまでの最短待ち時間（ミリ秒）。落ち着いてから動き出すため。 */
     const DWELL_MS   = 2000;
+
+    /**
+     * tick() が続けて失敗したとき、速度と音量をページへ返す（bail）までの回数。
+     * 20ms ごとの実行で 5 回＝およそ 0.1 秒ぶんです。
+     *
+     * 1 回の失敗ですぐ返さないのは、ときどきだけ失敗する場合（たとえば 0.1 秒ごとの
+     * 遅延の問い合わせだけが失敗する場合）に、返す → 次の成功で適用し直す、を繰り返して
+     * 速度が 1 秒間に何度も上下してしまうためです。間の tick が成功していれば制御は
+     * 働いているので、続けて失敗したときだけ手を引きます。
+     */
+    const BAIL_AFTER = 5;
+
+    /**
+     * tick() が続けて失敗したとき、高頻度の実行をやめて待機間隔へ落とすまでの回数。
+     * 20ms ごとの実行で 50 回＝およそ 1 秒ぶんです。サイト側の変更などで毎回例外が出る状態のまま、
+     * 1 秒間に 50 回も失敗し続けないための歯止めです（成功すれば元の間隔に戻ります）。
+     */
+    const FAIL_LIMIT = 50;
 
     /**
      * 自動しきい値スライダー（設定 speedupAuto）の段階ごとのパラメーター。
@@ -599,7 +628,8 @@
     const GUARD_NUMBERS = {
         speedupRate:       [1,    4,    1],
         speedupThreshold:  [0,    100,  10],
-        speedupAuto:       [0,    3,    2],
+        speedupStopThreshold: [0, 100,  9],
+        speedupAuto:      [0,    3,    2],
         floorThreshold:    [0,    10,   0.3],
         duckVolume:        [0,    100,  100],
     };
@@ -629,6 +659,11 @@
             const num = value[key];
             out[key] = typeof num === 'number' && Number.isFinite(num) ? clamp(num, lo, hi) : def;
         }
+
+        // 加速を終了する残量は、加速を開始する残量を超えてはいけません（schema.js の cap と同じ規則）。
+        // 超えていると「加速を始めた直後の判定で、もう終了の線を下回っている」ことになり、
+        // tick ごとに加速と通常を往復してしまうためです。
+        out.speedupStopThreshold = Math.min(out.speedupStopThreshold, out.speedupThreshold);
         return out;
     }
 
@@ -669,6 +704,8 @@
     let timer  = null;
     /** @type {number} 現在のタイマー間隔（ミリ秒） */
     let period = 0;
+    /** @type {number} tick() が続けて失敗した回数（成功すると 0 に戻る） */
+    let failures = 0;
 
     /**
      * バッファ残量を統計的に観測し、「安全に加速できる余裕」を推定するオブジェクト。
@@ -1316,8 +1353,20 @@
         //     抜けるときは AMPLE_KEEP 秒ぶん低い基準を使い、頻繁な切り替わりを防ぎます。
         if (tuned.auto && health >= tuned.ample - (speeding ? AMPLE_KEEP : 0)) return 'speedup';
 
-        // (5) 手動モード：ユーザーが決めたしきい値と、生の残量をそのまま比較。
-        if (!tuned.auto) return health >= settings.speedupThreshold ? 'speedup' : 'normal';
+        // (5) 手動モード：ユーザーが決めた 2 本のしきい値と、生の残量をそのまま比較。
+        //     通常速度のときは「開始」の線、加速中は「終了」の線を使います（ユーザーが幅を決める
+        //     ヒステリシス）。残量が開始の線に達したら加速し、終了の線を下回るまで加速を続けます。
+        //     2 本を同じ値にすれば、1.5.0 までと同じ「1 本の線」の動きになります。
+        //
+        //     ただし下限モードが有効なときは、加速を新しく始めるのは残量が
+        //     「最低速度にする閾値 + FLOOR_CLEAR」を超えているときだけにします（下限モードから
+        //     抜けた直後を含みます）。開始の線を下限モードの近くまで下げていると、
+        //     加速 → 下限モード → 加速 … と 1.25 倍と 0.15 倍を往復し続けるためです。
+        if (!tuned.auto) {
+            if (speeding) return health >= settings.speedupStopThreshold ? 'speedup' : 'normal';
+            const clear = settings.floor ? settings.floorThreshold + FLOOR_CLEAR : -Infinity;
+            return health >= settings.speedupThreshold && health > clear ? 'speedup' : 'normal';
+        }
 
         // (6) 自動モード：統計から求めた「安全な余裕」が、必要な余裕を上回るかで判断。
         //     room が NaN（判断材料不足）のときは比較が false になり、加速しません。
@@ -1642,8 +1691,13 @@
         if (!live) return sleep();
 
         // --- ここから本格的な制御。高頻度モードへ切り替えます ---
+        // ただし一時停止中は、待機と同じ 1 秒間隔にとどめます。止まっている間は残量も遅延も
+        // 動かないので、1 秒間に 50 回確かめても得るものが無く、電池を減らすだけだからです。
+        // 再生を再開すると play / playing イベント（onMediaEvent）がすぐに判断を走らせ、
+        // そこで高頻度モードへ戻ります。加速や音量の横取りはそのまま保つので、統計も捨てません。
+        // 続けて失敗している間（FAIL_LIMIT 回以上）も、同じ理由で 1 秒間隔に落とします。
         idling = false;
-        schedule(TICK_MS);
+        schedule(video.paused || failures >= FAIL_LIMIT ? IDLE_MS : TICK_MS);
 
         const tuned = tuning();
         const { health, ahead } = buffer();
@@ -1685,7 +1739,31 @@
         // --- バッジの更新（判断より低い頻度で十分）---
         if (now < paintAt) return;
         paintAt = now + PAINT_MS;
-        repaint(health, ahead, status);
+
+        // バッジは見た目だけの機能なので、ここで例外が出ても速度の制御は巻き込みません。
+        // （速度と音量はこの時点で適用済みです。下の run() の後始末まで例外を届かせると、
+        //   適用したばかりの速度を毎回解除してしまい、tick ごとに速度が上下します）
+        try { repaint(health, ahead, status); }
+        catch (error) { log('paint failed', error); }
+    }
+
+    /**
+     * 例外で tick() が続けて止まったときの後始末（BAIL_AFTER 回続いたときに 1 度だけ呼びます）。
+     *
+     * 判断の途中で止まり続けると、最後に適用した速度（1.25 倍や 0.15 倍）と音量の
+     * ダッキングがそのまま残り、残量が尽きても下限モードへ切り替わらなくなります。
+     * そこで速度と音量をいったんページへ返し、状態も通常へ戻します。
+     * 失敗が続く間は、速度を適用する手前で止まるので、返したままになります。
+     * tick が成功すれば、改めて判断し直して適用し直します。
+     * @returns {void}
+     */
+    function bail() {
+        try {
+            Rate.release();
+            Volume.release();
+        } catch { }
+        state   = 'normal';
+        stateAt = -Infinity;
     }
 
     /**
@@ -1694,12 +1772,22 @@
      * 例外を握りつぶすのは、サイト側の予期しない変更で 1 回失敗しても、
      * タイマーごと止まってしまわないようにするためです
      * （次の呼び出しで復帰できる可能性が高い）。
+     * 続けて失敗したときは bail() で速度と音量をページへ返し（BAIL_AFTER を参照）、
+     * さらに失敗が続く間は実行間隔を 1 秒に落とします（FAIL_LIMIT を参照）。
      * @param {boolean} sampling 統計サンプルとして採用してよい呼び出しか
      * @returns {void}
      */
     function run(sampling) {
-        try { tick(sampling); }
-        catch (error) { log('tick failed', error); }
+        try {
+            tick(sampling);
+            failures = 0;
+        } catch (error) {
+            failures += 1;
+            log('tick failed', error);
+            if (failures === BAIL_AFTER) bail();
+            // tick() の前半（間隔を切り替える前）で失敗し続ける場合に備えて、ここでも間隔を落とします。
+            if (failures >= FAIL_LIMIT) schedule(IDLE_MS);
+        }
     }
 
     /** 高頻度モードのタイマーから呼ぶ関数（統計サンプルとして採用する）。 */

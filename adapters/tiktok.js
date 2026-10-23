@@ -139,15 +139,63 @@
     }
 
     /**
+     * Function.prototype.toString が、差し替えた関数について本来の関数と同じ文字列を返すようにする。
+     *
+     * ■ なぜ必要？
+     *   関数を Proxy で包むと、名前と引数の数は本来のまま見えますが、文字列化した姿だけは
+     *   Chrome では `function () { [native code] }` になり、本来の
+     *   `function get hardwareConcurrency() { [native code] }` と食い違います
+     *   （Chromium で確かめました）。ページ側の不正検知はこの文字列をよく見比べるため、
+     *   普通の視聴者が「書き換えられた環境」と疑われかねません。
+     *
+     * ■ 仕組み
+     *   toString そのものも Proxy で包み、登録しておいた関数（差し替えた getter と、
+     *   包んだ toString 自身）のときだけ、本来の文字列を返します。それ以外はすべて本来の
+     *   toString にそのまま任せるので、関数ではないものを渡したときの例外なども本来どおりです。
+     *   表を WeakMap にしているのは、ページ側から中身を見られず、関数の回収も妨げないためです。
+     * @param {Function} fake 差し替えた関数
+     * @param {Function} real 本来の関数（この文字列化した姿を fake に名乗らせます）
+     * @returns {void}
+     */
+    function disguise(fake, real) {
+        const proto = Function.prototype;
+        const desc  = Object.getOwnPropertyDescriptor(proto, 'toString');
+        const native = desc?.value;
+        if (typeof native !== 'function' || !desc.configurable) return;
+
+        // ページ側のスクリプトが後から Reflect や WeakMap を書き換えても巻き込まれないよう、
+        // 使う関数は今のうちに手元へ控えておきます（このファイルはページのスクリプトより先に動きます）。
+        const apply = Reflect.apply;
+        const has   = WeakMap.prototype.has;
+        const get   = WeakMap.prototype.get;
+        const masks = new WeakMap();
+
+        const toString = new Proxy(native, {
+            apply(target, receiver, args) {
+                return apply(has, masks, [receiver]) ? apply(get, masks, [receiver]) : apply(target, receiver, args);
+            },
+        });
+
+        try {
+            masks.set(fake, apply(native, real, []));
+            masks.set(toString, apply(native, native, []));
+            Object.defineProperty(proto, 'toString', { ...desc, value: toString });
+        } catch {
+            // 差し替えられなければ、文字列化した姿が本来と少し違うだけで、動作には影響しません。
+        }
+    }
+
+    /**
      * navigator.hardwareConcurrency（CPU のコア数）の読み取りを差し替える。
      *
      * Navigator.prototype にある本来の getter を Proxy で包み、戻り値だけを上限 SHOWN_CORES で
      * 頭打ちにします。
      *   - navigator そのものに独自のプロパティを生やさず、プロトタイプ側を差し替えるのは、
      *     「navigator 自身はこのプロパティを持たない」という本来の形を崩さないためです。
-     *   - 新しい関数を作らず Proxy で包むのは、関数の名前・引数の数・文字列化した姿
-     *     （[native code]）を本来の getter のまま保つためです。ページ側の不正検知などが
-     *     「書き換えられた関数」とみなして、普通の視聴者を誤って疑うことがないようにしています。
+     *   - 新しい関数を作らず Proxy で包むのは、関数の名前・引数の数を本来の getter のまま
+     *     保つためです。文字列化した姿（[native code]）も disguise() で本来のものにそろえます。
+     *     ページ側の不正検知などが「書き換えられた関数」とみなして、普通の視聴者を誤って
+     *     疑うことがないようにしています。
      *
      * 実際の値は呼ばれるたびに本来の getter から読み、設定もそのつど確かめます。
      * TikTok は最初に読んだ結果を覚えて使い続けるため、効くのはページを開いたときの判定だけです。
@@ -170,10 +218,12 @@
         const desc  = Object.getOwnPropertyDescriptor(proto, 'hardwareConcurrency');
         if (typeof desc?.get !== 'function' || !desc.configurable) return;
 
+        // disguise() と同じく、ページ側に後から書き換えられても巻き込まれないよう手元へ控えておきます。
+        const apply = Reflect.apply;
         const capped = new Proxy(desc.get, {
             apply(target, receiver, args) {
                 // receiver が Navigator でなければ、本来の getter と同じ例外がここで投げられます。
-                const cores = Reflect.apply(target, receiver, args);
+                const cores = apply(target, receiver, args);
                 return cores > SHOWN_CORES && wanted() ? SHOWN_CORES : cores;
             },
         });
@@ -182,7 +232,9 @@
             Object.defineProperty(proto, 'hardwareConcurrency', { ...desc, get: capped });
         } catch {
             // 差し替えられなければ、TikTok は WebCodecs 方式のまま（速度は変えられないだけ）です。
+            return;
         }
+        disguise(capped, desc.get);
     }
 
     // ページのスクリプトより先に動く必要があるため、読み込まれた時点ですぐに差し替えます

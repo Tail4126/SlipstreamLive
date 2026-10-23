@@ -108,7 +108,8 @@ colour as Slipstream Live works.
 Click the toolbar icon to open the settings popup. It has two panels:
 
 * **Site settings** — tabs for YouTube / Twitch / TwitCasting / TikTok. Each site remembers its own values,
-  and the popup automatically opens the tab for the site you're currently on.
+  and the popup automatically opens the tab for the site you're currently on. On any other site, it
+  opens the tab you last had selected.
 * **All sites** — the master switch and the on-screen badges.
 
 Every row has a **?** button with a plain-language explanation, and each section has a
@@ -146,7 +147,9 @@ delayed — not leaving a speed-up, not entering Floor, not leaving it. Only the
 *increases* intervention is treated cautiously; backing off and falling back to safety always take
 effect at once. Holding 1.25x for two more seconds after the controller has decided it isn't safe
 would spend buffer it has already judged it can't spare. Widening a threshold alone can't stop the
-chatter, because the value being compared against it moves as well.
+chatter, because the value being compared against it moves as well. (With auto-adjust **Off**, the
+speed-up decision uses no fixed 0.2 s band; the gap between your own start and stop thresholds is
+the band instead.)
 
 **When speeding up stops helping, it stops speeding up.** Live video is only ever produced in real
 time, so once you reach the live edge there is no gap left to close. Holding a higher rate there
@@ -205,7 +208,8 @@ catch-up from fighting with it.)
 | **Speed up when delayed** | ON / OFF | ON | ON | ON | ON | Master switch for catching up. |
 | **Speed-up playback rate** | 1.05x–4.00x | 1.25x | 1.25x | 1.25x | 1.25x | How fast to catch up (0.05 steps). Higher = faster, but eats buffer. |
 | **Auto-adjust buffer threshold** | Off / Stable / Standard / Aggressive | Standard | Standard | Standard | Standard | Let Slipstream Live decide when it's safe to speed up. **Recommended.** |
-| **Speed-up buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | 10.0s | Only used when auto-adjust is **Off**: speed up once this much video is loaded. |
+| **Speed-up start buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | 10.0s | Only used when auto-adjust is **Off**: start speeding up once this much video is loaded. With maximum slowdown on, speed-up won't start until buffer health is more than 0.4 s above the maximum slowdown threshold. |
+| **Speed-up stop buffer threshold** | 0.1–100.0s | 9.0s | 9.0s | 9.0s | 9.0s | Only used when auto-adjust is **Off**: while speeding up, return to normal speed once buffer health drops below this. Setting it above the start threshold raises the start threshold to match. |
 | **Maximum slowdown on buffer depletion** | ON / OFF | ON | ON | ON | ON | Master switch for the 0.15x emergency brake. |
 | **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | 0.50s | Drop to 0.15x while buffer health is below this. |
 | **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | ON | Ducks the audio while at 0.15x. |
@@ -228,7 +232,7 @@ site where it differs.*
 
 | Level | Trough window | Safety factor | Added margin | Hysteresis | Character |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Off** | — | — | — | 0.2s | No estimation; uses **Speed-up buffer threshold** as-is. |
+| **Off** | — | — | — | start − stop | No estimation; uses the **Speed-up start/stop buffer thresholds** as-is. |
 | **Stable** | 60s | 10 | 1.0s | 0.2s | Longest window, largest factor. Speeds up only when the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. Good for music. |
 | **Standard** | 30s | 5 | 0.3s | 0.2s | The balanced middle ground. The default, and enough for most connections. |
 | **Aggressive** | 5s | 3 | 0.1s | 0.2s | Short window; reacts quickly to recent headroom and closes the gap harder, but reaches maximum slowdown more often. |
@@ -249,10 +253,16 @@ seconds — because there is no 0.15x brake left to catch a trough that reaches 
 
 *The automatic levels also damp the decision twice over: hysteresis raises the entry line by 0.2 s,
 and after any mode change at least 2 seconds pass before the next speed-up may begin. With
-auto-adjust **Off** neither applies — the speed-up starts the instant buffer health reaches the
-number you set and stops the instant it drops below. The manual mode therefore behaves exactly as
-written, at the cost of the rate switching more often on a bumpy connection. (The 0.15x brake is a
-separate test and keeps its own hysteresis either way.)*
+auto-adjust **Off** neither applies — the speed-up starts the instant buffer health reaches your
+**start** threshold and stops the instant it drops below your **stop** threshold. The gap between
+the two is the hysteresis (1 second with the 10 s / 9 s defaults): widen it and the rate switches
+less often; set both to the same value and you get the single-line behaviour of 1.5.0 and earlier.
+(The 0.15x brake is a separate test and keeps its own hysteresis either way.)*
+
+*One exception: while **Maximum slowdown on buffer depletion** is on, even auto-adjust **Off** won't start a
+speed-up until buffer health is more than 0.4 s above the **Maximum slowdown threshold**. A start
+threshold below that would speed up straight into 0.15x, leave it, and speed up again, bouncing
+between the two about once a second.*
 
 ### All-sites settings
 
@@ -269,7 +279,7 @@ separate test and keeps its own hysteresis either way.)*
 
 ### The short version
 
-Every 20 milliseconds, Slipstream Live measures **buffer health** — how many seconds of video are
+Every 20 milliseconds (once a second while paused), Slipstream Live measures **buffer health** — how many seconds of video are
 loaded and ready to play — and picks one of the three modes based on that number.
 
 The tricky part is knowing when it's safe to speed up. Buffer health is never a steady number:
@@ -345,8 +355,9 @@ statistical test once health drops below 15 seconds. This matters after a manual
 the buffer drives the fetch rate far above 1.0, the stationarity gate correctly refuses to record
 troughs, and without the shortcut the extension would sit at 1.00x with a minute of video already
 loaded. The shortcut applies to the automatic levels only — with auto-adjust **Off**, your manual
-threshold is used exactly as set: the speed-up begins the moment buffer health reaches it and ends
-the moment it drops below, with no added margin and no waiting period.
+thresholds are used exactly as set: the speed-up begins the moment buffer health reaches the start
+threshold and ends the moment it drops below the stop threshold, with no added margin and no
+waiting period.
 
 </details>
 
@@ -397,11 +408,11 @@ immediately when the tab becomes visible again.
 **It never speeds up.**
 Auto-adjust is deliberately cautious: on an unstable connection it will decide that speeding up
 isn't safe. Try moving **Auto-adjust buffer threshold** one step toward **Aggressive** first. If that still
-isn't enough, set it to **Off** and configure **Speed-up buffer threshold** manually (try 15–20
+isn't enough, set it to **Off** and configure **Speed-up start buffer threshold** manually (try 15–20
 seconds and work down). With auto-adjust **Off**, the speed-up starts the moment buffer health
-reaches your threshold, and stops as soon as it drops below — no extra margin and no waiting period
-(1.1.3 and later; earlier versions needed 0.2 s more and up to 2 seconds of delay). If the rate now switches back and forth more than
-you'd like, either raise the threshold or switch auto-adjust back on.
+reaches the start threshold, and stops as soon as it drops below **Speed-up stop buffer threshold**
+— no extra margin and no waiting period. If the rate switches back and forth more than you'd like,
+lower the stop threshold to widen the gap between the two, or switch auto-adjust back on.
 
 **It sits at 1.00x right after seeking, even with plenty of video buffered.**
 Make sure you're on 1.1.0 or later. From that version, buffer health above 20 seconds allows a
@@ -417,7 +428,7 @@ automatically, so check your version first. If it persists, look at `gain=` in t
 **It drops to 0.15x too often.**
 Move **Auto-adjust buffer threshold** one step toward **Stable** — a longer window and a larger
 safety factor mean a speed-up is only allowed once the troughs have proved themselves. Otherwise
-raise the manual threshold, or lower **Speed-up playback rate** so the buffer drains more slowly.
+raise the manual **Speed-up stop buffer threshold**, or lower **Speed-up playback rate** so the buffer drains more slowly.
 Lowering **Maximum slowdown threshold** delays the brake, but increases the chance of an actual
 freeze.
 
@@ -425,7 +436,8 @@ freeze.
 Check that **Change playback speed** is ON, that you're on a *live* stream rather than a VOD or
 clip, and that you haven't set a manual playback speed in the player menu. On a YouTube premiere,
 also check **Control premieres** at the bottom of the **YouTube** tab — it's off by default, so
-premieres are skipped until you turn it on.
+premieres are skipped until you turn it on. Right after the extension is updated or disabled, tabs
+that were already open stop being controlled; reload the page to pick up the new version.
 
 **Nothing happens on TwitCasting.**
 Check whether the stream is playing in low-latency mode. Low-latency streams arrive over WebRTC

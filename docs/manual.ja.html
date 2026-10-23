@@ -49,7 +49,7 @@
         <h1>取扱説明書</h1>
         <p class="lede">Slipstream Live は、ブラウザがどれだけ先まで映像を読み込めているかを監視し、再生速度をほんの少しだけ上げ下げすることで、映像を止めずにライブ配信の「今」へ近づけ続けます。このページでは、インストール方法・すべての設定項目・うまく動かないときの対処をまとめています。</p>
         <div class="page-meta">
-            <span>バージョン 1.5.0</span>
+            <span>バージョン 1.6.0</span>
             <span>YouTube Live ・ Twitch ・ ツイキャス ・ TikTok LIVE</span>
         </div>
     </div>
@@ -183,7 +183,7 @@
                 <tbody>
                     <tr><td class="num">1</td><td>アイコン・タイトル</td><td>アイコンをクリックするとプロジェクトページが開きます。名前の右にバージョン番号が表示されます。</td></tr>
                     <tr><td class="num">2</td><td><span class="ui">再生速度を変更する</span></td><td>マスタースイッチ。オフにすると制御もバッジ表示もすべて停止します。<span class="ui">「全サイト共通」</span>の印が付いています。</td></tr>
-                    <tr><td class="num">3</td><td>サイトタブ</td><td>YouTube / Twitch / TwitCasting / TikTok。それぞれ別々に値を保存し、今開いているサイトのタブが自動で選ばれます。</td></tr>
+                    <tr><td class="num">3</td><td>サイトタブ</td><td>YouTube / Twitch / TwitCasting / TikTok。それぞれ別々に値を保存し、今開いているサイトのタブが自動で選ばれます。対応サイト以外を開いているときは、最後に選択されていたタブが選ばれます。</td></tr>
                     <tr><td class="num">4</td><td><span class="ui">サイト別設定</span>パネル</td><td>選択中のサイトの、加速に関する設定と最低速度に関する設定。</td></tr>
                     <tr><td class="num">5</td><td><span class="ui">?</span> ボタン</td><td>その項目のわかりやすい説明が開きます。</td></tr>
                     <tr><td class="num">6</td><td><span class="ui">リセット · サイト名</span></td><td>選択中のサイトの設定だけを既定値に戻します。</td></tr>
@@ -194,7 +194,7 @@
         </div>
         <ul>
             <li>変更は即時反映されます。保存ボタンはありません。</li>
-            <li>現在使われない項目はグレー表示になります。たとえば<span class="ui">「バッファ閾値を自動調整する」</span>がオフ以外のとき、<span class="ui">「加速するバッファ閾値（秒）」</span>は操作できません。</li>
+            <li>現在使われない項目はグレー表示になります。たとえば<span class="ui">「バッファ閾値を自動調整する」</span>がオフ以外のとき、<span class="ui">「加速を開始するバッファ閾値（秒）」</span>と<span class="ui">「加速を終了するバッファ閾値（秒）」</span>は操作できません。</li>
             <li>Twitch タブを選んでいるときだけ、既定値が大きい理由の注釈と、他のサイトにはない<span class="ui">「プレイヤーのエラーから自動復帰する」</span>のスイッチがパネル下部に表示されます。</li>
             <li>TikTok タブを選んでいるときだけ、<span class="ui">「Chrome での速度変更を有効にする」</span>のスイッチがパネル下部に表示されます（<a href="#tiktok">6 章「Chrome の TikTok LIVE」</a>を参照）。</li>
         </ul>
@@ -287,7 +287,8 @@
                 <tbody>
                     <tr><td><span class="ui">遅延時に加速する</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>追いつき機能のスイッチ。</td></tr>
                     <tr><td><span class="ui">遅延時の再生速度</span></td><td>1.05x〜4.00x / 0.05</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td>加速時の倍率。大きいほど速く追いつけますが、バッファ消費も増えます。</td></tr>
-                    <tr><td><span class="ui">加速するバッファ閾値（秒）</span></td><td>0.1〜100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>自動調整が<strong>オフのときだけ</strong>使われます。この秒数まで読み込めていたら加速します。</td></tr>
+                    <tr><td><span class="ui">加速を開始するバッファ閾値（秒）</span></td><td>0.1〜100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>自動調整が<strong>オフのときだけ</strong>使われます。残量がこの秒数に達したら加速を始めます。最低速度が有効なときは、残量が「最低速度にする閾値」より 0.4 秒を超えて多くなるまで加速を始めません（加速と 0.15x を往復しないため）。</td></tr>
+                    <tr><td><span class="ui">加速を終了するバッファ閾値（秒）</span></td><td>0.1〜100.0 / 0.1</td><td class="num">9.0</td><td class="num">9.0</td><td class="num">9.0</td><td class="num">9.0</td><td>自動調整が<strong>オフのときだけ</strong>使われます。加速中、残量がこの秒数を下回ったら通常速度へ戻します。開始との差がヒステリシスの幅になります。開始より大きくすると、開始も同じ値に引き上げます。</td></tr>
                     <tr><td><span class="ui">バッファ閾値を自動調整する</span></td><td>オフ / 安定 / 標準 / 積極的</td><td class="num">標準</td><td class="num">標準</td><td class="num">標準</td><td class="num">標準</td><td>加速して安全かどうかを Slipstream Live に判断させます。<strong>推奨。</strong></td></tr>
                     <tr><td><span class="ui">バッファ枯渇時に最低速度にする</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>0.15x の緊急ブレーキのスイッチ。</td></tr>
                     <tr><td><span class="ui">最低速度にする閾値（秒）</span></td><td>0.0〜10.0 / 0.1</td><td class="num">0.80</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.30</td><td class="num">0.50</td><td>バッファ残量がこれを下回っている間 0.15x にします。</td></tr>
@@ -310,7 +311,7 @@
             <table>
                 <thead><tr><th>段階</th><th class="num">谷を貯める窓</th><th class="num">安全余裕係数</th><th class="num">下限への上乗せ</th><th class="num">ヒステリシス</th><th>性格</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>オフ</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.2s</td><td>自動調整せず<span class="ui">「加速するバッファ閾値」</span>をそのまま使います。</td></tr>
+                    <tr><td><strong>オフ</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">開始−終了</td><td>自動調整せず<span class="ui">「加速を開始／終了するバッファ閾値」</span>をそのまま使います。</td></tr>
                     <tr><td><strong>安定</strong></td><td class="num">60s</td><td class="num">10</td><td class="num">1.0s</td><td class="num">0.2s</td><td>最も長い窓と最も大きな係数。谷が長時間そろって高いときにしか加速しないため、最低速度へ落ちにくい代わりに加速の機会は少なくなります。音楽ライブ向け。</td></tr>
                     <tr><td><strong>標準</strong></td><td class="num">30s</td><td class="num">5</td><td class="num">0.3s</td><td class="num">0.2s</td><td>安定と積極的の中間。既定値で、たいていの環境はこれで足ります。</td></tr>
                     <tr><td><strong>積極的</strong></td><td class="num">5s</td><td class="num">3</td><td class="num">0.1s</td><td class="num">0.2s</td><td>短い窓で直近の余裕へ素早く反応し、遅れをより詰めます。その代わり最低速度に入る頻度は上がります。</td></tr>
@@ -345,7 +346,7 @@
     <!-- ============================================================ 8 -->
     <section class="doc-section" id="how">
         <h2><span class="num">8</span> 動作の仕組み</h2>
-        <p>Slipstream Live は 20 ミリ秒ごとに<strong>バッファ残量</strong>（何秒先まで映像を読み込めているか）を測り、その値から 3 つのモードのどれかを選びます。</p>
+        <p>Slipstream Live は 20 ミリ秒ごとに<strong>バッファ残量</strong>（何秒先まで映像を読み込めているか）を測り、その値から 3 つのモードのどれかを選びます（一時停止中は 1 秒ごと）。</p>
         <p>難しいのは「いつ加速して安全か」の判断です。バッファ残量は一定ではありません。映像は「セグメント」という数秒単位の塊で届くため、塊が届いた瞬間にドンと増え、再生とともにすーっと減っていきます。グラフにすると<strong>のこぎり波</strong>の形になります。たまたま山（ピーク）を見て「余裕たっぷり」と誤解して加速すると、直後の谷でバッファを使い切って映像が止まります。</p>
         <p>そこで Slipstream Live は、1 回の測定値を信じる代わりに、配信ごとに自動調整される窓で<strong>谷の位置を統計的に推定</strong>し、その余裕が「確保したいバッファ量」（<span class="ui">最低速度にする閾値</span>＋段階ごとの上乗せ量。この機能がオフのときはセグメント 1 個ぶん）を上回っている間だけ加速します。安全係数を大きく取っているため、谷が安定して同じ高さでないと余裕は生まれず、回線が不安定なときは自然と加速が抑制されます。データが足りない間は「わからないので何もしない」が自動的に成立します。</p>
         <p>この判定の上に、ひとつだけ近道があります。残量が 20 秒（「最低速度にする閾値」を大きくしている場合は「確保したいバッファ量＋10 秒」のうち高いほう）を超えている間は、谷の推定を待たずに加速し、15 秒を下回ると従来の判定へ戻ります。シーク直後はバッファの埋め直しが速すぎて統計が一時的に使えなくなるため、その場面でも反応を保つための仕組みです。近道が働くのは自動調整が「安定」「標準」「積極的」のときだけです。「オフ」では、残量が設定した閾値に達した時点で加速を開始し、下回った時点で戻る、という単純な動きになります。</p>
@@ -362,7 +363,7 @@
 
         <div class="qa">
             <h3>まったく加速しない</h3>
-            <p>自動調整はわざと慎重に作ってあります。回線が不安定だと「加速は危険」と判断するためです。まず<span class="ui">「バッファ閾値を自動調整する」</span>を 1 段階<span class="ui">「積極的」</span>寄りに変えてみてください。それでも足りなければ<span class="ui">「オフ」</span>にして<span class="ui">「加速するバッファ閾値（秒）」</span>を手動で設定します。15〜20 秒あたりから始めて、様子を見ながら下げるのがおすすめです。1.1.3 以降、「オフ」では残量が設定値に達した瞬間に加速し、下回った瞬間に戻ります（ヒステリシスも 2 秒の待ちもありません）。倍率の切り替わりが多すぎると感じる場合は、閾値を上げるか自動調整をオンに戻してください。</p>
+            <p>自動調整はわざと慎重に作ってあります。回線が不安定だと「加速は危険」と判断するためです。まず<span class="ui">「バッファ閾値を自動調整する」</span>を 1 段階<span class="ui">「積極的」</span>寄りに変えてみてください。それでも足りなければ<span class="ui">「オフ」</span>にして<span class="ui">「加速を開始するバッファ閾値（秒）」</span>を手動で設定します。15〜20 秒あたりから始めて、様子を見ながら下げるのがおすすめです。「オフ」では残量が開始の値に達した瞬間に加速し、<span class="ui">「加速を終了するバッファ閾値（秒）」</span>を下回った瞬間に戻ります（固定のヒステリシスも 2 秒の待ちもなく、2 本の差だけが幅になります）。倍率の切り替わりが多すぎると感じる場合は、終了の値を下げて 2 本の差を広げるか、自動調整をオンに戻してください。</p>
         </div>
 
         <div class="qa">
@@ -377,12 +378,12 @@
 
         <div class="qa">
             <h3>最低速度（0.15x）に入る頻度が高い</h3>
-            <p>まず<span class="ui">「バッファ閾値を自動調整する」</span>を 1 段階<span class="ui">「安定」</span>寄りに変えてみてください。窓が長く安全余裕係数も大きくなるため、谷が十分に安定していると確認できるまで加速しなくなります。それでも頻発する場合は、手動閾値を大きめにするか、<span class="ui">「遅延時の再生速度」</span>を下げてバッファの消費を緩やかにしてください。<span class="ui">「最低速度にする閾値（秒）」</span>を下げれば発動は遅くなりますが、実際に映像が止まるリスクは上がります。</p>
+            <p>まず<span class="ui">「バッファ閾値を自動調整する」</span>を 1 段階<span class="ui">「安定」</span>寄りに変えてみてください。窓が長く安全余裕係数も大きくなるため、谷が十分に安定していると確認できるまで加速しなくなります。それでも頻発する場合は、<span class="ui">「加速を終了するバッファ閾値（秒）」</span>を大きめにするか、<span class="ui">「遅延時の再生速度」</span>を下げてバッファの消費を緩やかにしてください。<span class="ui">「最低速度にする閾値（秒）」</span>を下げれば発動は遅くなりますが、実際に映像が止まるリスクは上がります。</p>
         </div>
 
         <div class="qa">
             <h3>何も起こらない</h3>
-            <p><span class="ui">「再生速度を変更する」</span>がオンになっているか、VOD やクリップではなく<em>ライブ</em>配信を見ているか、プレイヤーのメニューで再生速度を手動変更していないかを確認してください。プレミア公開を見ている場合は、<span class="ui">YouTube</span> タブの一番下にある<span class="ui">「プレミア公開も制御する」</span>も確認してください。既定はオフなので、オンにするまでは意図的に制御対象から外れます。</p>
+            <p><span class="ui">「再生速度を変更する」</span>がオンになっているか、VOD やクリップではなく<em>ライブ</em>配信を見ているか、プレイヤーのメニューで再生速度を手動変更していないかを確認してください。プレミア公開を見ている場合は、<span class="ui">YouTube</span> タブの一番下にある<span class="ui">「プレミア公開も制御する」</span>も確認してください。既定はオフなので、オンにするまでは意図的に制御対象から外れます。拡張機能を更新・無効化した直後は、開いていたタブでの制御が止まります。ページを再読み込みすると、新しい版で動き始めます。</p>
         </div>
 
         <div class="qa">

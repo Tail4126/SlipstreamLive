@@ -282,7 +282,17 @@
         // 文字列や配列をそのまま `...` で展開すると、"abc" が { 0: 'a', 1: 'b', ... } の
         // ようなゴミのキーに化けて保存されてしまうためです。
         const bucket = isRecord(data[scope]) ? data[scope] : {};
-        commit(scope, { ...bucket, [key]: value });
+
+        // cap を持つ項目（加速を終了する残量）に、相手の項目（加速を開始する残量）より大きな値が
+        // 入力されたら、相手の項目も同じ値へ引き上げて一緒に保存します。ユーザーが今入力した値を
+        // 優先し、「終了 ≦ 開始」の関係は相手を動かして保つ、という考え方です。
+        // （逆に開始を終了より下げたときは保存値を書き換えず、settingsOf() が読み出し時に
+        //   終了を開始まで抑えます。開始を元に戻せば、終了も元の値に戻ります。）
+        // どちらもサイト別の設定なので、保存先（bucket）は同じです。
+        const cap = KEYS[key].cap;
+        const raise = cap && value > settingsOf(data, site)[cap] ? { [cap]: value } : {};
+
+        commit(scope, { ...bucket, [key]: value, ...raise });
     }
 
     /**
@@ -429,6 +439,27 @@
     }
 
     /**
+     * 選択中のタブ（サイト）を切り替え、「最後に選択されていたタブ」として記録する。
+     *
+     * 記録した値は、対応外のサイトを見ているときにこの画面を開いた場合に、
+     * 同じタブを選んだ状態で開くために使います（detect() を参照）。
+     * タブを押したときだけでなく、対応サイトを見ていて自動でそのタブが選ばれたときも記録します。
+     * 画面に選ばれた状態で表示されたタブが「最後に選択されていたタブ」になる、という考え方です。
+     * 値が変わらないときは書き込みません（無駄な保存を避けるため）。
+     * @param {string} site サイト ID
+     * @returns {void}
+     */
+    function select(site) {
+        current = site;
+        if (ui.site === site && !Object.hasOwn(ui, 'seen')) return;
+        // seen は 1.5.0 まで content.js が記録していた「最後に見ていたサイト」です。
+        // もう使わないため、書き込むついでに取り除き、使わないデータを残さないようにします。
+        const { seen: _unused, ...rest } = ui;
+        ui = { ...rest, site };
+        store.set('ui', ui);
+    }
+
+    /**
      * サイト切り替えタブを動的に作る。
      * HTML に直接書かず、SITES の定義から生成することで、
      * 対応サイトを増やしたときに自動で反映されるようにしています。
@@ -443,10 +474,7 @@
             tab.role        = 'tab';
             tab.textContent = SITES[site].label;
             tab.addEventListener('click', () => {
-                current = site;
-                // 次回この画面を開いたとき、同じタブを選んだ状態にするため記録します。
-                ui = { ...ui, site };
-                store.set('ui', ui);
+                select(site);
                 render();
             });
             bar.append(tab);
@@ -625,15 +653,17 @@
      *
      * 優先順位：
      *   1) 今アクティブなタブが対応サイトなら、そのサイト
-     *   2) content.js が記録した「最後に見ていたサイト」
-     *   3) 前回この画面で選んでいたサイト
-     *   4) それも無ければ先頭のサイト
+     *   2) 最後に選択されていたタブ（select() が記録した ui.site）
+     *   3) それも無ければ先頭のサイト
+     *
+     * 1.5.0 までは 1) と 2) の間に「対応サイトのページを最後に表示したサイト」（content.js が
+     * 記録していた ui.seen）を挟んでいましたが、対応外のサイトで開いたときに、画面で最後に
+     * 選んだタブではなく、最後に見ていた配信サイトのタブが開いてしまうため、やめました。
      * @param {string|null} site activeSite() の結果
      * @returns {string} サイト ID
      */
     function detect(site) {
         if (site) return site;
-        if (sites.includes(ui.seen)) return ui.seen;
         if (sites.includes(ui.site)) return ui.site;
         return sites[0];
     }
@@ -668,12 +698,12 @@
     const [savedUi, savedData, activeId] = await loading;
     ui      = savedUi;                               // 画面の状態
     data    = savedData;                             // 設定
-    current = detect(activeId);                      // 開くタブを決定
+    select(detect(activeId));                        // 開くタブを決定し、最後に選択されたタブとして記録
     render();                                        // 画面に反映
 
     // 他の場所（別ウィンドウの設定画面など）で設定が変わったら、この画面も追従させます。
-    // ui も追いかけるのは、設定画面をタブで開いたままにしている間に content.js が
-    // 書き込んだ「最後に見ていたサイト」（ui.seen）を、古い値で上書きしないためです。
+    // ui も追いかけるのは、別の窓の設定画面で選ばれた「最後に選択されていたタブ」（ui.site）を、
+    // この画面が持っている古い値で上書きしないためです。
     api.storage.onChanged.addListener((changes, area) => {
         if (area !== 'local') return;
         if (changes.ui) ui = isRecord(changes.ui.newValue) ? changes.ui.newValue : {};

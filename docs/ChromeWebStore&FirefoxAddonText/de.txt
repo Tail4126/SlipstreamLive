@@ -1,0 +1,47 @@
+Erkennt die Latenz auf YouTube, Twitch, TwitCasting und TikTok und passt die Wiedergabegeschwindigkeit an, um live aufzuholen.
+
+Zwischen dem Moment, in dem der Streamer spricht, und dem Moment, in dem du es siehst, liegen immer ein paar Sekunden Verzögerung. Diese Verzögerung wächst bei jeder Verbindungsstörung – und schrumpft von allein nicht wieder zurück.
+
+Manuell auf 1,25-fache Geschwindigkeit zu stellen, hilft dir aufzuholen, aber dann musst du selbst den Füllstand deines Puffers im Auge behalten und rechtzeitig zurückschalten, bevor er leer ist. Vergisst du das, bleibt das Bild mit dem Lade-Kreisel hängen.
+
+Slipstream Live übernimmt genau diese Wache für dich – rund 50 Mal pro Sekunde. Kompatibel mit YouTube Live, Twitch, TwitCasting und TikTok LIVE. Einmal installiert, musst du dich um nichts mehr kümmern.
+
+■ Nie hängen, nie ausrasten. Unsere Obsession für Stabilität
+
+Nur wenn im Puffer genug Reserve ist, wird leicht beschleunigt (Standard: 1,25x); kurz bevor der Puffer leer wird, bremst Slipstream Live bis auf 0,15x herunter und senkt gleichzeitig die Lautstärke ab. Da immer kurz vor dem Lade-Kreisel gebremst wird, kommt es nicht zum Einfrieren durch zu starkes Beschleunigen.
+
+Und sobald du aufgeholt hast, hört das Beschleunigen ganz auf. Live-Video entsteht nun einmal nur in Echtzeit: Hältst du die höhere Geschwindigkeit über den Live-Rand hinaus, überholt die Wiedergabe die ankommenden Segmente und stockt immer wieder für Sekundenbruchteile – unterm Strich langsamer, als gar nichts zu tun. Slipstream Live vergleicht deshalb die Sekunden, die das Beschleunigen hätte aufholen sollen, mit den Sekunden, die tatsächlich aufgeholt wurden, und verzichtet aufs Beschleunigen, sobald erkennbar ist, dass es nichts bringt. Entsteht wieder echter Rückstand, geht es sofort weiter.
+
+Damit die Geschwindigkeit an der Schwelle nicht ständig hin- und herspringt, gibt es an den Grenzen etwas Spiel (Hysterese). Änderst du selbst die Geschwindigkeit im Player, gibt Slipstream Live die Kontrolle sofort ab (Twitch und TikTok LIVE haben kein Geschwindigkeitsmenü, dort bleibt die Steuerung also bei der Erweiterung). Auch das Absenken der Lautstärke (Ducking) ist nur vorübergehend – deine eigentliche Lautstärkeeinstellung wird nie dauerhaft verändert.
+
+■ Unter der Haube wird's ernst: Die „Täler" im Puffer statistisch vorhersagen
+
+Da Video in wenige Sekunden lange Blöcke (Segmente) ankommt, zeichnet der Pufferfüllstand eine „Sägezahnkurve" – rauf und runter. Misst man zufällig genau an einem Gipfel und beschleunigt, kann der Puffer im nächsten Tal leerlaufen und das Bild einfrieren.
+
+Deshalb verlässt sich Slipstream Live nicht auf eine einzelne Messung, sondern schätzt die Position des Tals selbst statistisch – aus kurzfristigem Mittelwert und Standardabweichung.
+
+　Tal = Mittelwert − √3 × Standardabweichung
+
+Dank der Eigenschaften der Gleichverteilung lässt sich die Position des Tals bestimmen, ohne die Segmentlänge des Streams zu kennen.
+
+　Reserve (Sicherheitsabstand) = Mittelwert der Täler − K × Streuung der Täler
+
+Solange zu wenig Daten vorliegen, wird diese Reserve automatisch zu „NaN", und die Entscheidung fällt immer auf „Nein". Anders gesagt: „Im Zweifel nichts tun" ist fest in der Logik verankert.
+
+„Pufferschwelle automatisch anpassen" hat vier Stufen: Aus / Stabil / Standard / Aggressiv. Bei instabiler Verbindung wird von selbst weniger beschleunigt, bei stabilen Streams holt dich Slipstream Live zuverlässig bis an den Live-Rand.
+
+■ Auf die Eigenheiten jeder Plattform abgestimmt
+
+Da bei Twitch Videodaten für rund 10 Sekunden aussetzen können, ist die Bremsschwelle dort großzügiger bemessen; TwitCasting hat von Haus aus einen flacheren Puffer, daher ist sie dünner gesetzt; Firefox meldet Pufferwerte anders, weshalb er eigene Standardwerte bekommt – so ist alles plattformspezifisch abgestimmt. Streams, bei denen eine Steuerung grundsätzlich nicht funktioniert – etwa TwitCastings Low-Latency-Streams (WebRTC) – werden automatisch ausgeschlossen. VODs, Clips und Werbung fasst Slipstream Live grundsätzlich nicht an. Auf TikTok greift die Erweiterung nur auf LIVE-Seiten ein; die Videos in deinem Feed bleiben unberührt. Auch YouTube-Premieren bleiben standardmäßig außen vor: Eine Premiere ist dafür da, dass alle denselben Moment gemeinsam erleben – Aufholen hieße dort nur, dem Chat vorauszulaufen. Wer es trotzdem möchte, schaltet es einfach ein.
+
+Auf Twitch bleibt der Player manchmal komplett mit einem nummerierten Fehler stehen, etwa „Fehler #3000". Slipstream Live erkennt das und drückt stellvertretend Twitchs eigenen Neu-laden-Button (standardmäßig an). Die Seite selbst wird nicht neu geladen, deine Position und der Chat-Verlauf bleiben also erhalten – nach rund einer Sekunde ist nur das Bild zurück.
+
+In Chrome auf Rechnern mit 6 oder mehr CPU-Kernen spielt TikTok LIVE über eine eigene Engine ab, die Geschwindigkeitsänderungen komplett ignoriert. Deshalb lässt Slipstream Live TikTok-Seiten, noch bevor TikToks Skripte laufen, höchstens 4 CPU-Kerne sehen, sodass TikTok die Standard-Engine wählt, die es auch in Firefox und Edge nutzt und bei der sich die Geschwindigkeit ändern lässt (standardmäßig an). Die Änderung bleibt auf TikToks eigene Seiten beschränkt, und dabei wird nichts ausgelesen oder gesendet; einzelne Verarbeitungsschritte von TikTok, etwa die Bildverbesserung, können sich allerdings ändern. Möchtest du die Wahl TikTok überlassen, schalte im Tab „TikTok" die Option „Geschwindigkeit in Chrome änderbar machen" aus und lade die Seite neu.
+
+■ Im Betrieb keinerlei Netzwerkverbindung
+
+Während du zuschaust, wird kein einziges Mal eine Verbindung zu einem externen Server aufgebaut. Keine Analytics, keine Telemetrie, keine Kennungen, keine Werbung. Benötigt werden nur zwei Berechtigungen: „storage", um deine Einstellungen auf dem Gerät zu speichern, und „activeTab", um beim Öffnen des Popups zu erkennen, ob der aktuelle Tab eine unterstützte Seite ist. Der Website-Zugriff bleibt auf die vier unterstützten Plattformen beschränkt (YouTube, Twitch, TwitCasting, TikTok), und Einstellungen werden nicht synchronisiert, sondern ausschließlich lokal auf deinem Gerät gespeichert. Die einzige Ausnahme ist die Deinstallation: Dann öffnet der Browser eine freiwillige Feedback-Seite. Die Erweiterung hinterlegt dafür lediglich eine feste URL – ohne Kennung, ohne Einstellungen, ohne irgendetwas darüber, was du gesehen hast.
+
+Dazu gibt es ein optionales Anzeige-Badge (standardmäßig aus) für Wiedergabegeschwindigkeit, Verzögerung in Sekunden und Pufferfüllstand, eine Einstellungsoberfläche in 19 Sprachen, „?"-Hilfen zu jeder Option sowie einen Reset-Button pro Abschnitt.
+
+Bleib am „Jetzt" des Streams dran – ohne selbst ständig hinschauen zu müssen. Probier Slipstream Live gern aus.

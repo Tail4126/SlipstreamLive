@@ -49,7 +49,7 @@
         <h1>User manual</h1>
         <p class="lede">Slipstream Live watches how much video your browser has loaded ahead and nudges the playback speed so you stay close to the live edge — without the video stopping to buffer. This manual covers installation, every setting, and what to do when something looks wrong.</p>
         <div class="page-meta">
-            <span>Version 1.5.0</span>
+            <span>Version 1.6.0</span>
             <span>YouTube Live ・ Twitch ・ TwitCasting ・ TikTok LIVE</span>
         </div>
     </div>
@@ -183,7 +183,7 @@
                 <tbody>
                     <tr><td class="num">1</td><td>Icon and title</td><td>Clicking the icon opens the project page. The version number is shown next to the name.</td></tr>
                     <tr><td class="num">2</td><td><span class="ui">Change playback speed</span></td><td>The master switch. Turning it off stops all control and all badges. Marked <span class="ui">All sites</span>.</td></tr>
-                    <tr><td class="num">3</td><td>Site tabs</td><td>YouTube / Twitch / TwitCasting / TikTok. Each site stores its own values, and the tab for the site you are currently on is selected automatically.</td></tr>
+                    <tr><td class="num">3</td><td>Site tabs</td><td>YouTube / Twitch / TwitCasting / TikTok. Each site stores its own values, and the tab for the site you are currently on is selected automatically. On any other site, the tab you last had selected is shown.</td></tr>
                     <tr><td class="num">4</td><td><span class="ui">Site settings</span> panel</td><td>Speed-up settings and maximum-slowdown settings for the selected site.</td></tr>
                     <tr><td class="num">5</td><td><span class="ui">?</span> buttons</td><td>Opens a plain-language explanation of that row.</td></tr>
                     <tr><td class="num">6</td><td><span class="ui">Reset · (site name)</span></td><td>Restores only the currently selected site's settings to their defaults.</td></tr>
@@ -194,7 +194,7 @@
         </div>
         <ul>
             <li>Changes take effect immediately. There is no Save button.</li>
-            <li>Rows that are not currently in use are greyed out. For example, <span class="ui">Speed-up buffer threshold (sec)</span> is disabled while <span class="ui">Auto-adjust buffer threshold</span> is set to anything other than Off.</li>
+            <li>Rows that are not currently in use are greyed out. For example, <span class="ui">Speed-up start buffer threshold (sec)</span> and <span class="ui">Speed-up stop buffer threshold (sec)</span> are disabled while <span class="ui">Auto-adjust buffer threshold</span> is set to anything other than Off.</li>
             <li>On the Twitch tab only, an explanatory note about that site's larger default threshold appears at the bottom of the panel, along with a <span class="ui">Recover from player errors</span> switch that has no equivalent on the other sites.</li>
             <li>On the TikTok tab only, an <span class="ui">Allow speed changes in Chrome</span> switch appears at the bottom of the panel (see <a href="#tiktok">“TikTok LIVE on Chrome”</a> in section 6).</li>
         </ul>
@@ -287,7 +287,8 @@
                 <tbody>
                     <tr><td><span class="ui">Speed up when delayed</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for catching up.</td></tr>
                     <tr><td><span class="ui">Speed-up playback rate</span></td><td>1.05x–4.00x / 0.05</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td class="num">1.25x</td><td>How fast to catch up. Higher catches up sooner but consumes buffer faster.</td></tr>
-                    <tr><td><span class="ui">Speed-up buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. Speeds up once this much video is loaded ahead.</td></tr>
+                    <tr><td><span class="ui">Speed-up start buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td class="num">10.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. Starts speeding up once this much video is loaded ahead. With maximum slowdown on, speed-up won't start until buffer health is more than 0.4 s above the maximum slowdown threshold (so it can't bounce between speed-up and 0.15x).</td></tr>
+                    <tr><td><span class="ui">Speed-up stop buffer threshold (sec)</span></td><td>0.1–100.0 / 0.1</td><td class="num">9.0</td><td class="num">9.0</td><td class="num">9.0</td><td class="num">9.0</td><td>Used <strong>only when Auto-adjust is Off</strong>. While speeding up, returns to normal speed once buffer health drops below this. The gap to the start threshold is the hysteresis; setting it above the start threshold raises the start threshold to match.</td></tr>
                     <tr><td><span class="ui">Auto-adjust buffer threshold</span></td><td>Off / Stable / Standard / Aggressive</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td class="num">Standard</td><td>Lets Slipstream Live decide when speeding up is safe. <strong>Recommended.</strong></td></tr>
                     <tr><td><span class="ui">Maximum slowdown on buffer depletion</span></td><td>ON / OFF</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td class="num">ON</td><td>Master switch for the 0.15x emergency brake.</td></tr>
                     <tr><td><span class="ui">Maximum slowdown threshold (sec)</span></td><td>0.0–10.0 / 0.1</td><td class="num">0.80</td><td class="num">2.00<br>(FF 0.50)</td><td class="num">0.30</td><td class="num">0.50</td><td>Drops to 0.15x while buffer health stays below this.</td></tr>
@@ -310,7 +311,7 @@
             <table>
                 <thead><tr><th>Level</th><th class="num">Trough window</th><th class="num">Safety factor</th><th class="num">Added margin</th><th class="num">Hysteresis</th><th>Character</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>Off</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0.2 s</td><td>No estimation; uses <span class="ui">Speed-up buffer threshold</span> as-is.</td></tr>
+                    <tr><td><strong>Off</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">start − stop</td><td>No estimation; uses the <span class="ui">Speed-up start/stop buffer thresholds</span> as-is.</td></tr>
                     <tr><td><strong>Stable</strong></td><td class="num">60 s</td><td class="num">10</td><td class="num">1.0 s</td><td class="num">0.2 s</td><td>Longest window, largest factor. Speeds up only once the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. A good fit for music.</td></tr>
                     <tr><td><strong>Standard</strong></td><td class="num">30 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.2 s</td><td>The balanced middle ground. The default, and enough for most connections.</td></tr>
                     <tr><td><strong>Aggressive</strong></td><td class="num">5 s</td><td class="num">3</td><td class="num">0.1 s</td><td class="num">0.2 s</td><td>Short window; reacts quickly to recent headroom and closes the gap harder, but reaches maximum slowdown more often.</td></tr>
@@ -345,7 +346,7 @@
     <!-- ============================================================ 8 -->
     <section class="doc-section" id="how">
         <h2><span class="num">8</span> How it works</h2>
-        <p>Every 20 milliseconds Slipstream Live measures <strong>buffer health</strong> — how many seconds of video are loaded and ready to play — and picks one of the three modes from that number.</p>
+        <p>Every 20 milliseconds (once a second while paused) Slipstream Live measures <strong>buffer health</strong> — how many seconds of video are loaded and ready to play — and picks one of the three modes from that number.</p>
         <p>The hard part is knowing when speeding up is <em>safe</em>. Buffer health is never steady: video arrives in chunks ("segments"), so the buffer jumps when a chunk lands and then drains until the next one. Plotted over time it looks like a sawtooth. A single reading taken at a peak would suggest plenty of room, leading to a speed-up that hits the very next trough with nothing left.</p>
         <p>So instead of trusting one reading, Slipstream Live estimates statistically where the <em>troughs</em> are, over a window that adapts to each stream, and only allows a speed-up while that estimated headroom stays above the buffer level you have asked it to protect — your maximum slowdown threshold plus the level's added margin, or one segment's worth of buffer if maximum slowdown is switched off. Because the safety factor is large, headroom only opens up when the troughs are <em>consistent</em> — an unstable connection naturally suppresses speed-ups, and while there isn't enough data yet, Slipstream Live simply does nothing.</p>
         <p>One shortcut sits above that test. Once buffer health passes 20 seconds — or your maximum slowdown threshold plus 10 seconds, whichever is higher — the trough estimate is no longer what limits the decision, so Slipstream Live speeds up without waiting for it, and returns to the statistical test below 15 seconds. This is what keeps it responsive right after you seek, when the buffer refills so quickly that the statistics are temporarily unusable. The shortcut applies to the automatic levels only; with auto-adjust <strong>Off</strong>, the speed-up simply begins the moment buffer health reaches your threshold and ends the moment it drops below.</p>
@@ -362,7 +363,7 @@
 
         <div class="qa">
             <h3>It never speeds up.</h3>
-            <p>Auto-adjust is deliberately cautious: on an unstable connection it decides that speeding up isn't safe. Move <span class="ui">Auto-adjust buffer threshold</span> one step toward <span class="ui">Aggressive</span> first. If that still isn't enough, set it to <span class="ui">Off</span> and configure <span class="ui">Speed-up buffer threshold (sec)</span> manually — start around 15–20 seconds and work down. From version 1.1.3 onwards the manual mode speeds up the instant buffer health reaches your threshold and stops as soon as it drops below, with no added margin and no waiting period; if the rate now switches back and forth more than you'd like, raise the threshold or switch auto-adjust back on.</p>
+            <p>Auto-adjust is deliberately cautious: on an unstable connection it decides that speeding up isn't safe. Move <span class="ui">Auto-adjust buffer threshold</span> one step toward <span class="ui">Aggressive</span> first. If that still isn't enough, set it to <span class="ui">Off</span> and configure <span class="ui">Speed-up start buffer threshold (sec)</span> manually — start around 15–20 seconds and work down. The manual mode speeds up the instant buffer health reaches the start threshold and stops as soon as it drops below <span class="ui">Speed-up stop buffer threshold (sec)</span>, with no added margin and no waiting period; if the rate switches back and forth more than you'd like, lower the stop threshold to widen the gap between the two, or switch auto-adjust back on.</p>
         </div>
 
         <div class="qa">
@@ -377,12 +378,12 @@
 
         <div class="qa">
             <h3>It drops to 0.15x too often.</h3>
-            <p>Move <span class="ui">Auto-adjust buffer threshold</span> one step toward <span class="ui">Stable</span>: the longer window and larger safety factor mean a speed-up is only allowed once the troughs have proved themselves. Otherwise raise the manual threshold, or lower <span class="ui">Speed-up playback rate</span> so the buffer drains more slowly. Lowering <span class="ui">Maximum slowdown threshold (sec)</span> delays the brake, but increases the chance of an actual freeze.</p>
+            <p>Move <span class="ui">Auto-adjust buffer threshold</span> one step toward <span class="ui">Stable</span>: the longer window and larger safety factor mean a speed-up is only allowed once the troughs have proved themselves. Otherwise raise <span class="ui">Speed-up stop buffer threshold (sec)</span>, or lower <span class="ui">Speed-up playback rate</span> so the buffer drains more slowly. Lowering <span class="ui">Maximum slowdown threshold (sec)</span> delays the brake, but increases the chance of an actual freeze.</p>
         </div>
 
         <div class="qa">
             <h3>Nothing happens at all.</h3>
-            <p>Check that <span class="ui">Change playback speed</span> is ON, that you are on a <em>live</em> stream rather than a VOD or clip, and that you haven't selected a manual playback speed in the player's own menu. On a YouTube premiere, check <span class="ui">Control premieres</span> at the bottom of the <span class="ui">YouTube</span> tab as well — it is off by default, so premieres are skipped until you turn it on.</p>
+            <p>Check that <span class="ui">Change playback speed</span> is ON, that you are on a <em>live</em> stream rather than a VOD or clip, and that you haven't selected a manual playback speed in the player's own menu. On a YouTube premiere, check <span class="ui">Control premieres</span> at the bottom of the <span class="ui">YouTube</span> tab as well — it is off by default, so premieres are skipped until you turn it on. Right after the extension is updated or disabled, tabs that were already open stop being controlled; reload the page to pick up the new version.</p>
         </div>
 
         <div class="qa">
