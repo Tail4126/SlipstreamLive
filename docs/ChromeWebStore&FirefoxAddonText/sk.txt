@@ -1,0 +1,47 @@
+Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu a TikToku a úpravou rýchlosti prehrávania dobieha živé vysielanie.
+
+Medzi okamihom, keď streamer prehovorí, a okamihom, keď to uvidíte, vždy uplynie niekoľko sekúnd. Toto oneskorenie rastie pri každom zakolísaní pripojenia a samo od seba sa už nezmenší.
+
+Dobehnúť ho môžete ručným prepnutím na rýchlosť 1,25x, lenže potom musíte sami strážiť, koľko zostáva v bufferi, a včas spomaliť, kým sa neminie. Keď zabudnete, obraz zamrzne na točiacom sa koliesku načítavania.
+
+Slipstream Live toto stráženie prevezme za vás a kontroluje stav približne 50-krát za sekundu. Funguje s YouTube Live, Twitchom, TwitCastingom a TikTok LIVE. Stačí ho nainštalovať a viac nemusíte robiť nič.
+
+■ Nezamŕza a nevystrája. Dôraz na stabilitu
+
+Zrýchľuje len vtedy, keď je v bufferi skutočná rezerva (predvolene 1,25x), a tesne predtým, než sa buffer minie, plynulo spomalí až na 0,15x – a spolu s tým stíši aj zvuk. Brzda vždy zaberie chvíľu predtým, než by sa objavilo koliesko načítavania, takže obraz nezamrzne pre prehnané zrýchlenie.
+
+A keď oneskorenie doženiete, zrýchľovanie úplne prestane. Živé video vzniká len v reálnom čase, takže keby sa vyššia rýchlosť držala aj po dosiahnutí aktuálneho okamihu vysielania, prehrávanie by predbiehalo príchod jednotlivých segmentov a znova a znova by sa na zlomok sekundy zastavovalo – nakoniec by to bolo pomalšie, ako nerobiť nič. Slipstream Live preto porovnáva, koľko sekúnd malo zrýchlenie dobehnúť, s tým, koľko ich naozaj dobehlo, a so zrýchľovaním prestane, len čo zistí, že nepomáha. Keď sa znova nahromadí skutočné oneskorenie, hneď sa k dobiehaniu vráti.
+
+Aby rýchlosť na samej hranici prahu neskákala sem a tam, majú hranice zabudovanú vôľu (hysterézu). Len čo rýchlosť v prehrávači zmeníte sami, Slipstream Live vám ovládanie okamžite prenechá (Twitch ani TikTok LIVE ponuku rýchlosti nemajú, takže tam všetko zostáva v rukách rozšírenia). Stíšenie zvuku je tiež len dočasné – vaše skutočné nastavenie hlasitosti nikdy neprepíše.
+
+■ Pod kapotou to berie vážne: štatistická predpoveď „dolín“ bufferu
+
+Video prichádza po kúskoch (segmentoch) dlhých niekoľko sekúnd, takže stav bufferu kreslí „pílovitú vlnu“ – stúpa, klesá a stále dokola. Ak sa náhodou zmeria vrchol a zrýchli sa, buffer sa môže minúť hneď v najbližšej doline a obraz zamrzne.
+
+Slipstream Live preto neverí jedinému meraniu, ale polohu samotnej doliny odhaduje štatisticky z krátkodobého priemeru a smerodajnej odchýlky.
+
+　dolina = priemer − √3 × smerodajná odchýlka
+
+Vďaka vlastnosti rovnomerného rozdelenia sa dá dolina nájsť bez toho, aby bolo potrebné poznať dĺžku segmentov prenosu.
+
+　bezpečnostná rezerva (room) = priemer dolín − K × rozptyl dolín
+
+Kým nie je dosť údajov, room má automaticky hodnotu „NaN“ a rozhodnutie vždy vyznie ako „nie“. Inými slovami, zásada „v pochybnostiach nerobiť nič“ je zaručená samotnou logikou, nielen sľúbená.
+
+Nastavenie „Automaticky upravovať prah bufferu“ má štyri úrovne: Vypnuté / Stabilné / Štandardné / Agresívne. Pri nestabilnom pripojení je zrýchľovanie samo od seba zdržanlivejšie, pri stabilných prenosoch vás spoľahlivo dovedie až k aktuálnemu okamihu vysielania.
+
+■ Vyladené na zvláštnosti každej platformy
+
+Keďže na Twitchi môžu videodáta vypadnúť asi na 10 sekúnd, prah maximálneho spomalenia je tam nastavený veľkorysejšie; TwitCasting má buffer od prírody plytký, preto je prah nižší; Firefox hlási stav bufferu inak, a tak má vlastné predvolené hodnoty – takto je všetko vyladené pre každú platformu zvlášť. Prenosy, pri ktorých takéto ovládanie vôbec nemôže fungovať – napríklad prenosy TwitCastingu s nízkou latenciou (WebRTC) –, sú automaticky vylúčené. Na VOD, klipy ani reklamy rozšírenie nikdy nesiaha. Na TikToku pracuje len na stránkach LIVE; videí vo vašom feede sa nikdy nedotkne. Premiéry na YouTube sú predvolene tiež vynechané: premiéra je tu na to, aby všetci prežili rovnaký okamih spoločne, a dobiehanie by tam znamenalo len predbiehať chat. Kto chce, môže si to zapnúť.
+
+Na Twitchi sa prehrávač niekedy úplne zastaví s očíslovanou chybou, napríklad „Chyba #3000“. Slipstream Live to rozpozná a stlačí za vás vlastné tlačidlo Twitchu na opätovné načítanie (predvolene zapnuté). Samotná stránka sa znova nenačítava, takže zostanete tam, kde ste, a chat beží ďalej – zhruba za sekundu sa vráti len obraz.
+
+V Chrome na počítačoch so 6 a viac jadrami procesora prehráva TikTok LIVE vlastným prehrávacím jadrom, ktoré zmeny rýchlosti úplne ignoruje. Preto Slipstream Live ešte predtým, ako sa spustia skripty TikToku, zariadi, aby stránky TikToku videli najviac 4 jadrá procesora, a TikTok potom zvolí štandardné jadro, ktoré používa vo Firefoxe a Edgi a pri ktorom sa rýchlosť dá upravovať (predvolene zapnuté). Zmena sa týka len stránok samotného TikToku a nič sa kvôli nej nečíta ani neodosiela; niektoré úpravy od TikToku, napríklad vylepšenie obrazu, sa však môžu zmeniť. Ak chcete voľbu nechať na TikToku, vypnite na karte TikTok nastavenie „Umožniť zmenu rýchlosti v Chrome“ a stránku znova načítajte.
+
+■ Počas prevádzky žiadna sieťová komunikácia
+
+Počas sledovania sa rozšírenie ani raz nepripojí k externému serveru. Žiadna analytika, telemetria, identifikátory ani reklamy. Potrebuje len dve povolenia: „storage“, aby mohlo ukladať vaše nastavenia do zariadenia, a „activeTab“, aby po otvorení vyskakovacieho okna zistilo, či je v aktuálnej karte podporovaný web. Prístup k webom je obmedzený na štyri podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a nastavenia sa nikam nesynchronizujú – ukladajú sa iba lokálne vo vašom zariadení. Jedinou výnimkou je odinštalovanie: prehliadač vtedy otvorí nepovinný dotazník. Rozšírenie iba vopred zaregistruje pevnú adresu URL – bez identifikátora, bez nastavení a bez akýchkoľvek informácií o sledovanom obsahu.
+
+K tomu voliteľný ukazovateľ na obrazovke (predvolene vypnutý) s rýchlosťou prehrávania, oneskorením v sekundách a rezervou bufferu, nastavenia v 19 jazykoch, pomocník „?“ pri každej voľbe a tlačidlo na reset v každej sekcii.
+
+Zostaňte pri „teraz“ prenosu – bez neustáleho stráženia. Vyskúšajte Slipstream Live.

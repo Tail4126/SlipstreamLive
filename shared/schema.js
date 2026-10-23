@@ -95,6 +95,11 @@
      *   def   : 既定値。共通設定ならそのままの値、サイト別ならサイト ID をキーにしたオブジェクト。
      *   range : [最小値, 最大値, 刻み幅]。これがある項目は数値、無い項目は ON/OFF（真偽値）。
      *   ff    : Firefox のときだけ def を上書きする値。
+     *   cap   : 別の設定キーの名前。この項目の値は、そのキーの値を超えないように抑えます
+     *           （例: 加速を終了する残量は、加速を開始する残量より大きくできない）。
+     *           保存されている値そのものは書き換えず、settingsOf() が読み出すときに抑えます。
+     *           なお設定画面でこの項目に相手より大きな値を入力したときは、popup.js の save() が
+     *           相手の項目を同じ値へ引き上げて保存します。
      *
      * 各項目の意味：
      *   enabled          … 拡張機能全体の ON/OFF
@@ -103,8 +108,13 @@
      *   showHealth       … バッファ残量バッジを表示するか
      *   speedup          … 追いつくための「加速」機能を使うか
      *   speedupRate      … 加速時の再生速度（1.25 = 1.25 倍速）
-     *   speedupThreshold … 手動モードのとき、何秒ぶん溜まっていたら加速してよいか
-     *   speedupAuto      … 自動しきい値の積極度（0=オフ / 1=安定 / 2=標準 / 3=積極的）
+     *   speedupThreshold … 手動モードのとき、残量が何秒以上になったら加速を始めるか
+     *                      （1.5.0 までは「加速するバッファ閾値」1 本だけだった。保存済みの値を
+     *                        そのまま引き継げるよう、キー名は変えずに「開始」の意味で使っています）
+     *   speedupStopThreshold … 手動モードで加速している間、残量が何秒を下回ったら通常速度へ戻すか。
+     *                      開始と終了の間に幅（ヒステリシス）を持たせ、倍率の往復を減らします。
+     *                      speedupThreshold より大きい値は、speedupThreshold まで抑えます（cap）
+     *   speedupAuto     … 自動しきい値の積極度（0=オフ / 1=安定 / 2=標準 / 3=積極的）
      *   floor            … バッファ切れ寸前に超低速へ落とす「下限」機能を使うか
      *   floorThreshold   … 残量が何秒を切ったら下限モードに入るか
      *   duck             … 下限モード中に音量を下げるか
@@ -113,7 +123,7 @@
      *   recover          … Twitch のプレイヤーがエラーで止まったとき、自動で復帰させるか
      *   forceMse         … Chrome の TikTok で、速度を変えられる再生方式（MSE）を選ばせるか
      *                      （仕組みは adapters/tiktok.js の冒頭を参照）
-     * @type {Record<string, { scope?: string, def: unknown, range?: number[], ff?: Record<string, number> }>}
+     * @type {Record<string, { scope?: string, def: unknown, range?: number[], ff?: Record<string, number>, cap?: string }>}
      */
     const KEYS = {
         // --- 全サイト共通の設定（scope: 'common'）------------------------------
@@ -126,7 +136,10 @@
         speedup:          { def: all(true) },
         speedupRate:      { range: [1.05, 4, 0.05], def: all(1.25) },
         speedupThreshold: { range: [0.1, 100, 0.1], def: all(10) },
-        speedupAuto:      { range: [0, 3, 1], def: all(2) },
+        // 開始（10 秒）より 1 秒低い 9 秒を既定にし、のこぎり波の 1 周期ごとに倍率が
+        // 切り替わるのを抑えます。開始と同じ値にすれば、1.5.0 までと同じ 1 本の線の動きになります。
+        speedupStopThreshold: { range: [0.1, 100, 0.1], def: all(9), cap: 'speedupThreshold' },
+        speedupAuto:     { range: [0, 3, 1], def: all(2) },
         floor:            { def: all(true) },
 
         // floorThreshold だけはサイトごとに最適値が違うため、個別に既定値を持たせています。
@@ -154,6 +167,9 @@
 
     /** 設定キーの一覧。settingsOf() が呼ばれるたびに作り直さないよう、1 度だけ作ります。 */
     const KEY_NAMES = Object.keys(KEYS);
+
+    /** cap（上限を別の項目に合わせる指定）を持つ設定キーの一覧。 */
+    const CAPPED = KEY_NAMES.filter((key) => KEYS[key].cap);
 
     /**
      * その設定キーを「どの保存先（バケット）」に入れるかを返す。
@@ -239,8 +255,18 @@
      * @param {string} site サイト ID
      * @returns {Record<string, number|boolean>} そのサイト用に整えた設定一式
      */
-    const settingsOf = (data, site) => Object.fromEntries(
-        KEY_NAMES.map((key) => [key, fix(site, key, data?.[bucketOf(site, key)]?.[key])]));
+    function settingsOf(data, site) {
+        const out = Object.fromEntries(
+            KEY_NAMES.map((key) => [key, fix(site, key, data?.[bucketOf(site, key)]?.[key])]));
+
+        // cap を持つ項目は、相手の項目の値を超えないように抑えます。
+        // 保存値を書き換えずに読み出し時だけ抑えるのは、開始の値を一時的に下げただけで
+        // 終了の値まで失われないようにするためです（開始を元に戻せば、終了も元の値に戻ります）。
+        // （1.5.0 以前から「加速するバッファ閾値」を変えていた場合は、更新後に common.js の
+        //   移行が終了を開始と同じ値で保存するので、ここに頼らずとも更新前と同じ動きが保たれます。）
+        for (const key of CAPPED) out[key] = Math.min(out[key], out[KEYS[key].cap]);
+        return out;
+    }
 
     /**
      * ホスト名から、対応サイトのどれに当たるかを判定する。

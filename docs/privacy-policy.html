@@ -32,7 +32,7 @@
     <div class="page-head">
         <h1>プライバシーポリシー</h1>
         <div class="page-meta">
-            <span>最終更新: 2026-10-23</span>
+            <span>最終更新: 2026-10-24</span>
         </div>
         <div class="lang-note">
             <strong>言語について。</strong>
@@ -69,9 +69,10 @@
                 <tr><th>Item</th><th>Example</th><th>Why</th></tr>
                 <tr><td>Per-site settings</td><td>Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting / TikTok</td><td>So your preferences apply on each site</td></tr>
                 <tr><td>Global settings</td><td>Master switch, badge display</td><td>So your preferences apply everywhere</td></tr>
-                <tr><td>Popup tab state</td><td><code>youtube</code>, <code>twitch</code>, <code>twitcasting</code>, or <code>tiktok</code></td><td>So the popup opens on the right tab next time</td></tr>
+                <tr><td>Popup tab state</td><td><code>youtube</code>, <code>twitch</code>, <code>twitcasting</code>, or <code>tiktok</code></td><td>So the popup opens on the tab you last selected when you're not on a supported site</td></tr>
+                <tr><td>Settings format version</td><td><code>2</code></td><td>So settings saved by an older version are converted to the current format once, after an update</td></tr>
             </table>
-            <p>The "popup tab state" is just a short label for which of the four supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. For any site outside the supported four, nothing is recorded at all.</p>
+            <p>The "popup tab state" is just a short label for which of the four site tabs you last had selected in the popup. No URLs, titles, channel names, video IDs, timestamps — nothing like that. For any site outside the supported four, nothing is recorded at all.</p>
             <p><strong style="color:var(--ink)">1.2 Only ever in memory (never saved)</strong></p>
             <table class="data-table">
                 <tr><th>Item</th><th>Why</th></tr>
@@ -162,9 +163,10 @@ https://www.tiktok.com/*</div>
                 <tr><th>内容</th><th>例</th><th>理由</th></tr>
                 <tr><td>サイト別設定</td><td>YouTube / Twitch / ツイキャス / TikTok ごとの再生速度、しきい値、機能のオン・オフ</td><td>各サイトで設定を反映させるため</td></tr>
                 <tr><td>全体設定</td><td>マスタースイッチ、バッジ表示</td><td>どのサイトでも設定を反映させるため</td></tr>
-                <tr><td>ポップアップのタブ状態</td><td><code>youtube</code> / <code>twitch</code> / <code>twitcasting</code> / <code>tiktok</code></td><td>次回ポップアップを開いたとき同じタブを表示するため</td></tr>
+                <tr><td>ポップアップのタブ状態</td><td><code>youtube</code> / <code>twitch</code> / <code>twitcasting</code> / <code>tiktok</code></td><td>対応サイト以外を開いているときに、最後に選択していたタブで設定画面を開くため</td></tr>
+                <tr><td>設定の形式の版</td><td><code>2</code></td><td>古い版で保存された設定を、更新後に 1 度だけ今の形式へ書き換えるため</td></tr>
             </table>
-            <p>「ポップアップのタブ状態」は、対応4サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。</p>
+            <p>「ポップアップのタブ状態」は、設定画面で対応4サイトのうちどのタブを最後に選択していたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。</p>
             <p><strong style="color:var(--ink)">1.2 メモリ上だけで扱うもの（保存しない）</strong></p>
             <table class="data-table">
                 <tr><th>内容</th><th>理由</th></tr>

@@ -1,0 +1,47 @@
+Detecta a latência no YouTube, Twitch, TwitCasting e TikTok e ajusta a velocidade de reprodução para alcançar o ponto ao vivo.
+
+Entre o momento em que o streamer fala e o momento em que você vê, sempre existe um atraso de alguns segundos. Esse atraso cresce cada vez que a conexão engasga, e não diminui sozinho.
+
+Você consegue se atualizar mudando manualmente para 1,25x, mas aí precisa ficar de olho no nível do seu buffer e voltar a velocidade antes que ele acabe. Se esquecer, o vídeo trava naquela rodinha de carregamento.
+
+O Slipstream Live faz essa vigilância por você, cerca de 50 vezes por segundo. Compatível com YouTube Live, Twitch, TwitCasting e TikTok LIVE. Depois de instalar, você não precisa fazer mais nada.
+
+■ Não trava, não surta. Uma obsessão por estabilidade
+
+Ele só acelera um pouco quando há folga de verdade no buffer (1,25x por padrão), e desacelera até 0,15x — abaixando o volume junto — bem antes de o buffer acabar. Como o freio sempre entra um passo antes daquela rodinha aparecer, você evita travar por acelerar demais.
+
+E, depois que você já alcançou a live, ele para de acelerar. Vídeo ao vivo só é gerado em tempo real, então manter a velocidade alta depois de chegar na borda ao vivo faz a reprodução ultrapassar a chegada dos segmentos e travar por frações de segundo, repetidamente — no fim, mais lento do que não fazer nada. Por isso o Slipstream Live compara os segundos que a aceleração deveria ter recuperado com os que ela realmente recuperou, e desiste de acelerar assim que percebe que não está funcionando. Se o atraso voltar a aparecer, ele volta a acelerar na hora.
+
+Para a velocidade não ficar "oscilando" bem em cima do limite, existe uma folga proposital (histerese) nas bordas. No momento em que você muda a velocidade no player, o Slipstream Live devolve o controle na hora (como a Twitch e o TikTok LIVE não têm menu de velocidade, lá ele continua no comando). O "ducking" de volume também é só temporário: ele nunca reescreve o seu ajuste real de volume.
+
+■ Por dentro é sério mesmo: prevendo estatisticamente os "vales" do buffer
+
+O vídeo chega em blocos (segmentos) de poucos segundos, então o nível do buffer desenha uma "onda dente de serra" — sobe e desce sem parar. Se por acaso a medição pega um pico e acelera, o buffer pode secar logo no vale seguinte e travar.
+
+Por isso o Slipstream Live não confia numa única medição: ele estima estatisticamente a posição do vale a partir da média e do desvio padrão de um período curto.
+
+　vale = média − √3 × desvio padrão
+
+Usando uma propriedade da distribuição uniforme, dá pra encontrar a posição do vale sem nem saber a duração dos segmentos da transmissão.
+
+　margem de segurança = média dos vales − K × variabilidade dos vales
+
+Enquanto não há dados suficientes, essa margem vira automaticamente "NaN", e a decisão sempre pende para o lado de "não fazer nada". Ou seja: "não fazer nada quando não se sabe" é garantido pela própria lógica, não é só uma promessa.
+
+"Ajustar limite de buffer automaticamente" tem quatro níveis: desligado / estável / padrão / agressivo. Em conexões instáveis, a aceleração fica naturalmente mais conservadora; em lives estáveis, ele te leva com segurança até a borda ao vivo.
+
+■ Ajustado até para as manias de cada plataforma
+
+Como o vídeo da Twitch pode cortar por cerca de 10 segundos, o limite máximo de desaceleração é ajustado com mais folga; o TwitCasting já tem um buffer naturalmente raso, então o ajuste é mais enxuto; o Firefox reporta os níveis de buffer de um jeito diferente, então recebe seus próprios valores padrão — assim, tudo é ajustado plataforma por plataforma. Transmissões em que esse tipo de controle simplesmente não funciona — como as lives de baixa latência (WebRTC) do TwitCasting — são automaticamente excluídas. Ele também não mexe em VODs, clipes ou anúncios. No TikTok, ele só age nas páginas LIVE; os vídeos do seu feed nunca são tocados. As estreias do YouTube também ficam de fora por padrão: uma estreia existe para que todo mundo assista ao mesmo momento junto, então se adiantar ali significaria apenas passar na frente do chat. Quem quiser, é só ligar.
+
+Na Twitch, o player às vezes para de vez com um erro numerado, tipo "Erro #3000". O Slipstream Live percebe isso e aperta por você o próprio botão de recarregar da Twitch (ligado por padrão). A página não é recarregada, então você não perde seu lugar nem o fio do chat: em cerca de um segundo, só o vídeo volta.
+
+No Chrome, em computadores com 6 ou mais núcleos de CPU, o TikTok LIVE toca por um mecanismo de reprodução próprio do TikTok, que ignora totalmente as mudanças de velocidade. Por isso, antes que os scripts do TikTok rodem, o Slipstream Live faz as páginas do TikTok enxergarem no máximo 4 núcleos de CPU, e o TikTok escolhe o mecanismo padrão que usa no Firefox e no Edge, em que a velocidade pode ser ajustada (ligado por padrão). A mudança fica restrita às páginas do próprio TikTok e nada é lido nem enviado por causa dela, mas alguns processamentos do TikTok, como a melhoria de imagem, podem mudar. Para deixar a escolha com o TikTok, desligue "Permitir mudar a velocidade no Chrome" na aba TikTok e recarregue a página.
+
+■ Zero comunicação de rede durante o uso
+
+Enquanto você assiste, ele nunca se conecta a um servidor externo, nem uma vez sequer. Sem analytics, sem telemetria, sem identificadores, sem anúncios. São necessárias apenas duas permissões: "storage", para guardar suas configurações no aparelho, e "activeTab", para saber se a aba aberta é um site compatível quando você abre o popup. O acesso a sites fica limitado às quatro plataformas suportadas (YouTube, Twitch, TwitCasting, TikTok), e as configurações não são sincronizadas — ficam salvas só localmente, no seu dispositivo. A única exceção é na desinstalação, quando o navegador abre um formulário opcional de feedback. A extensão apenas deixa registrada uma URL fixa, sem identificador, sem suas configurações e sem nada sobre o que você estava assistindo.
+
+Também vem com um selo opcional na tela (desligado por padrão) mostrando velocidade de reprodução, atraso em segundos e nível de buffer, uma tela de configurações em 19 idiomas, ajuda com "?" em cada item e um botão de reset por seção.
+
+Continue acompanhando o "agora" da transmissão sem precisar ficar de olho o tempo todo. Experimente o Slipstream Live.

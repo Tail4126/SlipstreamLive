@@ -1,6 +1,6 @@
 # Privacy Policy / プライバシーポリシー
 
-**Last updated / 最終更新:** 2026-10-23
+**Last updated / 最終更新:** 2026-10-24
 
 > **Note on Language / 言語に関する注記**
 > このポリシーは英語で書いたものが正式版で、日本語訳は参考用です。両者の内容にズレがあった場合は英語版を優先します。
@@ -43,9 +43,10 @@ The Extension runs entirely on your device. It doesn't collect, transmit, store 
 | :--- | :--- | :--- |
 | Per-site settings | Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting / TikTok | So your preferences apply on each site |
 | Global settings | Master switch, badge display | So your preferences apply everywhere |
-| Popup tab state | `youtube`, `twitch`, `twitcasting`, or `tiktok` | So the popup opens on the right tab next time |
+| Popup tab state | `youtube`, `twitch`, `twitcasting`, or `tiktok` | So the popup opens on the tab you last selected when you're not on a supported site |
+| Settings format version | `2` | So settings saved by an older version are converted to the current format once, after an update |
 
-The "popup tab state" is just a short label for which of the four supported sites you last had open. No URLs, titles, channel names, video IDs, timestamps — nothing like that. And for any site outside the supported four, nothing is recorded at all.
+The "popup tab state" is just a short label for which of the four site tabs you last had selected in the popup. No URLs, titles, channel names, video IDs, timestamps — nothing like that. And for any site outside the supported four, nothing is recorded at all.
 
 #### 1.2 Only ever in memory (never saved)
 
@@ -162,9 +163,10 @@ For how the Extension actually works, see the [user manual](https://tail4126.git
 | :--- | :--- | :--- |
 | サイト別設定 | YouTube / Twitch / ツイキャス / TikTok ごとの再生速度、しきい値、機能のオン・オフ | 各サイトで設定を反映させるため |
 | 全体設定 | マスタースイッチ、バッジ表示 | どのサイトでも設定を反映させるため |
-| ポップアップのタブ状態 | `youtube` / `twitch` / `twitcasting` / `tiktok` | 次回ポップアップを開いたとき同じタブを表示するため |
+| ポップアップのタブ状態 | `youtube` / `twitch` / `twitcasting` / `tiktok` | 対応サイト以外を開いているときに、最後に選択していたタブで設定画面を開くため |
+| 設定の形式の版 | `2` | 古い版で保存された設定を、更新後に 1 度だけ今の形式へ書き換えるため |
 
-「ポップアップのタブ状態」は、対応4サイトのうちどれを直近に開いていたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。
+「ポップアップのタブ状態」は、設定画面で対応4サイトのうちどのタブを最後に選択していたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。
 
 #### 1.2 メモリ上だけで扱うもの（保存しない）
 

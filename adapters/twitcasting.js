@@ -68,8 +68,8 @@
          */
         const current = { id: '', live: false };
 
-        /** @type {number} これまでに観測した動画の最大長（秒） */
-        let span = NaN;
+        /** @type {number} 最初に観測した動画の長さ（秒）。まだ観測していなければ NaN */
+        let first = NaN;
         /** @type {boolean} 動画の長さが伸び続けている＝ライブと判断できたか */
         let growing = false;
 
@@ -79,7 +79,7 @@
          */
         const forget = () => {
             latency.reset();
-            span = NaN;
+            first = NaN;
             growing = false;
         };
 
@@ -104,25 +104,30 @@
          * 動画の長さから「ライブ配信かどうか」を推定する。
          *
          * 考え方：録画は長さが固定だが、ライブは時間とともに伸び続ける。
-         *   - 長さが不明（NaN）           → 読み込み中かもしれないので、とりあえずライブ扱い
-         *   - 長さが極端に大きい（ENDLESS 超）→ ライブ確定
-         *   - 前回より GROWTH 秒以上伸びた   → ライブ確定（以後 growing を立てたまま）
+         *   - 長さが不明（NaN）               → 読み込み中かもしれないので、とりあえずライブ扱い
+         *   - 長さが極端に大きい（ENDLESS 超）  → ライブ確定
+         *   - 最初に観測した長さより GROWTH 秒を超えて伸びた → ライブ確定（以後 growing を立てたまま）
+         *
+         * ■ 「前回より」ではなく「最初より」伸びたかを見る理由
+         *   この関数は、待機中は 1 秒ごと、動画のイベント（timeupdate や progress）が届くたびには
+         *   0.1〜0.25 秒ごとに呼ばれます。前回の値と比べると、1 回あたりの伸びは呼ばれる間隔ぶん
+         *   （0.25 秒以下）にしかならず、長さが少しずつ滑らかに伸びる配信では、いつまでも
+         *   GROWTH を超えずにライブと判定できませんでした（Chromium で、0.25 秒ごとの timeupdate と
+         *   一緒に長さを伸ばして確かめると、6 秒たっても制御が始まりませんでした）。
+         *   最初の値と比べれば、呼ばれる間隔に関係なく、伸びた分がそのまま積み上がります。
+         *
+         * 長さが 0 以下のときは、まだ読み込みが始まっていないとみなし、最初の値にしません
+         * （0 から本来の長さへ変わっただけの録画を、伸びたと取り違えないためです）。
          * @returns {boolean} ライブと推定されれば true
          */
         function endless() {
             const now = watcher.video?.duration ?? NaN;
             if (Number.isNaN(now)) return true;
             if (now >= ENDLESS) return true;
+            if (!(now > 0)) return growing;
 
-            // 前回の最大値より十分伸びていれば「伸び続けている」と判定。
-            if (now > span + GROWTH) growing = true;
-
-            // 観測した最大長を更新する。
-            // `if (!(now <= span))` は `if (now > span)` とほぼ同じ意味ですが、
-            // span が NaN のときも条件が成立する（NaN との比較は常に false になるため
-            // 否定で true になる）点が違います。初回の代入をこれで賄っています。
-            if (!(now <= span)) span = now;
-
+            if (Number.isNaN(first)) first = now;
+            if (now - first > GROWTH) growing = true;
             return growing;
         }
 

@@ -1,0 +1,47 @@
+Mendeteksi latensi di YouTube, Twitch, TwitCasting, dan TikTok, lalu mengatur kecepatan pemutaran untuk mengejar siaran langsung.
+
+Antara saat streamer berbicara dan saat Anda melihatnya, selalu ada jeda beberapa detik. Jeda ini bertambah setiap kali koneksi tersendat, dan tidak akan menyusut dengan sendirinya.
+
+Anda bisa mengejarnya dengan mengubah kecepatan ke 1,25x secara manual, tetapi Anda jadi harus terus memantau sisa buffer dan menurunkan kecepatan lagi sebelum buffer habis. Kalau lupa, video akan membeku dengan ikon loading yang berputar-putar.
+
+Slipstream Live mengambil alih tugas memantau itu untuk Anda, sekitar 50 kali per detik. Mendukung YouTube Live, Twitch, TwitCasting, dan TikTok LIVE. Cukup pasang, selebihnya Anda tidak perlu melakukan apa-apa.
+
+■ Tidak membeku, tidak kebablasan. Fokus pada stabilitas
+
+Slipstream Live hanya sedikit mempercepat saat buffer benar-benar longgar (bawaan 1,25x), dan tepat sebelum buffer habis, kecepatan diturunkan perlahan hingga 0,15x — sekaligus mengecilkan volume. Karena rem selalu bekerja sesaat sebelum ikon loading muncul, video tidak akan membeku akibat percepatan yang berlebihan.
+
+Setelah Anda berhasil mengejar, percepatan dihentikan sepenuhnya. Video siaran langsung hanya dibuat secara real-time, jadi jika kecepatan tetap tinggi setelah mencapai titik siaran langsung, pemutaran justru mendahului kedatangan setiap segmen dan tersendat sepersekian detik berulang kali — akhirnya malah lebih lambat daripada tidak melakukan apa-apa. Karena itu, Slipstream Live membandingkan berapa detik yang seharusnya terkejar oleh percepatan dengan berapa detik yang benar-benar terkejar, lalu menahan percepatan begitu terlihat bahwa percepatan tidak membantu. Begitu keterlambatan yang nyata muncul lagi, percepatan langsung dilanjutkan.
+
+Agar kecepatan tidak bolak-balik berganti tepat di ambang batas, ada kelonggaran (histeresis) di sekitar batasnya. Begitu Anda mengubah kecepatan sendiri di pemutar, Slipstream Live langsung menyerahkan kendali kepada Anda (Twitch dan TikTok LIVE tidak punya menu kecepatan, jadi di sana kendali tetap dipegang ekstensi ini). Pengecilan volume juga hanya sementara — pengaturan volume Anda yang sebenarnya tidak pernah ditimpa.
+
+■ Di balik layar, cukup serius: memprediksi “lembah” buffer secara statistik
+
+Video datang dalam potongan (segmen) beberapa detik, sehingga level buffer membentuk “gelombang gigi gergaji” — naik, lalu turun, terus berulang. Jika kebetulan yang terukur adalah puncaknya lalu kecepatan dinaikkan, buffer bisa habis di lembah berikutnya dan video membeku.
+
+Karena itu, Slipstream Live tidak memercayai satu kali pengukuran, melainkan memperkirakan posisi lembah itu sendiri secara statistik dari rata-rata dan simpangan baku jangka pendek.
+
+　lembah = rata-rata − √3 × simpangan baku
+
+Berkat sifat distribusi seragam, posisi lembah bisa ditemukan tanpa perlu mengetahui panjang segmen siaran.
+
+　margin aman (room) = rata-rata lembah − K × sebaran lembah
+
+Selama datanya belum cukup, room otomatis menjadi “NaN” dan keputusan selalu jatuh ke sisi “tidak”. Dengan kata lain, prinsip “kalau ragu, jangan lakukan apa-apa” dijamin oleh logikanya sendiri, bukan sekadar janji.
+
+“Sesuaikan ambang buffer otomatis” punya empat tingkat: Nonaktif / Stabil / Standar / Agresif. Pada koneksi yang tidak stabil, percepatan dengan sendirinya menjadi lebih hati-hati; pada siaran yang stabil, Anda akan diantar dengan andal sampai ke titik siaran langsung.
+
+■ Disesuaikan dengan karakter tiap platform
+
+Karena data video di Twitch bisa terputus sekitar 10 detik, ambang perlambatan maksimumnya dibuat lebih longgar; buffer TwitCasting memang dangkal dari sananya, jadi ambangnya dibuat lebih tipis; Firefox melaporkan level buffer dengan cara yang berbeda, jadi disediakan nilai bawaan tersendiri — begitulah semuanya disetel per platform. Siaran yang pada dasarnya tidak bisa dikendalikan dengan cara ini — seperti siaran latensi rendah (WebRTC) di TwitCasting — otomatis dikecualikan. VOD, klip, dan iklan juga tidak pernah disentuh. Di TikTok, ekstensi ini hanya bekerja di halaman LIVE; video di feed Anda tidak pernah disentuh. Tayang Perdana YouTube juga tidak dikendalikan secara bawaan: tayang perdana ada agar semua orang menyaksikan momen yang sama bersama-sama, jadi mengejar di sana hanya berarti mendahului chat. Bagi yang ingin, fitur ini bisa diaktifkan.
+
+Di Twitch, pemutar kadang berhenti total dengan error bernomor seperti “Error #3000”. Slipstream Live mendeteksinya dan menekan tombol muat ulang milik Twitch sendiri untuk Anda (aktif secara bawaan). Halamannya tidak dimuat ulang, jadi posisi menonton dan alur chat tidak hilang — hanya videonya yang kembali dalam sekitar satu detik.
+
+Di Chrome pada komputer dengan 6 inti CPU atau lebih, TikTok LIVE diputar lewat mesin pemutar milik TikTok sendiri yang sama sekali mengabaikan perubahan kecepatan. Karena itu, sebelum skrip TikTok berjalan, Slipstream Live membuat halaman TikTok hanya melihat paling banyak 4 inti CPU, sehingga TikTok memilih mesin standar yang dipakainya di Firefox dan Edge, yang kecepatannya bisa diatur (aktif secara bawaan). Perubahan ini hanya berlaku di halaman TikTok sendiri dan tidak ada apa pun yang dibaca atau dikirim karenanya, meskipun sebagian pemrosesan TikTok, seperti penyempurnaan gambar, bisa berubah. Jika Anda ingin menyerahkan pilihan kepada TikTok, nonaktifkan “Izinkan ubah kecepatan di Chrome” di tab TikTok lalu muat ulang halaman.
+
+■ Tanpa komunikasi jaringan saat berjalan
+
+Selama Anda menonton, ekstensi ini tidak pernah terhubung ke server eksternal, sekali pun. Tanpa analitik, tanpa telemetri, tanpa pengenal, tanpa iklan. Izin yang diperlukan hanya dua: “storage” untuk menyimpan setelan di perangkat Anda, dan “activeTab” untuk mengetahui apakah tab yang sedang terbuka adalah situs yang didukung saat Anda membuka popup. Akses situs juga terbatas pada empat platform yang didukung (YouTube, Twitch, TwitCasting, TikTok), dan setelan tidak disinkronkan ke mana pun; semuanya hanya disimpan secara lokal di perangkat Anda. Satu-satunya pengecualian adalah saat pencopotan, ketika browser membuka formulir masukan yang bersifat opsional. Ekstensi ini hanya mendaftarkan URL tetap sejak awal — tanpa pengenal, tanpa setelan, dan tanpa informasi apa pun tentang apa yang Anda tonton.
+
+Selain itu tersedia lencana tampilan opsional (nonaktif secara bawaan) yang menunjukkan kecepatan pemutaran, keterlambatan dalam detik, dan sisa buffer, layar setelan dalam 19 bahasa, bantuan “?” di setiap opsi, serta tombol setel ulang untuk setiap bagian.
+
+Tetap ikuti “saat ini” dari siaran — tanpa harus terus mengawasinya sendiri. Ayo coba Slipstream Live.
