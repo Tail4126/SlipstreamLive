@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Automatická detekce a úprava zpoždění živých přenosů" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Zjišťuje zpoždění přenosů na YouTube, Twitchi, TwitCastingu a TikToku a úpravou rychlosti přehrávání dohání živé vysílání." },
+    "appDesc": { "message": "Zjišťuje zpoždění přenosů na YouTube, Twitchi, TwitCastingu, TikToku a DAZN a úpravou rychlosti přehrávání dohání živé vysílání." },
     "enabled": { "message": "Měnit rychlost přehrávání" },
     "speedup": { "message": "Zrychlovat při zpoždění" },
     "speedupDesc": { "message": "Automaticky zrychlí přehrávání, když je v bufferu dost rezervy na dohnání živého vysílání. Po dohnání nebo při poklesu bufferu se vrátí k normální rychlosti." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Uživatelská příručka" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Všechny weby" },
-    "scopeCommonDesc": { "message": "Toto nastavení platí pro všechny podporované weby." }
+    "scopeCommonDesc": { "message": "Toto nastavení platí pro všechny podporované weby." },
+    "grantDesc": { "message": "Aby bylo možné na $SITE$ upravovat rychlost přehrávání, je potřeba povolit přístup k webu.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Zapnout na tomto webu" },
+    "grantSite": { "message": "Zapnout na $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Zapnuto. Pokud se nic nezmění, načtěte stránku znovu." }
 }

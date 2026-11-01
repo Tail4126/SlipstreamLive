@@ -123,6 +123,18 @@
 }
 
 /*
+    DAZN は、サイトの強調色の黄色（#f7ff1a）と同じ色相の、濃い黄色（オリーブ寄り）です。
+    黄色そのままでは ON のスイッチの白いつまみとのコントラスト比が 1.1:1 しかなく、
+    つまみが背景に溶けるため、TikTok と同じ基準（つまみとの差 3:1 以上、選択中のタブの
+    文字 4.5:1 以上）を満たす明るさまで落としています。
+    ライトはつまみ 5.3:1・タブの文字 5.0:1、ダークはつまみ 3.3:1・タブの文字 5.9:1 です。
+*/
+:root[data-site = 'dazn']
+{
+    --site-accent: light-dark(#6c7000, #8f9400);
+}
+
+/*
     * はすべての要素に当てはまるセレクター。
     box-sizing: border-box は「指定した幅に、内側の余白と枠線も含める」という設定で、
     これがないと padding を足すたびに要素が幅からはみ出して、幅の計算が煩雑になります。
@@ -535,6 +547,60 @@ body
     border-end-end-radius: var(--radius-sm);
     font-size: 11px;
     line-height: 1.5;
+}
+
+/*
+    -------------------------------------------------------------------------
+    「このサイトで有効にする」の案内（DAZN のように、許可してから動かすサイト用）
+    -------------------------------------------------------------------------
+    設定のまとまり（.group）と同じ白いカードに、サイトの色の枠線を付けて目立たせます。
+    中は「説明文 → ボタン」の縦並びです。
+*/
+.grant
+{
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px 10px 10px;
+    border-color: var(--site-edge);
+}
+.grant-text
+{
+    margin: 0;
+    max-width: 270px;   /* 長い翻訳文でポップアップが横に広がりすぎないように（.note と同じ） */
+    line-height: 1.5;
+}
+
+/*
+    許可を求めるボタン。この画面でいちばん押してほしいボタンなので、
+    サイトの色で塗りつぶします。文字色は選択中のタブと同じ組み合わせ（背景色の文字 × 強調色）で、
+    各サイトの色はこの組み合わせで 4.5:1 以上になるよう選んであります。
+    align-self: start は、縦並びの中でボタンを始まり側（横書きの日本語・英語なら左）へ寄せ、
+    横いっぱいに伸ばさないための指定です。
+*/
+.grant-button
+{
+    align-self: start;
+    padding: 5px 14px;
+    background-color: var(--ui-accent);
+    color: var(--bg);
+    border: 1px solid var(--ui-accent);
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 120ms ease;
+}
+
+/* マウスを乗せたら少しだけ明るさを変え、押せることを伝えます。 */
+.grant-button:hover
+{
+    filter: brightness(1.12);
+}
+.grant-button:focus-visible
+{
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
 }
 
 /*

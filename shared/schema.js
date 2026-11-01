@@ -21,6 +21,9 @@
  * ■ 読み込まれる場所
  *   manifest.json の content_scripts で、common.js より先に読み込まれます。
  *   また popup.html からも同じ順番で読み込まれます。
+ *   DAZN のように許可を得てから動かすサイトでは、background.js が登録するスクリプトの先頭に
+ *   入ります。background.js 自身も、対応サイトの一覧（SITES）を知るためにこのファイルを読み込みます
+ *   （Chrome は importScripts()、Firefox は manifest の background.scripts で読み込みます）。
  *
  * ■ 全体が (() => { ... })(); で囲まれている理由
  *   これは IIFE（即時実行関数式）と呼ばれる書き方で、「定義した瞬間に実行する
@@ -40,7 +43,7 @@
      * 判定には拡張機能自身の URL の形式を使います（Firefox は moz-extension://、
      * Chrome は chrome-extension://）。User-Agent 文字列は、ブラウザの設定や
      * 偽装用の拡張機能で書き換えられることがあり、当てにならないためです。
-     * このファイルは拡張機能の API が使える場所（content.js と設定画面）でしか読み込まれません。
+     * このファイルは拡張機能の API が使える場所（content.js・設定画面・background.js）でしか読み込まれません。
      * @type {boolean}
      */
     const FIREFOX = globalThis.browser?.runtime?.getURL?.('').startsWith('moz-extension:') === true;
@@ -56,29 +59,44 @@
 
     /**
      * 対応サイトの一覧。
-     * - label: 設定画面のタブに表示する名前
-     * - host : そのサイトかどうかを判定する正規表現（ホスト名と照合する）
+     * - label  : 設定画面のタブに表示する名前
+     * - host   : そのサイトかどうかを判定する正規表現（ホスト名と照合する）
+     * - origins: ユーザーが許可したときだけ動かすサイトにだけ付ける、許可を求めるアドレスの一覧
+     *            （マッチパターン）。manifest の optional_host_permissions と同じ値にします。
      *
      * 正規表現 `/(^|\.)twitch\.tv$/` の意味：
      *   `(^|\.)`     … 先頭、または「.」の直後（＝サブドメインを許可）
      *   `twitch\.tv` … 文字としての "twitch.tv"（`\.` は「.」そのもの）
      *   `$`          … ここで文字列が終わる
      *   → "twitch.tv" と "player.twitch.tv" は一致し、"nottwitch.tv" は一致しません。
-     * @type {Record<string, { label: string, host: RegExp }>}
+     *
+     * ■ origins を持つサイト（DAZN）の動かし方
+     *   1.6.0 までの 4 サイトは、manifest の content_scripts にスクリプトを静的に書いています。
+     *   ここへホストを足すと、Chrome は更新時に新しい権限の承認を求め、承認されるまで
+     *   すべての利用者の拡張機能を無効にしてしまいます。Firefox（Manifest V3）は、更新で
+     *   増えたホストの権限をそもそも付与しないため、足したサイトでは動きません。
+     *   そこで DAZN からあとに足すサイトは、権限を optional_host_permissions に置き、
+     *     1) 設定画面の「このサイトで有効にする」から permissions.request() で許可をもらう
+     *     2) 許可が付いたら background.js が scripting.registerContentScripts() で
+     *        スクリプトを登録する（manifest に書いたのと同じ 2 組。MAIN world・全フレーム・document_start）
+     *   という手順で動かします。読み込むファイルは background.js の scriptsOf() が
+     *   サイト ID から組み立てます（アダプターは adapters/<サイト ID>.js）。
+     * @type {Record<string, { label: string, host: RegExp, origins?: string[] }>}
      */
     const SITES = {
         youtube:     { label: 'YouTube',     host: /(^|\.)(youtube\.com|youtube-nocookie\.com)$/ },
         twitch:      { label: 'Twitch',      host: /(^|\.)twitch\.tv$/ },
         twitcasting: { label: 'TwitCasting', host: /(^|\.)twitcasting\.tv$/ },
         tiktok:      { label: 'TikTok',      host: /(^|\.)tiktok\.com$/ },
+        dazn:        { label: 'DAZN',        host: /(^|\.)dazn\.com$/, origins: ['https://www.dazn.com/*'] },
     };
 
-    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok']）。何度も使うので 1 度だけ作ります。 */
+    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn']）。何度も使うので 1 度だけ作ります。 */
     const SITE_IDS = Object.keys(SITES);
 
     /**
      * 「全サイトに同じ既定値を配る」ためのヘルパー。
-     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true }
+     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true, dazn: true }
      *
      * Object.fromEntries は [キー, 値] の配列をオブジェクトに変換する関数です。
      * SITES から鍵を起こすので、対応サイトを増やしても書き足しが要りません。
@@ -148,7 +166,7 @@
         // 波打たないため、ツイキャス（0.3）と YouTube（0.8）の間の 0.5 にしています。
         floorThreshold: {
             range: [0, 10, 0.1],
-            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5 },
+            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8 },
             ff:  { twitch: 0.5 },
         },
 
@@ -158,11 +176,11 @@
 
         // recover は Twitch のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // （heal() を持たないサイトでは、ON にしても何も起きません。）
-        recover:          { def: { youtube: false, twitch: true, twitcasting: false, tiktok: false } },
+        recover:          { def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false } },
 
         // forceMse は TikTok のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // TikTok では既定 ON です。OFF のままだと、Chrome（6 コア以上）では速度をまったく変えられないためです。
-        forceMse:         { def: { youtube: false, twitch: false, twitcasting: false, tiktok: true } },
+        forceMse:         { def: { youtube: false, twitch: false, twitcasting: false, tiktok: true, dazn: false } },
     };
 
     /** 設定キーの一覧。settingsOf() が呼ばれるたびに作り直さないよう、1 度だけ作ります。 */

@@ -33,7 +33,8 @@
     ■ 画面の構造
         ヘッダー（ロゴ＋全体の ON/OFF）
         └ #scopes
-            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok のタブで切り替え）
+            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok / DAZN のタブで切り替え）
+            │           DAZN のタブでは、まだ許可していなければ先頭に「このサイトで有効にする」の案内（#grant）が出る
             └ #common … 全サイト共通設定（画面上のバッジ表示）
         フッター（取扱説明書へのリンク）
 -->
@@ -125,6 +126,23 @@
             <div id="tabs" class="scope-head" role="tablist"></div>
 
             <div class="groups">
+
+                <!--
+                    許可を得てから動かすサイト（DAZN）の案内。
+                    そのサイトのタブを選んでいて、まだサイトへのアクセスを許可していないときだけ
+                    popup.js の render() が表示します（許可した直後は「有効にしました」に変わります）。
+
+                    ボタンを押すと、popup.js がブラウザに許可を求めます（permissions.request()）。
+                    許可されると background.js がスクリプトを登録し、開いているタブにも入れます。
+                    ボタンの文言は、今見ているページがそのサイトなら「このサイトで有効にする」、
+                    そうでなければ「DAZN で有効にする」のようにサイト名入りになります。
+                    role="status" は、文言が「有効にしました」に変わったことを
+                    スクリーンリーダーにも伝えるための指定です。
+                -->
+                <div id="grant" class="group grant" hidden>
+                    <p id="grant-text" class="grant-text" role="status"></p>
+                    <button id="grant-button" class="grant-button" type="button"></button>
+                </div>
 
                 <!-- === 加速に関する設定のまとまり === -->
                 <div class="group">

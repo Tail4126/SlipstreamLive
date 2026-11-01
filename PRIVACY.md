@@ -1,6 +1,6 @@
 # Privacy Policy / プライバシーポリシー
 
-**Last updated / 最終更新:** 2026-10-24
+**Last updated / 最終更新:** 2026-10-31
 
 > **Note on Language / 言語に関する注記**
 > このポリシーは英語で書いたものが正式版で、日本語訳は参考用です。両者の内容にズレがあった場合は英語版を優先します。
@@ -41,12 +41,12 @@ The Extension runs entirely on your device. It doesn't collect, transmit, store 
 
 | Item | Example | Why |
 | :--- | :--- | :--- |
-| Per-site settings | Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting / TikTok | So your preferences apply on each site |
+| Per-site settings | Playback rate, buffer thresholds, feature toggles for YouTube / Twitch / TwitCasting / TikTok / DAZN | So your preferences apply on each site |
 | Global settings | Master switch, badge display | So your preferences apply everywhere |
-| Popup tab state | `youtube`, `twitch`, `twitcasting`, or `tiktok` | So the popup opens on the tab you last selected when you're not on a supported site |
+| Popup tab state | `youtube`, `twitch`, `twitcasting`, `tiktok`, or `dazn` | So the popup opens on the tab you last selected when you're not on a supported site |
 | Settings format version | `2` | So settings saved by an older version are converted to the current format once, after an update |
 
-The "popup tab state" is just a short label for which of the four site tabs you last had selected in the popup. No URLs, titles, channel names, video IDs, timestamps — nothing like that. And for any site outside the supported four, nothing is recorded at all.
+The "popup tab state" is just a short label for which of the five site tabs you last had selected in the popup. No URLs, titles, channel names, video IDs, timestamps — nothing like that. And for any site outside the supported five, nothing is recorded at all.
 
 #### 1.2 Only ever in memory (never saved)
 
@@ -62,12 +62,14 @@ This exists only while the video is playing, gets used to compute a speed adjust
 
 ### 2. Permissions and site access
 
-Two permissions, nothing more:
+Three permissions, plus one optional site permission that you grant yourself:
 
 | Permission | Why |
 | :--- | :--- |
 | **`storage`** | To save and load your settings via `chrome.storage.local` / `browser.storage.local`. Local rather than synced, on purpose — so your settings stay on your device. |
 | **`activeTab`** | Used only when you open the popup, to check the active tab's hostname and pick the right settings panel. The hostname itself is discarded immediately; only the site label (see §1.1) might get saved. |
+| **`scripting`** | Used only for DAZN, and only after you allow it: to register the same scripts the other sites get from the manifest, and to start them on DAZN pages that are already open. Nothing is registered for a site you haven't allowed. |
+| **`https://www.dazn.com/*`** (optional) | Not granted at install. Requested only when you press **Enable on this site** (or **Enable on DAZN**) in the settings popup, and only granted if you accept your browser's prompt. You can withdraw it at any time in your browser's extension settings. |
 
 Content scripts only run on these sites — nowhere else:
 
@@ -77,6 +79,7 @@ https://m.youtube.com/*            https://player.twitch.tv/*
 https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
 https://twitcasting.tv/*           https://*.twitcasting.tv/*
 https://www.tiktok.com/*
+https://www.dazn.com/*             (only after you allow it)
 ```
 
 Live-chat frames are excluded on purpose. On these pages, the Extension only looks at the video player's buffer state and adjusts speed/volume. It doesn't touch page content, form inputs, cookies, credentials, or account info.
@@ -109,7 +112,7 @@ Opening it is an ordinary navigation, exactly as if you had typed the address in
 
 There's nothing to share, sell, or hand over, because nothing is collected or transmitted in the first place — including in a business transfer scenario.
 
-The Extension also isn't acting as a data processor for YouTube, Twitch, TwitCasting, or TikTok. Using those sites is still governed by their own privacy policies.
+The Extension also isn't acting as a data processor for YouTube, Twitch, TwitCasting, TikTok, or DAZN. Using those sites is still governed by their own privacy policies.
 
 ---
 
@@ -161,12 +164,12 @@ For how the Extension actually works, see the [user manual](https://tail4126.git
 
 | 内容 | 例 | 理由 |
 | :--- | :--- | :--- |
-| サイト別設定 | YouTube / Twitch / ツイキャス / TikTok ごとの再生速度、しきい値、機能のオン・オフ | 各サイトで設定を反映させるため |
+| サイト別設定 | YouTube / Twitch / ツイキャス / TikTok / DAZN ごとの再生速度、しきい値、機能のオン・オフ | 各サイトで設定を反映させるため |
 | 全体設定 | マスタースイッチ、バッジ表示 | どのサイトでも設定を反映させるため |
-| ポップアップのタブ状態 | `youtube` / `twitch` / `twitcasting` / `tiktok` | 対応サイト以外を開いているときに、最後に選択していたタブで設定画面を開くため |
+| ポップアップのタブ状態 | `youtube` / `twitch` / `twitcasting` / `tiktok` / `dazn` | 対応サイト以外を開いているときに、最後に選択していたタブで設定画面を開くため |
 | 設定の形式の版 | `2` | 古い版で保存された設定を、更新後に 1 度だけ今の形式へ書き換えるため |
 
-「ポップアップのタブ状態」は、設定画面で対応4サイトのうちどのタブを最後に選択していたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。
+「ポップアップのタブ状態」は、設定画面で対応5サイトのうちどのタブを最後に選択していたかを示す短いラベルにすぎません。URL、タイトル、チャンネル名、動画ID、日時などは一切記録しません。対応サイト以外については何も記録しません。
 
 #### 1.2 メモリ上だけで扱うもの（保存しない）
 
@@ -182,12 +185,14 @@ For how the Extension actually works, see the [user manual](https://tail4126.git
 
 ### 2. 権限とサイトアクセス
 
-要求する権限は2つだけです。
+要求する権限は3つと、ユーザーが自分で許可する任意のサイト権限が1つです。
 
 | 権限 | 理由 |
 | :--- | :--- |
 | **`storage`** | 設定を `chrome.storage.local` / `browser.storage.local` に保存・読み込みするため。設定を端末外に出さないよう、あえて同期ストレージではなくローカルストレージを使っています。 |
 | **`activeTab`** | ポップアップを開いた瞬間だけ使い、アクティブなタブのホスト名を見て該当する設定パネルを選びます。ホスト名自体はすぐ破棄され、保存されうるのはサイトラベル（§1.1参照）だけです。 |
+| **`scripting`** | DAZN のためだけに、許可された後でだけ使います。ほかのサイトでマニフェストから読み込んでいるのと同じスクリプトを登録し、すでに開いている DAZN のページでも動かし始めるためです。許可していないサイトには何も登録しません。 |
+| **`https://www.dazn.com/*`**（任意） | インストール時には付与されません。設定画面の **「このサイトで有効にする」**（または「DAZN で有効にする」）を押したときだけ要求し、ブラウザの確認で許可したときだけ付与されます。ブラウザの拡張機能の管理画面からいつでも取り消せます。 |
 
 コンテンツスクリプトが動くのは以下のサイトだけです。
 
@@ -197,6 +202,7 @@ https://m.youtube.com/*            https://player.twitch.tv/*
 https://www.youtube-nocookie.com/* https://clips.twitch.tv/*
 https://twitcasting.tv/*           https://*.twitcasting.tv/*
 https://www.tiktok.com/*
+https://www.dazn.com/*             （許可した場合のみ）
 ```
 
 ライブチャットのフレームはあえて対象外にしています。これらのページで行うのは、プレイヤーのバッファ状態を見て速度・音量を調整することだけです。ページ内容やフォーム入力、Cookie、認証情報、アカウント情報には触れません。
@@ -229,7 +235,7 @@ TikTok では、Chromium 系ブラウザの場合に限り、もう 1 つだけ�
 
 そもそも何も収集・送信していないので、渡せるものがありません。事業譲渡があった場合も同じです。
 
-また本拡張機能はYouTube・Twitch・ツイキャス・TikTokの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。
+また本拡張機能はYouTube・Twitch・ツイキャス・TikTok・DAZNの処理者として動くものでもありません。これらのサービスの利用には、それぞれのプライバシーポリシーが適用されます。
 
 ---
 

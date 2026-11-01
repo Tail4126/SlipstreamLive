@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Latenz von Live-Streams automatisch erkennen und anpassen" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Erkennt die Latenz auf YouTube, Twitch, TwitCasting und TikTok und passt die Wiedergabegeschwindigkeit an, um live aufzuholen." },
+    "appDesc": { "message": "Erkennt die Latenz auf YouTube, Twitch, TwitCasting, TikTok und DAZN und passt die Wiedergabegeschwindigkeit an, um live aufzuholen." },
     "enabled": { "message": "Wiedergabegeschwindigkeit ändern" },
     "speedup": { "message": "Bei Verzögerung beschleunigen" },
     "speedupDesc": { "message": "Beschleunigt automatisch, wenn genügend Puffer vorhanden ist, um zum Live-Signal aufzuholen. Kehrt zur normalen Geschwindigkeit zurück, sobald der Live-Punkt erreicht ist oder der Puffer sinkt." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Handbuch" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Alle Websites" },
-    "scopeCommonDesc": { "message": "Diese Einstellung gilt für alle unterstützten Websites." }
+    "scopeCommonDesc": { "message": "Diese Einstellung gilt für alle unterstützten Websites." },
+    "grantDesc": { "message": "Um auf $SITE$ die Wiedergabegeschwindigkeit anzupassen, ist der Zugriff auf die Website nötig.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Auf dieser Website aktivieren" },
+    "grantSite": { "message": "Auf $SITE$ aktivieren", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Aktiviert. Falls sich nichts ändert, die Seite neu laden." }
 }

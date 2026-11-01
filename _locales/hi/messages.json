@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — लाइव स्ट्रीम की देरी को अपने-आप पहचानें और ठीक करें" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "YouTube, Twitch, TwitCasting और TikTok पर स्ट्रीम की देरी पहचानकर प्लेबैक स्पीड अपने-आप घटाता-बढ़ाता है, ताकि लाइव से पीछे न रहें।" },
+    "appDesc": { "message": "YouTube, Twitch, TwitCasting, TikTok और DAZN पर स्ट्रीम की देरी पहचानकर प्लेबैक स्पीड अपने-आप बदलता है, ताकि लाइव से पीछे न रहें।" },
     "enabled": { "message": "प्लेबैक स्पीड बदलें" },
     "speedup": { "message": "देरी होने पर स्पीड बढ़ाएं" },
     "speedupDesc": { "message": "बफ़र में काफ़ी गुंजाइश होने पर, लाइव तक पहुंचने के लिए अपने-आप स्पीड बढ़ाता है। लाइव तक पहुंचते ही या बफ़र घटने पर सामान्य स्पीड पर लौट आता है।" },
@@ -44,5 +44,9 @@
     "manual": { "message": "उपयोगकर्ता गाइड" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "सभी साइटें" },
-    "scopeCommonDesc": { "message": "यह सेटिंग सभी समर्थित साइटों पर लागू होती है।" }
+    "scopeCommonDesc": { "message": "यह सेटिंग सभी समर्थित साइटों पर लागू होती है।" },
+    "grantDesc": { "message": "$SITE$ पर प्लेबैक स्पीड बदलने के लिए साइट तक पहुंच की अनुमति ज़रूरी है।", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "इस साइट पर चालू करें" },
+    "grantSite": { "message": "$SITE$ पर चालू करें", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "चालू हो गया। अगर कुछ न बदले, तो पेज रीलोड करें।" }
 }

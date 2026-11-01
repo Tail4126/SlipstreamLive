@@ -8,6 +8,58 @@
 
 ## [未リリース]
 
+## [1.7.0] - 2026-11-02
+
+### 追加
+
+- **DAZN に対応した。** 5 つ目の対応サイトとして `www.dazn.com` のライブ配信を制御する。アダプター `adapters/dazn.js` を追加し、`shared/schema.js` の `SITES` に DAZN を加えた。設定画面には DAZN のタブが増える。
+  - **DAZN だけは「許可制」で動かす。** これまでの 4 サイトのようにマニフェストの静的な `content_scripts.matches` へホストを足すと、Chrome は更新時に新しい権限の承認を求め、承認されるまで全利用者の拡張機能を無効にする。Firefox（MV3）は更新で増えたホストの権限を付与しないため、足したサイトでは動かない。そこで `https://www.dazn.com/*` は 3 つのマニフェストの `optional_host_permissions` に置き、次の手順で動かす。
+    1. 設定画面の DAZN タブの先頭に、まだ許可していないときだけ案内を出す。ボタンは、今見ているページが DAZN なら **「このサイトで有効にする」**、それ以外のページやオプションページで開いたときは **「DAZN で有効にする」** になる。
+    2. ボタンのクリックの処理の中で、何も待たずに `permissions.request()` を呼ぶ（Firefox はユーザー操作の処理中でないと拒否し、Chrome もユーザー操作の直後でないと拒否するため）。許可されると案内は「有効にしました」に変わる。
+    3. `background.js` が `permissions.onAdded` を受けて、マニフェストの 2 組と同じスクリプト（ISOLATED world の `shared/schema.js`・`common.js`・`content.js` と、MAIN world の `shared/util.js`・`adapters/dazn.js`・`inject.js`）を `scripting.registerContentScripts()` で登録する。指定は `world: 'MAIN'`（MAIN 側）・`allFrames: true`・`runAt: 'document_start'`・`persistAcrossSessions: true`。登録はページを開いたときにしか効かないため、同時に `scripting.executeScript()` で、すでに開いている DAZN のタブにも入れる（再読み込みでライブを読み込み直さずに済むように）。
+    4. 許可が取り消されたら（`permissions.onRemoved`）登録を外す。
+  - Firefox では許可のダイアログが出るとポップアップが閉じることがあり、`permissions.request()` の後ろが動かない場合がある。そのため登録はポップアップではなく `background.js` が行う。Firefox の `permissions.onAdded` は、止まっているイベントページも起こせる「永続化されたリスナー」に対応している（`ext-permissions.js` の `PERSISTENT_EVENTS`）。
+  - **登録は、バックグラウンドが起動するたびに「今付いている許可」に合わせ直す**（`start()`）。拡張機能を更新すると登録したスクリプトは消えるため（MDN の `persistAcrossSessions` の説明）、`runtime.onInstalled` で起こされたときに登録し直す。登録済みのものは `updateContentScripts()` で最新の定義に上書きするので、更新でファイルの並びが変わっても古い定義が残らない。同時に何度呼ばれても同じ id を 2 回登録しないよう、呼び出しは 1 本の列に並べる。
+  - 新しいサイトは、`optional_host_permissions` にホストを足し、`SITES` に同じマッチパターンを `origins` として持つ項目を足し、`adapters/<サイト ID>.js` を置くだけで、`background.js` と設定画面には手を入れずに許可制で動く。
+- **DAZN のアダプター（`adapters/dazn.js`）。** Web 版の DAZN は、自社のプレーヤー（peng）の中で dash.js を使って MPEG-DASH を再生し、`<video>` を `div.player-solution[data-test-id="PLAYER_SOLUTION"]` の中に置く。
+  - 本編の `<video>` は PLAYER_SOLUTION の中から選ぶ。マルチビューで複数並んだときは、画面に映る面積が大きく、再生中で、音が出ているものを選ぶ（止まっているもの・消音のものは面積を半分に見積もる）。外枠の印が変わっても動き続けられるよう、見つからなければページ全体の `<video>` から選ぶ。
+  - **ライブ判定は「再生ソースがあり、動画の長さが `ENDLESS` 以上」。** DAZN のライブは長さが 2^32 秒（4294967296）になる（ふつうの dash.js なら `Infinity`）。見逃し配信やハイライトは長さが決まっているので対象外になる。同じ `<video>` のまま別の配信へ切り替わったことに気付けるよう、再生ソースが入れ替わるたびに `media()` の id（`パス#番号`）を変える。
+  - **遅延は、使えるものから順に 3 通りで求める。** (1) DAZN のライブの多くは再生位置が「1970 年からの経過秒数」にそろっている（MPD の `availabilityStartTime` が 1970 年）ので、「今の時刻 − 再生位置」を現実の時刻からの遅れとして使う（dash.js の `getCurrentLiveLatency()` と同じ考え方）。端末の時計のずれに備え、−5 秒〜1 日の範囲に収まるときだけ使う。(2) シーク可能範囲の末尾 − 再生位置。DAZN の dash.js はライブでも範囲を [0, 2^32] にしていて末尾が最新地点を表さないため、末尾が `ENDLESS` より小さいときだけ使う。(3) 受信済みの末尾 − 再生位置（TikTok と同じ）。
+  - **巻き戻し（DVR）の判定は (1)・(2) のときだけ `tracker()` で行い、(3) のときは常に最前線にいるものとして扱う。** (3) はバッファが溜まるだけで伸びるため、読み込み始めに溜まっていくバッファを巻き戻しと取り違え、`(DVR)` と表示してしまったためである（実機のライブ TV で、再生位置が約 5,400 万秒のチャンネルに切り替えたときに確認した）。求め方が変わったときと、再生が詰まったとき（`waiting`）も、`tracker()` の記録をやり直す。
+  - **必要なバッファの目安（`needs()`）は測って求める。** dash.js はセグメントを 1 個ずつ追加するので、バッファの末尾はセグメント 1 個ぶんずつ階段状に伸びる。その段差（0.2〜15 秒）を直近 9 回ぶん覚え、中央値をセグメントの長さとする。3 回たまるまでは 2 秒とみなす。DAZN は配信によって低遅延の設定（dash.js の `liveDelay: 3` と追いつき機能）を使い分けているため、決め打ちにしていない。
+  - DAZN のプレーヤーには速度変更のメニューがないため、`respectUserRate` は `false`（Twitch・TikTok と同じ）。低遅延の配信で dash.js の追いつき機能が速度を書き換えても、横取りした側で受け止め、Slipstream Live の判断を優先する。
+  - `gap` は 1.5 秒。dash.js はそれより小さい隙間を自動で飛び越えて再生を続けるため。
+  - バッジは、コントロールバー下段の左側（再生・10 秒戻し・音量・現在時刻が並ぶ箱）の末尾に並べる。クラス名は自動生成で変わるため、`data-test-id` の `CURRENT_TIME` から上へたどり、`VOLUME_BUTTON` も含む最初の祖先を箱とみなす。DAZN の `data-test-id` は「`VOLUME_BUTTON VOLUME_BUTTON_UNMUTED`」のように状態を表す語が続くため、`~=` で探す。見つからなければ従来どおりプレーヤーの左上に浮かべる。
+  - **実機での確認（2026 年 10 月、Chrome 156、DAZN のライブ TV）。** NFL Network（再生位置が時計にそろっているチャンネル）で、開いた直後の遅延は約 40 秒、バッファは約 12 秒だった。DAZN の dash.js はバッファを約 12 秒までしか先読みしないため、加速してもバッファは減らずに遅延だけが縮み、約 1 分半で遅延は約 19 秒、バッファは 1.3〜4.3 秒になった（最前線に追いつき、以後はほぼ 1.00x）。セグメントの長さは 2.6 秒と測れた。60 秒巻き戻すと遅延バッジは `(DVR)` になった。別のチャンネル（再生位置が時計にそろっていない、セグメント 2 秒）でも、加速してバッファを詰め、`(DVR)` と誤表示しないことを確かめた。
+  - **最低速度にする閾値の DAZN の既定値は 0.8 秒**（YouTube と同じ）。DAZN も数秒ごとのセグメントで届く MPEG-DASH で、バッファの波打ち方が近いため。
+- `_locales/*/messages.json`（19 言語）にキー `grantDesc`・`grantHere`・`grantSite`・`grantDone` を追加した。`grantDesc` と `grantSite` はサイト名の差し込み口（`$SITE$`）を持つ。`?locale=` で言語ファイルを手動で読み込んだときも同じ規則で埋め込めるよう、`popup.js` の `t()` に差し込みの処理（`fill()`）を加えた。
+
+### 変更
+
+- 3 つのマニフェストの `permissions` に `scripting` を加えた（Chrome・Firefox とも、この権限は利用者への警告を出さない）。Firefox 向けの `background.scripts` は、`background.js` の前に `shared/schema.js` を読み込む。Chrome の Service Worker は `importScripts()` で読み込む。
+- `background.js` にリスナー（`runtime.onStartup`・`runtime.onInstalled`・`permissions.onAdded`・`permissions.onRemoved`）を加えた。Firefox のイベントページは永続化されたリスナーを持つとブラウザ起動時に自動では起動されなくなるが、`runtime.onStartup` にリスナーがあれば起動されるため（Firefox の `ext-backgroundPage.js`）、アンインストール時のアンケートの登録は従来どおり起動のたびに行われる。
+- 設定画面に DAZN のテーマ色（ライト `#6c7000` / ダーク `#8f9400`）を加えた。DAZN の強調色の黄色（`#f7ff1a`）と同じ色相を、TikTok と同じ基準（ON のスイッチの白いつまみとの差 3:1 以上、選択中のタブの文字 4.5:1 以上）を満たす明るさまで落としたもの。ライトはつまみ 5.3:1・タブの文字 5.0:1、ダークはつまみ 3.3:1・タブの文字 5.9:1。
+- `shared/schema.js` の `recover` と `forceMse` の既定値に `dazn: false` を加えた。
+- ストアの概要（`_locales/*/messages.json` の `appDesc`、19 言語）に DAZN を加えた。132 文字の上限に収めるため、一部の言語では言い回しを詰めた（英語は「stream」を、ポルトガル語（ポルトガル）はサイト名の前の冠詞を省き、ヒンディー語・インドネシア語・マレー語・ポーランド語・ポルトガル語（ブラジル）・ロシア語・ウクライナ語は速度の調整にあたる語句を短いものに替えた）。最長はドイツ語の 132 文字。
+
+### 移行に関する注意
+
+- **権限の承認は求められない。** 追加した `scripting` は警告の出ない権限で、DAZN へのアクセスは任意の権限のため、更新しても拡張機能が無効になったり、承認を求められたりはしない。
+- **DAZN は、更新しただけでは動かない。** DAZN のページで設定画面を開き、DAZN タブの「このサイトで有効にする」を押して、ブラウザの確認で許可すること。許可はブラウザの拡張機能の管理画面からいつでも取り消せる。
+
+### ドキュメント
+
+- `README.md` / `README.ja.md` の紹介文・主な機能・動作確認・使い方（「DAZN で使うには」を新設）・バッジの見かた・設定一覧表（DAZN の列）・困ったときは・プライバシー・ファイル構成・サイトを追加するには（今後のサイトは許可制にすること）を更新した。
+- `PRIVACY.md` と `docs/privacy-policy.html` の権限の説明に `scripting` と任意の権限 `https://www.dazn.com/*` を加え、対象サイト・保存内容の説明に DAZN を加えた。最終更新日を 2026-10-31 にした。
+- `SECURITY.md`・`TIPS.md`・不具合報告のテンプレートに DAZN を加えた。
+- 取扱説明書（英日）に「DAZN で使うには」の節を設け、対応サイト・動作確認・サイトタブ・バッジの見かた・制御しないもの・設定一覧表（DAZN の列）・困ったときはを DAZN に合わせて更新した。トップページの対応サイトの記述も更新した。
+- 取扱説明書（英日）の「プライバシー」の節と、トップページの権限の一覧に `scripting` を加え、DAZN へのアクセスが任意の権限であることを書き足した（これまでは「2 つの権限だけ」のままだった）。
+- 取扱説明書（英日）のページ見出しにあるバージョン表記を 1.6.0 から 1.7.0 へ更新した。
+- **ストアの説明文（`docs/ChromeWebStore&FirefoxAddonText/` の 19 言語）を DAZN に合わせて更新した。** 1 行目の概要を新しい `appDesc` にそろえ、対応サイトの列挙に DAZN を加え、TikTok の段落の後に DAZN が許可制であること（DAZN のページで設定画面を開き、DAZN タブの「このサイトで有効にする」を押して許可する。許可するまでは DAZN に一切アクセスしない。許可はいつでも取り消せる。ライブ配信だけを制御する）を説明する段落を設けた。「動作中の通信はなし」の段落は、権限を 3 つ（`scripting` を追加）にし、サイトアクセスを「対応 4 サイトと、許可した場合の DAZN」に改めた。ボタン名は各言語の `grantHere` と同じ文言にしてある。
+- `CONTRIBUTING.md`（英日）の基本ルールの権限に `scripting` を加え、「サイトを追加する」を許可制（`optional_host_permissions`・`SITES` の `origins`・`adapters/<サイト ID>.js`）の手順に改めた。「4 サイト」の記述は 5 サイトへ改めた。
+- `docs/privacy-policy.html` の英語版に残っていた「supported four」を five に改めた。
+- 設定画面のスクリーンショット（Fig_3 / Fig_5 / Fig_6 ほか）は DAZN のタブが無いままで、撮り直しが必要である。
+
 ## [1.6.0] - 2026-10-24
 
 ### 追加
@@ -569,7 +621,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.6.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.3.2...v1.4.0

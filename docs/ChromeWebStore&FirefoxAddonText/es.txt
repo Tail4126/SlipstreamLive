@@ -1,10 +1,10 @@
-Detecta la latencia en YouTube, Twitch, TwitCasting y TikTok y ajusta la velocidad de reproducción para alcanzar el directo.
+Detecta la latencia en YouTube, Twitch, TwitCasting, TikTok y DAZN y ajusta la velocidad de reproducción para alcanzar el directo.
 
 Entre el instante en que quien transmite habla y el instante en que tú lo ves, siempre hay un retraso de unos segundos. Ese retraso crece cada vez que la conexión se altera, y no se reduce solo por sí mismo.
 
 Puedes ponerte al día cambiando manualmente a velocidad 1.25x, pero entonces tienes que vigilar tú mismo el nivel del buffer y bajar la velocidad antes de que se agote. Si te olvidas, el video se congela con esa ruedita de carga.
 
-Slipstream Live hace esa vigilancia por ti, unas 50 veces por segundo. Compatible con YouTube Live, Twitch, TwitCasting y TikTok LIVE. Una vez instalado, no tienes que hacer nada más.
+Slipstream Live hace esa vigilancia por ti, unas 50 veces por segundo. Compatible con YouTube Live, Twitch, TwitCasting, TikTok LIVE y DAZN. Una vez instalado, no tienes que hacer nada más.
 
 ■ Nunca se congela, nunca se descontrola. Obsesionados con la estabilidad
 
@@ -38,9 +38,11 @@ En Twitch, el reproductor a veces se detiene por completo con un error numerado 
 
 En Chrome, en equipos con 6 o más núcleos de CPU, TikTok LIVE se reproduce con un motor propio de TikTok que ignora por completo los cambios de velocidad. Por eso, antes de que se ejecuten los scripts de TikTok, Slipstream Live hace que sus páginas vean como máximo 4 núcleos de CPU, y TikTok elige el motor estándar que usa en Firefox y Edge, donde la velocidad sí se puede cambiar (activado por defecto). El cambio se limita a las propias páginas de TikTok y no se lee ni se envía nada por ello, aunque algunos procesos de TikTok, como la mejora de imagen, pueden cambiar. Si prefieres que TikTok decida por sí mismo, desactiva "Permitir cambiar la velocidad en Chrome" en la pestaña TikTok y recarga la página.
 
+En DAZN, la extensión funciona solo con tu permiso. Abre la ventana de ajustes mientras estás en DAZN, pulsa "Activar en este sitio" en la pestaña DAZN y permite el acceso cuando el navegador lo pida. Hasta entonces, la extensión no tiene ningún acceso a DAZN, y puedes retirar el permiso cuando quieras desde la gestión de extensiones del navegador. Solo controla las retransmisiones en directo; las repeticiones y los resúmenes quedan intactos.
+
 ■ Cero comunicación por red mientras funciona
 
-Mientras ves la transmisión, nunca se conecta a un servidor externo, ni una sola vez. Sin analítica, sin telemetría, sin identificadores, sin anuncios. Solo necesita dos permisos: "storage", para guardar tus ajustes en el dispositivo, y "activeTab", para saber si la pestaña actual es un sitio compatible cuando abres la ventana de ajustes. El acceso a sitios queda limitado a las cuatro plataformas compatibles (YouTube, Twitch, TwitCasting, TikTok), y los ajustes no se sincronizan; se guardan solo en tu dispositivo. La única excepción es al desinstalar, cuando el navegador abre una encuesta opcional. La extensión se limita a registrar de antemano una URL fija, sin identificadores, sin tus ajustes y sin nada sobre lo que estabas viendo.
+Mientras ves la transmisión, nunca se conecta a un servidor externo, ni una sola vez. Sin analítica, sin telemetría, sin identificadores, sin anuncios. Solo necesita tres permisos: "storage", para guardar tus ajustes en el dispositivo; "activeTab", para saber si la pestaña actual es un sitio compatible cuando abres la ventana de ajustes, y "scripting", para empezar a funcionar en DAZN cuando lo permitas. El acceso a sitios queda limitado a las cuatro plataformas compatibles (YouTube, Twitch, TwitCasting, TikTok) y, solo si lo permites, a DAZN, y los ajustes no se sincronizan; se guardan solo en tu dispositivo. La única excepción es al desinstalar, cuando el navegador abre una encuesta opcional. La extensión se limita a registrar de antemano una URL fija, sin identificadores, sin tus ajustes y sin nada sobre lo que estabas viendo.
 
 También incluye una insignia opcional en pantalla (desactivada por defecto) que muestra la velocidad de reproducción, el retraso en segundos y el nivel del buffer, una pantalla de ajustes disponible en 19 idiomas, ayuda con "?" en cada opción y un botón de reinicio por sección.
 

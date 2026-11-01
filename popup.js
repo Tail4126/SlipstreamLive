@@ -50,7 +50,7 @@
     /** ツールチップをマウス位置から下へずらす量（ピクセル）。 */
     const TIP_DY    = 18;
 
-    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok']）。 */
+    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn']）。 */
     const sites  = Object.keys(SITES);
 
     /** 設定 1 行ぶんの要素（有効/無効の切り替えに使う）。 */
@@ -64,6 +64,29 @@
 
     /** サイト別設定の「リセット」ボタン（文言に選択中のサイト名が入るため、描画のたびに書き換える）。 */
     const resetSite = document.getElementById('reset-site');
+
+    /**
+     * 許可を得てから動かすサイト（DAZN）の案内と、その中の文言・ボタン。
+     * 表示するかどうかと文言は renderGrant() が決めます。
+     */
+    const grant       = document.getElementById('grant');
+    const grantText   = document.getElementById('grant-text');
+    const grantButton = document.getElementById('grant-button');
+
+    /**
+     * 許可を得てから動かすサイトごとの、許可の状態（サイト ID → 許可済みなら true）。
+     * 起動時と、許可が付いた・外れたとき（permissions.onAdded / onRemoved）に読み直します。
+     * @type {Map<string, boolean>}
+     */
+    const granted = new Map();
+
+    /**
+     * この画面を開いている間に、ボタンから許可をもらったサイト。
+     * 許可した直後だけ、案内を「有効にしました」に変えて残すために覚えておきます
+     * （次にこの画面を開いたときは、許可済みなので案内そのものを出しません）。
+     * @type {Set<string>}
+     */
+    const enabledNow = new Set();
 
     /**
      * 画面上のすべての入力欄。
@@ -97,15 +120,42 @@
     let strings = null;
     /** @type {string} 表示に使う言語タグ（例: 'ja'、'pt-BR'） */
     let locale  = api.i18n.getUILanguage();
+    /** @type {string|null} 今アクティブなタブが対応サイトなら、そのサイト ID（activeSite() の結果） */
+    let activeId = null;
+
+    /**
+     * 言語ファイルの 1 項目に、差し込む値を埋め込む（URL で言語を指定したとき用）。
+     *
+     * 言語ファイルでは "$SITE$ で有効にする" のように $名前$ で差し込み口を書き、
+     * placeholders の content（"$1" など）で、何番目の値を入れるかを決めています。
+     * ブラウザの i18n.getMessage() は自分でこれを行いますが、loadLocale() で手動で読み込んだ
+     * 言語ファイルには同じ処理が無いため、ここで同じ規則（名前は大文字小文字を区別しない、
+     * "$$" は "$" そのもの）で埋め込みます。
+     * @param {{ message?: string, placeholders?: Record<string, { content?: string }> }} entry 言語ファイルの項目
+     * @param {string[]} values 差し込む値（$1, $2 … の順）
+     * @returns {string} 埋め込んだ文言
+     */
+    function fill(entry, values) {
+        const holders = entry.placeholders ?? {};
+        return String(entry.message ?? '').replace(/\$\$|\$([A-Za-z0-9_@]+)\$/g, (match, name) => {
+            if (!name) return '$';
+            const content = holders[name.toLowerCase()]?.content ?? '';
+            return content.replace(/\$([1-9])/g, (_, n) => values[n - 1] ?? '');
+        });
+    }
 
     /**
      * 表示用の文言を取り出す。
      * URL で言語を指定されていればそちらを優先し、無ければブラウザの言語設定に従って
      * 拡張機能の多言語機能（i18n.getMessage）から取り出します（見つからなければ空文字）。
      * @param {string} key 文言のキー
+     * @param {...string} values 文言の差し込み口（$SITE$ など）に入れる値
      * @returns {string} 対応する文言
      */
-    const t = (key) => strings?.[key]?.message ?? api.i18n.getMessage(key);
+    const t = (key, ...values) => {
+        const entry = strings?.[key];
+        return entry?.message != null ? fill(entry, values) : api.i18n.getMessage(key, values);
+    };
 
     /**
      * URL のクエリ（?locale=ja）で指定された言語ファイルを読み込む（開発用）。
@@ -209,6 +259,102 @@
     const rtl = () => document.documentElement.dir === 'rtl';
 
     /**
+     * そのサイトを動かすのに許可が必要なら、許可を求めるアドレスの一覧を返す。
+     * shared/schema.js の SITES で origins を持つサイト（DAZN）だけが該当します。
+     * @param {string} site サイト ID
+     * @returns {string[]|null} 許可を求めるアドレス（マッチパターン）。許可の要らないサイトなら null
+     */
+    const originsOf = (site) => (SITES[site]?.origins?.length ? SITES[site].origins : null);
+
+    /**
+     * 許可が必要なサイトについて、いま許可されているかを読み直す。
+     * @returns {Promise<void>}
+     */
+    async function loadGrants() {
+        await Promise.all(sites.filter(originsOf).map(async (site) => {
+            try {
+                granted.set(site, await api.permissions.contains({ origins: originsOf(site) }));
+            } catch (error) {
+                log.warn('permissions.contains', site, error);
+                granted.set(site, false);
+            }
+        }));
+    }
+
+    /**
+     * 「このサイトで有効にする」の案内を、選択中のサイトに合わせて出し分ける。
+     *
+     *   許可の要らないサイト             … 出さない
+     *   許可が要り、まだ許可されていない … 説明とボタンを出す
+     *   この画面でたった今許可した       … ボタンを消し、「有効にしました」を出す
+     *   前から許可されている             … 出さない
+     *
+     * ボタンの文言は、今見ているページ（アクティブなタブ）がそのサイトなら「このサイトで有効にする」、
+     * それ以外（別のサイトで開いたとき・オプションページとして開いたとき）は、どのサイトの話か
+     * 分かるよう「DAZN で有効にする」のようにサイト名を入れます。
+     * @returns {void}
+     */
+    function renderGrant() {
+        const need = originsOf(current) !== null;
+        const ok   = granted.get(current) === true;
+        const done = need && ok && enabledNow.has(current);
+
+        grant.hidden = !need || (ok && !done);
+        if (grant.hidden) return;
+
+        const label = SITES[current].label;
+        grantText.textContent   = done ? t('grantDone') : t('grantDesc', label);
+        grantButton.hidden      = done;
+        grantButton.textContent = activeId === current ? t('grantHere') : t('grantSite', label);
+    }
+
+    /**
+     * ボタンが押されたときの続き。ブラウザの許可ダイアログの結果を受け取って画面に反映する。
+     *
+     * 許可されたあとのスクリプトの登録は、background.js が permissions.onAdded で行います。
+     * Firefox では許可ダイアログが出るとこの画面が閉じることがあり、ここより後ろが動かない
+     * 場合があるためです（この関数は「画面が残っていれば表示を更新する」だけの役目です）。
+     * @param {string} site 許可を求めたサイト ID
+     * @param {Promise<boolean>} asking permissions.request() が返した Promise
+     * @returns {Promise<void>}
+     */
+    async function settleGrant(site, asking) {
+        let ok = false;
+        try {
+            ok = (await asking) === true;
+        } catch (error) {
+            log.warn('permissions.request', site, error);
+        }
+        if (ok) enabledNow.add(site);
+        await loadGrants();
+        render();
+    }
+
+    /**
+     * 「このサイトで有効にする」ボタンが押されたとき。
+     *
+     * permissions.request() は、クリックの処理の中で、何も待たず（await せず）に呼ぶ必要があります。
+     * Chrome はユーザー操作の直後でないと拒否し、Firefox も「ユーザー操作の処理中」でないと
+     * "permissions.request may only be called from a user input handler" で失敗するためです。
+     * そこで結果を待つ部分は settleGrant() に分け、ここでは呼び出しだけを済ませます。
+     * @returns {void}
+     */
+    function onGrantClick() {
+        const site    = current;
+        const origins = originsOf(site);
+        if (!origins) return;
+
+        let asking;
+        try {
+            asking = api.permissions.request({ origins });
+        } catch (error) {
+            log.warn('permissions.request', site, error);
+            return;
+        }
+        void settleGrant(site, asking);
+    }
+
+    /**
      * 現在の設定値を画面に反映する（再描画）。
      * 値が変わったときは必ずこれを呼ぶことで、画面と実データのずれを防ぎます。
      * @returns {void}
@@ -219,6 +365,9 @@
         // CSS 側でサイトごとの色分けをするための目印。
         document.documentElement.dataset.site = current;
         resetSite.textContent = `${t('reset')} · ${SITES[current].label}`;
+
+        // 許可が必要なサイトなら「このサイトで有効にする」の案内を出します。
+        renderGrant();
 
         // タブの選択状態を更新（aria-selected はスクリーンリーダー向けの情報でもあり、
         // CSS もこの属性を見て選択中のタブを塗り分けます）。
@@ -678,10 +827,10 @@
     // 他のサイトの設定まで消えてしまうためです。
     document.body.inert = true;
 
-    // ブラウザへの問い合わせ（画面の状態・設定・アクティブなタブ）は、
+    // ブラウザへの問い合わせ（画面の状態・設定・アクティブなタブ・許可の状態）は、
     // 待ち時間が重ならないよう最初にまとめて出しておき、その間に画面を組み立てます。
     // 1 つずつ順番に待つと、問い合わせの往復の時間がそのまま足し算になるためです。
-    const loading = Promise.all([store.get('ui'), store.get('settings'), activeSite()]);
+    const loading = Promise.all([store.get('ui'), store.get('settings'), activeSite(), loadGrants()]);
 
     await loadLocale();                              // 言語ファイルの読み込み（?locale= 指定時のみ）
     translate();                                     // 画面の文字を翻訳
@@ -692,14 +841,26 @@
         button.addEventListener('click', () => reset(button.dataset.reset));
     }
 
+    // 「このサイトで有効にする」ボタンに動作を割り当て
+    grantButton.addEventListener('click', onGrantClick);
+
     buildTabs();                                     // サイト切り替えタブを生成
     buildHelp();                                     // 「?」の吹き出しを生成
 
-    const [savedUi, savedData, activeId] = await loading;
-    ui      = savedUi;                               // 画面の状態
-    data    = savedData;                             // 設定
+    const [savedUi, savedData, savedActive] = await loading;
+    ui       = savedUi;                              // 画面の状態
+    data     = savedData;                            // 設定
+    activeId = savedActive;                          // 今見ているページのサイト（ボタンの文言に使う）
     select(detect(activeId));                        // 開くタブを決定し、最後に選択されたタブとして記録
     render();                                        // 画面に反映
+
+    // 拡張機能の管理画面など、この画面の外で許可が付いた・外れたときも、案内を出し直します。
+    const regrant = async () => {
+        await loadGrants();
+        render();
+    };
+    api.permissions.onAdded.addListener(regrant);
+    api.permissions.onRemoved.addListener(regrant);
 
     // 他の場所（別ウィンドウの設定画面など）で設定が変わったら、この画面も追従させます。
     // ui も追いかけるのは、別の窓の設定画面で選ばれた「最後に選択されていたタブ」（ui.site）を、
