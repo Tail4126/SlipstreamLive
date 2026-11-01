@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Detect and Adjust Live Stream Latency Automatically" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Detects stream latency on YouTube, Twitch, TwitCasting, and TikTok, and adjusts playback speed to catch up to the live edge." },
+    "appDesc": { "message": "Detects latency on YouTube, Twitch, TwitCasting, TikTok, and DAZN, and adjusts playback speed to catch up to the live edge." },
     "enabled": { "message": "Change playback speed" },
     "speedup": { "message": "Speed up when delayed" },
     "speedupDesc": { "message": "Automatically speeds up when there is sufficient buffer to catch up to the live edge. Returns to normal speed once caught up or if the buffer drops." },
@@ -44,5 +44,9 @@
     "manual": { "message": "User manual" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "All sites" },
-    "scopeCommonDesc": { "message": "This setting applies to all supported sites." }
+    "scopeCommonDesc": { "message": "This setting applies to all supported sites." },
+    "grantDesc": { "message": "Access to the site is needed to adjust playback speed on $SITE$.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Enable on this site" },
+    "grantSite": { "message": "Enable on $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Enabled. If nothing changes, reload the page." }
 }

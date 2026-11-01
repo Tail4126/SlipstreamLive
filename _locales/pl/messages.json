@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Automatyczne wykrywanie i korekta opóźnienia transmisji" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Wykrywa opóźnienie na YouTube, Twitchu, TwitCastingu i TikToku i dostosowuje prędkość odtwarzania, by dogonić transmisję na żywo." },
+    "appDesc": { "message": "Wykrywa opóźnienie na YouTube, Twitchu, TwitCastingu, TikToku i DAZN i zmienia prędkość odtwarzania, by dogonić transmisję na żywo." },
     "enabled": { "message": "Zmieniaj prędkość odtwarzania" },
     "speedup": { "message": "Przyspieszaj przy opóźnieniu" },
     "speedupDesc": { "message": "Automatycznie przyspiesza odtwarzanie, gdy w buforze jest wystarczający zapas, by dogonić transmisję na żywo. Wraca do normalnej prędkości po nadrobieniu opóźnienia lub gdy zapas bufora spadnie." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Instrukcja obsługi" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Wszystkie witryny" },
-    "scopeCommonDesc": { "message": "To ustawienie dotyczy wszystkich obsługiwanych witryn." }
+    "scopeCommonDesc": { "message": "To ustawienie dotyczy wszystkich obsługiwanych witryn." },
+    "grantDesc": { "message": "Aby regulować prędkość odtwarzania w serwisie $SITE$, potrzebny jest dostęp do witryny.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Włącz w tej witrynie" },
+    "grantSite": { "message": "Włącz w serwisie $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Włączono. Jeśli nic się nie zmieni, odśwież stronę." }
 }

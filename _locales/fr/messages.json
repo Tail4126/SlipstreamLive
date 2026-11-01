@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Détecter et ajuster automatiquement la latence du direct" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Détecte la latence sur YouTube, Twitch, TwitCasting et TikTok et ajuste la vitesse de lecture pour rattraper le direct." },
+    "appDesc": { "message": "Détecte la latence sur YouTube, Twitch, TwitCasting, TikTok et DAZN et ajuste la vitesse de lecture pour rattraper le direct." },
     "enabled": { "message": "Modifier la vitesse de lecture" },
     "speedup": { "message": "Accélérer en cas de retard" },
     "speedupDesc": { "message": "Accélère automatiquement lorsque le tampon est suffisant pour rattraper le direct. Reprend la vitesse normale une fois le direct rattrapé ou si le tampon diminue." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Manuel d'utilisation" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Tous les sites" },
-    "scopeCommonDesc": { "message": "Ce paramètre s'applique à tous les sites pris en charge." }
+    "scopeCommonDesc": { "message": "Ce paramètre s'applique à tous les sites pris en charge." },
+    "grantDesc": { "message": "L'accès au site est nécessaire pour régler la vitesse de lecture sur $SITE$.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Activer sur ce site" },
+    "grantSite": { "message": "Activer sur $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Activé. Si rien ne change, rechargez la page." }
 }

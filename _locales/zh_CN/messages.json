@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — 自动检测并调节直播延迟" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "自动检测 YouTube、Twitch、TwitCasting 和 TikTok 直播延迟，智能调节播放速度，时刻追上最新直播画面（实时）。" },
+    "appDesc": { "message": "自动检测 YouTube、Twitch、TwitCasting、TikTok 和 DAZN 直播延迟，智能调节播放速度，时刻追上最新直播画面（实时）。" },
     "enabled": { "message": "调节播放速度" },
     "speedup": { "message": "落后时自动加速" },
     "speedupDesc": { "message": "为了追上最新直播画面，在缓冲充足时自动加速。追上直播或缓冲不足时，将自动恢复正常速度。" },
@@ -44,5 +44,9 @@
     "manual": { "message": "使用手册" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "所有网站" },
-    "scopeCommonDesc": { "message": "此设置适用于所有受支持的网站。" }
+    "scopeCommonDesc": { "message": "此设置适用于所有受支持的网站。" },
+    "grantDesc": { "message": "要在 $SITE$ 上调节播放速度，需要允许访问该网站。", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "在此网站上启用" },
+    "grantSite": { "message": "在 $SITE$ 上启用", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "已启用。若没有变化，请刷新页面。" }
 }

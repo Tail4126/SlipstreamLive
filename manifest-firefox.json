@@ -3,7 +3,7 @@
 
     "name": "__MSG_appName__",
     "short_name": "__MSG_appShortName__",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "description": "__MSG_appDesc__",
 
     "default_locale": "en",
@@ -120,7 +120,7 @@
     ],
 
     "background": {
-        "scripts": [ "background.js" ]
+        "scripts": [ "shared/schema.js", "background.js" ]
     },
 
     "action": {
@@ -134,6 +134,11 @@
 
     "permissions": [
         "storage",
-        "activeTab"
+        "activeTab",
+        "scripting"
+    ],
+
+    "optional_host_permissions": [
+        "https://www.dazn.com/*"
     ]
 }

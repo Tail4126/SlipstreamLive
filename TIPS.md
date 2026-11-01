@@ -80,7 +80,7 @@ speedup  rate=1.25 now=8.32+0.00 health2.0s(avg=7.84 sd=1.20 n= 100) trough30.0s
 | ログ内容 | 出るタイミング／意味 |
 | :--- | :--- |
 | `settings {...}` | `data-slpstrm` 属性経由で設定の変化を検出した時。現在有効な設定一式を表示 |
-| `media {...}` | 再生中のメディア（動画ID）が切り替わった時。`live` フラグを含み、YouTube のみ `premiere` フラグも含む。TikTok の ID は `パス#番号` の形で、番号は同じ `<video>` の再生ソースが入れ替わるたび（LIVE フィードで次の配信へ移ったときなど）に増える |
+| `media {...}` | 再生中のメディア（動画ID）が切り替わった時。`live` フラグを含み、YouTube のみ `premiere` フラグも含む。TikTok と DAZN の ID は `パス#番号` の形で、番号は同じ `<video>` の再生ソースが入れ替わるたび（LIVE フィードで次の配信へ移ったときなど）に増える |
 | `stall {...}` | ライブ再生中にバッファ枯渇（`waiting` イベント）が発生した時。サイト名・再生位置・`readyState`・`health` を記録 |
 | `speedup is futile; standing down {...}` | `FUTILE` 状態に入った瞬間。要求量・実績・判定に使った窓の長さを添える |
 | `speedup re-armed { recover }` | `FUTILE` で見送っていた加速を再開した時。`recover` はその時に使った復帰しきい値（秒） |

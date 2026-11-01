@@ -34,6 +34,7 @@ body:
               - Twitch
               - TwitCasting / ツイキャス
               - TikTok LIVE
+              - DAZN
               - Multiple sites / 複数サイト
               - Not site-specific — settings page, etc. / サイトに依存しない（設定画面など）
       validations:

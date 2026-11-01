@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Автоматически определяет и сокращает задержку трансляций" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Определяет задержку на YouTube, Twitch, TwitCasting и TikTok и подстраивает скорость воспроизведения, чтобы догнать прямой эфир." },
+    "appDesc": { "message": "Определяет задержку на YouTube, Twitch, TwitCasting, TikTok и DAZN и меняет скорость воспроизведения, чтобы догнать прямой эфир." },
     "enabled": { "message": "Изменять скорость воспроизведения" },
     "speedup": { "message": "Ускорять при отставании" },
     "speedupDesc": { "message": "Автоматически ускоряет воспроизведение, когда в буфере достаточно запаса, чтобы догнать прямой эфир. Возвращается к обычной скорости, когда отставание устранено или запас буфера уменьшился." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Руководство пользователя" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Все сайты" },
-    "scopeCommonDesc": { "message": "Эта настройка действует на всех поддерживаемых сайтах." }
+    "scopeCommonDesc": { "message": "Эта настройка действует на всех поддерживаемых сайтах." },
+    "grantDesc": { "message": "Чтобы регулировать скорость воспроизведения на $SITE$, нужен доступ к сайту.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Включить на этом сайте" },
+    "grantSite": { "message": "Включить на $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Включено. Если ничего не изменилось, перезагрузите страницу." }
 }

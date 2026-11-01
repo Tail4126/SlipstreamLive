@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — ライブ配信のタイムラグを自動で検知・調整" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "YouTube・Twitch・ツイキャス・TikTokの配信遅延を自動検知。再生速度をスマートに調整し、常に最先端（リアルタイム）へ追いつく拡張機能" },
+    "appDesc": { "message": "YouTube・Twitch・ツイキャス・TikTok・DAZNの配信遅延を自動検知。再生速度をスマートに調整し、常に最先端（リアルタイム）へ追いつく拡張機能" },
     "enabled": { "message": "再生速度を変更する" },
     "speedup": { "message": "遅延時に加速する" },
     "speedupDesc": { "message": "配信の最先端に追いつくため、バッファに余裕がある時に自動で加速します。最先端に到達した際やバッファが減った場合は、自動で通常速度に戻ります。" },
@@ -44,5 +44,9 @@
     "manual": { "message": "取扱説明書" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.ja.html" },
     "scopeCommon": { "message": "全サイト共通" },
-    "scopeCommonDesc": { "message": "この設定はすべての対応サイトに適用されます。" }
+    "scopeCommonDesc": { "message": "この設定はすべての対応サイトに適用されます。" },
+    "grantDesc": { "message": "$SITE$ で再生速度を調整するには、サイトへのアクセスの許可が必要です。", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "このサイトで有効にする" },
+    "grantSite": { "message": "$SITE$ で有効にする", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "有効にしました。変わらないときは、ページを再読み込みしてください。" }
 }

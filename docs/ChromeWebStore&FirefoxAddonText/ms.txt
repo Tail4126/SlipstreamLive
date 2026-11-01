@@ -1,10 +1,10 @@
-Mengesan kelewatan di YouTube, Twitch, TwitCasting dan TikTok, lalu melaraskan kelajuan main balik untuk mengejar siaran langsung.
+Mengesan kelewatan di YouTube, Twitch, TwitCasting, TikTok dan DAZN, lalu melaraskan kelajuan video untuk mengejar siaran langsung.
 
 Antara ketika penstrim bercakap dengan ketika anda melihatnya, sentiasa ada kelewatan beberapa saat. Kelewatan ini bertambah setiap kali sambungan tersekat-sekat, dan tidak akan berkurang dengan sendirinya.
 
 Anda boleh mengejarnya dengan menukar kelajuan kepada 1.25x secara manual, tetapi anda pula perlu sentiasa memerhati baki penimbal dan memperlahankan semula sebelum ia habis. Jika terlupa, video akan beku dengan ikon pemuatan yang berpusing.
 
-Slipstream Live mengambil alih tugas memerhati itu untuk anda, kira-kira 50 kali sesaat. Menyokong YouTube Live, Twitch, TwitCasting dan TikTok LIVE. Pasang sahaja, selepas itu tiada apa-apa lagi yang perlu dilakukan.
+Slipstream Live mengambil alih tugas memerhati itu untuk anda, kira-kira 50 kali sesaat. Menyokong YouTube Live, Twitch, TwitCasting, TikTok LIVE dan DAZN. Pasang sahaja, selepas itu tiada apa-apa lagi yang perlu dilakukan.
 
 ■ Tidak beku, tidak keterlaluan. Mengutamakan kestabilan
 
@@ -38,9 +38,11 @@ Di Twitch, pemain kadangkala berhenti sepenuhnya dengan ralat bernombor seperti 
 
 Dalam Chrome pada komputer dengan 6 teras CPU atau lebih, TikTok LIVE dimainkan melalui enjin milik TikTok sendiri yang mengabaikan perubahan kelajuan sama sekali. Oleh itu, sebelum skrip TikTok berjalan, Slipstream Live menjadikan halaman TikTok hanya melihat paling banyak 4 teras CPU, jadi TikTok memilih enjin standard yang digunakannya dalam Firefox dan Edge, yang kelajuannya boleh dilaraskan (hidup secara lalai). Perubahan ini terhad kepada halaman TikTok sendiri dan tiada apa-apa yang dibaca atau dihantar kerananya, walaupun sesetengah pemprosesan TikTok, seperti penambahbaikan gambar, mungkin berubah. Jika anda mahu menyerahkan pilihan kepada TikTok, matikan “Benarkan ubah kelajuan dalam Chrome” pada tab TikTok dan muat semula halaman.
 
+Di DAZN, Slipstream Live hanya berfungsi dengan kebenaran anda. Buka tetingkap timbul semasa berada di DAZN, tekan “Dayakan di tapak ini” pada tab DAZN, kemudian benarkan akses apabila pelayar meminta. Sebelum itu, Slipstream Live langsung tiada akses ke DAZN, dan anda boleh menarik balik kebenaran itu pada bila-bila masa melalui halaman pengurusan sambungan dalam pelayar. Hanya siaran langsung yang dikawal; ulang tayang dan sorotan tidak disentuh.
+
 ■ Tiada komunikasi rangkaian semasa berjalan
 
-Semasa anda menonton, Slipstream Live tidak pernah bersambung ke pelayan luar, walau sekali pun. Tiada analitik, tiada telemetri, tiada pengecam, tiada iklan. Ia hanya memerlukan dua kebenaran: “storage” untuk menyimpan tetapan pada peranti anda, dan “activeTab” untuk mengenal pasti sama ada tab semasa ialah tapak yang disokong apabila anda membuka tetingkap timbul. Akses tapak juga terhad kepada empat platform yang disokong (YouTube, Twitch, TwitCasting, TikTok), dan tetapan tidak disegerakkan ke mana-mana; semuanya disimpan secara setempat pada peranti anda sahaja. Satu-satunya pengecualian ialah semasa nyahpasang, apabila pelayar membuka borang maklum balas pilihan. Slipstream Live hanya mendaftarkan URL tetap lebih awal — tanpa pengecam, tanpa tetapan dan tanpa sebarang maklumat tentang apa yang anda tonton.
+Semasa anda menonton, Slipstream Live tidak pernah bersambung ke pelayan luar, walau sekali pun. Tiada analitik, tiada telemetri, tiada pengecam, tiada iklan. Ia hanya memerlukan tiga kebenaran: “storage” untuk menyimpan tetapan pada peranti anda, “activeTab” untuk mengenal pasti sama ada tab semasa ialah tapak yang disokong apabila anda membuka tetingkap timbul, dan “scripting” untuk mula berfungsi di DAZN selepas anda membenarkannya. Akses tapak juga terhad kepada empat platform yang disokong (YouTube, Twitch, TwitCasting, TikTok), serta DAZN hanya jika anda membenarkannya, dan tetapan tidak disegerakkan ke mana-mana; semuanya disimpan secara setempat pada peranti anda sahaja. Satu-satunya pengecualian ialah semasa nyahpasang, apabila pelayar membuka borang maklum balas pilihan. Slipstream Live hanya mendaftarkan URL tetap lebih awal — tanpa pengecam, tanpa tetapan dan tanpa sebarang maklumat tentang apa yang anda tonton.
 
 Turut disertakan lencana paparan pilihan (mati secara lalai) yang menunjukkan kelajuan main balik, kelewatan dalam saat dan baki penimbal, skrin tetapan dalam 19 bahasa, bantuan “?” pada setiap tetapan, serta butang tetapkan semula untuk setiap bahagian.
 

@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Deteksi dan Atur Latensi Siaran Langsung secara Otomatis" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Mendeteksi latensi di YouTube, Twitch, TwitCasting, dan TikTok, lalu mengatur kecepatan pemutaran untuk mengejar siaran langsung." },
+    "appDesc": { "message": "Mendeteksi latensi di YouTube, Twitch, TwitCasting, TikTok, dan DAZN, lalu mengatur kecepatan video untuk mengejar siaran langsung." },
     "enabled": { "message": "Ubah kecepatan pemutaran" },
     "speedup": { "message": "Percepat saat tertinggal" },
     "speedupDesc": { "message": "Otomatis mempercepat pemutaran saat buffer cukup untuk mengejar siaran langsung. Kembali ke kecepatan normal setelah berhasil mengejar atau jika buffer berkurang." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Panduan pengguna" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Semua situs" },
-    "scopeCommonDesc": { "message": "Setelan ini berlaku untuk semua situs yang didukung." }
+    "scopeCommonDesc": { "message": "Setelan ini berlaku untuk semua situs yang didukung." },
+    "grantDesc": { "message": "Untuk mengatur kecepatan pemutaran di $SITE$, akses ke situs perlu diizinkan.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Aktifkan di situs ini" },
+    "grantSite": { "message": "Aktifkan di $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Sudah aktif. Jika tidak ada perubahan, muat ulang halaman." }
 }

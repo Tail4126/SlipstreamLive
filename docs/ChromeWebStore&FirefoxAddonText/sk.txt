@@ -1,10 +1,10 @@
-Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu a TikToku a úpravou rýchlosti prehrávania dobieha živé vysielanie.
+Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu, TikToku a DAZN a úpravou rýchlosti prehrávania dobieha živé vysielanie.
 
 Medzi okamihom, keď streamer prehovorí, a okamihom, keď to uvidíte, vždy uplynie niekoľko sekúnd. Toto oneskorenie rastie pri každom zakolísaní pripojenia a samo od seba sa už nezmenší.
 
 Dobehnúť ho môžete ručným prepnutím na rýchlosť 1,25x, lenže potom musíte sami strážiť, koľko zostáva v bufferi, a včas spomaliť, kým sa neminie. Keď zabudnete, obraz zamrzne na točiacom sa koliesku načítavania.
 
-Slipstream Live toto stráženie prevezme za vás a kontroluje stav približne 50-krát za sekundu. Funguje s YouTube Live, Twitchom, TwitCastingom a TikTok LIVE. Stačí ho nainštalovať a viac nemusíte robiť nič.
+Slipstream Live toto stráženie prevezme za vás a kontroluje stav približne 50-krát za sekundu. Funguje s YouTube Live, Twitchom, TwitCastingom, TikTok LIVE a DAZN. Stačí ho nainštalovať a viac nemusíte robiť nič.
 
 ■ Nezamŕza a nevystrája. Dôraz na stabilitu
 
@@ -38,9 +38,11 @@ Na Twitchi sa prehrávač niekedy úplne zastaví s očíslovanou chybou, naprí
 
 V Chrome na počítačoch so 6 a viac jadrami procesora prehráva TikTok LIVE vlastným prehrávacím jadrom, ktoré zmeny rýchlosti úplne ignoruje. Preto Slipstream Live ešte predtým, ako sa spustia skripty TikToku, zariadi, aby stránky TikToku videli najviac 4 jadrá procesora, a TikTok potom zvolí štandardné jadro, ktoré používa vo Firefoxe a Edgi a pri ktorom sa rýchlosť dá upravovať (predvolene zapnuté). Zmena sa týka len stránok samotného TikToku a nič sa kvôli nej nečíta ani neodosiela; niektoré úpravy od TikToku, napríklad vylepšenie obrazu, sa však môžu zmeniť. Ak chcete voľbu nechať na TikToku, vypnite na karte TikTok nastavenie „Umožniť zmenu rýchlosti v Chrome“ a stránku znova načítajte.
 
+Na DAZN funguje rozšírenie iba s vaším povolením. Otvorte vyskakovacie okno, keď ste na DAZN, na karte DAZN kliknite na „Zapnúť na tomto webe“ a po otázke prehliadača prístup povoľte. Kým to neurobíte, rozšírenie nemá k DAZN vôbec prístup, a povolenie môžete kedykoľvek odobrať v správe rozšírení v prehliadači. Ovláda iba živé prenosy; záznamy a zostrihy nechá na pokoji.
+
 ■ Počas prevádzky žiadna sieťová komunikácia
 
-Počas sledovania sa rozšírenie ani raz nepripojí k externému serveru. Žiadna analytika, telemetria, identifikátory ani reklamy. Potrebuje len dve povolenia: „storage“, aby mohlo ukladať vaše nastavenia do zariadenia, a „activeTab“, aby po otvorení vyskakovacieho okna zistilo, či je v aktuálnej karte podporovaný web. Prístup k webom je obmedzený na štyri podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a nastavenia sa nikam nesynchronizujú – ukladajú sa iba lokálne vo vašom zariadení. Jedinou výnimkou je odinštalovanie: prehliadač vtedy otvorí nepovinný dotazník. Rozšírenie iba vopred zaregistruje pevnú adresu URL – bez identifikátora, bez nastavení a bez akýchkoľvek informácií o sledovanom obsahu.
+Počas sledovania sa rozšírenie ani raz nepripojí k externému serveru. Žiadna analytika, telemetria, identifikátory ani reklamy. Potrebuje len tri povolenia: „storage“, aby mohlo ukladať vaše nastavenia do zariadenia, „activeTab“, aby po otvorení vyskakovacieho okna zistilo, či je v aktuálnej karte podporovaný web, a „scripting“, aby mohlo začať fungovať na DAZN, keď to povolíte. Prístup k webom je obmedzený na štyri podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a – iba s vaším povolením – na DAZN a nastavenia sa nikam nesynchronizujú – ukladajú sa iba lokálne vo vašom zariadení. Jedinou výnimkou je odinštalovanie: prehliadač vtedy otvorí nepovinný dotazník. Rozšírenie iba vopred zaregistruje pevnú adresu URL – bez identifikátora, bez nastavení a bez akýchkoľvek informácií o sledovanom obsahu.
 
 K tomu voliteľný ukazovateľ na obrazovke (predvolene vypnutý) s rýchlosťou prehrávania, oneskorením v sekundách a rezervou bufferu, nastavenia v 19 jazykoch, pomocník „?“ pri každej voľbe a tlačidlo na reset v každej sekcii.
 

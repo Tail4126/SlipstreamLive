@@ -1,10 +1,10 @@
-Zjišťuje zpoždění přenosů na YouTube, Twitchi, TwitCastingu a TikToku a úpravou rychlosti přehrávání dohání živé vysílání.
+Zjišťuje zpoždění přenosů na YouTube, Twitchi, TwitCastingu, TikToku a DAZN a úpravou rychlosti přehrávání dohání živé vysílání.
 
 Mezi okamžikem, kdy streamer promluví, a okamžikem, kdy to uvidíte, vždy uplyne několik sekund. Toto zpoždění roste při každém zaškobrtnutí připojení a samo od sebe se už nezmenší.
 
 Dohnat ho můžete ručním přepnutím na rychlost 1,25x, jenže pak musíte sami hlídat, kolik zbývá v bufferu, a včas zpomalit, než dojde. Když zapomenete, obraz zamrzne na točícím se kolečku načítání.
 
-Slipstream Live tohle hlídání převezme za vás a kontroluje stav zhruba 50krát za sekundu. Funguje s YouTube Live, Twitchem, TwitCastingem a TikTok LIVE. Stačí ho nainstalovat a víc nemusíte dělat nic.
+Slipstream Live tohle hlídání převezme za vás a kontroluje stav zhruba 50krát za sekundu. Funguje s YouTube Live, Twitchem, TwitCastingem, TikTok LIVE a DAZN. Stačí ho nainstalovat a víc nemusíte dělat nic.
 
 ■ Nezamrzá a neblázní. Důraz na stabilitu
 
@@ -38,9 +38,11 @@ Na Twitchi se přehrávač někdy úplně zastaví s očíslovanou chybou, třeb
 
 V Chromu na počítačích se 6 a více jádry procesora přehrává TikTok LIVE vlastním přehrávacím jádrem, které změny rychlosti úplně ignoruje. Proto Slipstream Live ještě předtím, než se spustí skripty TikToku, zařídí, aby stránky TikToku viděly nejvýše 4 jádra procesora, a TikTok pak zvolí standardní jádro, které používá ve Firefoxu a Edgi a u kterého lze rychlost upravovat (ve výchozím stavu zapnuto). Změna se týká jen stránek samotného TikToku a nic se kvůli ní nečte ani neodesílá; některé úpravy od TikToku, například vylepšení obrazu, se ale mohou změnit. Pokud chcete volbu nechat na TikToku, vypněte na kartě TikTok nastavení „Umožnit změnu rychlosti v Chromu“ a stránku znovu načtěte.
 
+Na DAZN funguje rozšíření jen s vaším svolením. Otevřete vyskakovací okno, když jste na DAZN, na kartě DAZN klikněte na „Zapnout na tomto webu“ a po dotazu prohlížeče přístup povolte. Dokud to neuděláte, rozšíření k DAZN vůbec nemá přístup, a svolení můžete kdykoli odebrat ve správě rozšíření v prohlížeči. Ovládá jen živé přenosy; záznamy a sestřihy nechává být.
+
 ■ Za provozu žádná síťová komunikace
 
-Během sledování se rozšíření ani jednou nepřipojí k externímu serveru. Žádná analytika, telemetrie, identifikátory ani reklamy. Potřebuje jen dvě oprávnění: „storage“, aby mohlo ukládat vaše nastavení do zařízení, a „activeTab“, aby po otevření vyskakovacího okna poznalo, zda je v aktuální kartě podporovaný web. Přístup k webům je omezen na čtyři podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a nastavení se nikam nesynchronizují – ukládají se pouze místně ve vašem zařízení. Jedinou výjimkou je odinstalace: prohlížeč tehdy otevře nepovinný dotazník. Rozšíření pouze předem zaregistruje pevnou adresu URL – bez identifikátoru, bez nastavení a bez jakýchkoli informací o sledovaném obsahu.
+Během sledování se rozšíření ani jednou nepřipojí k externímu serveru. Žádná analytika, telemetrie, identifikátory ani reklamy. Potřebuje jen tři oprávnění: „storage“, aby mohlo ukládat vaše nastavení do zařízení, „activeTab“, aby po otevření vyskakovacího okna poznalo, zda je v aktuální kartě podporovaný web, a „scripting“, aby mohlo začít fungovat na DAZN, jakmile to povolíte. Přístup k webům je omezen na čtyři podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a – jen s vaším svolením – na DAZN a nastavení se nikam nesynchronizují – ukládají se pouze místně ve vašem zařízení. Jedinou výjimkou je odinstalace: prohlížeč tehdy otevře nepovinný dotazník. Rozšíření pouze předem zaregistruje pevnou adresu URL – bez identifikátoru, bez nastavení a bez jakýchkoli informací o sledovaném obsahu.
 
 K tomu volitelný ukazatel na obrazovce (ve výchozím stavu vypnutý) s rychlostí přehrávání, zpožděním v sekundách a rezervou bufferu, nastavení v 19 jazycích, nápověda „?“ u každé volby a tlačítko pro reset v každé sekci.
 

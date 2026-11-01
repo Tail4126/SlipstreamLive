@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Kesan & Laras Kelewatan Siaran Langsung Secara Automatik" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Mengesan kelewatan di YouTube, Twitch, TwitCasting dan TikTok, lalu melaraskan kelajuan main balik untuk mengejar siaran langsung." },
+    "appDesc": { "message": "Mengesan kelewatan di YouTube, Twitch, TwitCasting, TikTok dan DAZN, lalu melaraskan kelajuan video untuk mengejar siaran langsung." },
     "enabled": { "message": "Ubah kelajuan main balik" },
     "speedup": { "message": "Percepatkan apabila ketinggalan" },
     "speedupDesc": { "message": "Mempercepatkan main balik secara automatik apabila penimbal mencukupi untuk mengejar siaran langsung. Kembali ke kelajuan biasa sebaik sahaja berjaya mengejar atau jika penimbal berkurang." },
@@ -44,5 +44,9 @@
     "manual": { "message": "Manual pengguna" },
     "manualUrl": { "message": "https://tail4126.github.io/SlipstreamLive/manual.html" },
     "scopeCommon": { "message": "Semua tapak" },
-    "scopeCommonDesc": { "message": "Tetapan ini digunakan pada semua tapak yang disokong." }
+    "scopeCommonDesc": { "message": "Tetapan ini digunakan pada semua tapak yang disokong." },
+    "grantDesc": { "message": "Untuk melaraskan kelajuan main balik di $SITE$, akses ke tapak perlu dibenarkan.", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantHere": { "message": "Dayakan di tapak ini" },
+    "grantSite": { "message": "Dayakan di $SITE$", "placeholders": { "site": { "content": "$1", "example": "DAZN" } } },
+    "grantDone": { "message": "Telah didayakan. Jika tiada perubahan, muat semula halaman." }
 }
