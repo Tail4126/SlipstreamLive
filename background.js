@@ -11,14 +11,14 @@
  *
  *   この拡張機能では、やることは 2 つです。
  *     1) 「アンインストールされたときに開くページ（アンケート）」を登録する
- *     2) ユーザーが許可したサイト（DAZN）で動かすスクリプトを登録する
+ *     2) ユーザーが許可したサイト（DAZN・Kick）で動かすスクリプトを登録する
  *
  * ■ 2) が必要な理由
  *   YouTube・Twitch・ツイキャス・TikTok のスクリプトは manifest の content_scripts に
  *   書いてありますが、そこへ新しいホストを足すと、Chrome は更新時に権限の承認を求め、
  *   承認されるまで全利用者の拡張機能を無効にします。Firefox（Manifest V3）は、更新で
  *   増えたホストの権限を付与しないため、足したサイトでは動きません。
- *   そこで DAZN は optional_host_permissions に置き、設定画面の「このサイトで有効にする」で
+ *   そこで DAZN と Kick は optional_host_permissions に置き、設定画面の「このサイトで有効にする」で
  *   ユーザーに許可をもらってから、ここで scripting.registerContentScripts() を使って
  *   manifest に書いたのと同じ 2 組のスクリプト（ISOLATED world と MAIN world）を登録します。
  *   許可が取り消されたら登録も外します。
@@ -64,7 +64,7 @@ delete globalThis.__slipstreamliveSchema;
 const SURVEY_URL = 'https://forms.gle/d6kbXD7QREL1VSmk9';
 
 /**
- * 許可を得てから動かすサイトの ID（SITES のうち origins を持つもの）。例: ['dazn']
+ * 許可を得てから動かすサイトの ID（SITES のうち origins を持つもの）。例: ['dazn', 'kick']
  * @type {string[]}
  */
 const OPTIONAL_SITES = Object.keys(SITES).filter((site) => SITES[site].origins?.length > 0);
@@ -77,7 +77,7 @@ const ISOLATED_FILES = ['shared/schema.js', 'common.js', 'content.js'];
 
 /**
  * MAIN world に入れるファイル。manifest のサイト別の content_scripts と同じ並びで、
- * アダプターのファイル名はサイト ID から決めます（dazn → adapters/dazn.js）。
+ * アダプターのファイル名はサイト ID から決めます（dazn → adapters/dazn.js、kick → adapters/kick.js）。
  * @param {string} site サイト ID
  * @returns {string[]} 読み込む順に並べたファイル
  */

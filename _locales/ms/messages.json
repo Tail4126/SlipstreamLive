@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Kesan & Laras Kelewatan Siaran Langsung Secara Automatik" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Mengesan kelewatan di YouTube, Twitch, TwitCasting, TikTok dan DAZN, lalu melaraskan kelajuan video untuk mengejar siaran langsung." },
+    "appDesc": { "message": "Mengesan kelewatan di YouTube, Twitch, TwitCasting, TikTok, DAZN dan Kick, lalu melaraskan kelajuan untuk mengejar siaran langsung." },
     "enabled": { "message": "Ubah kelajuan main balik" },
     "speedup": { "message": "Percepatkan apabila ketinggalan" },
     "speedupDesc": { "message": "Mempercepatkan main balik secara automatik apabila penimbal mencukupi untuk mengejar siaran langsung. Kembali ke kelajuan biasa sebaik sahaja berjaya mengejar atau jika penimbal berkurang." },

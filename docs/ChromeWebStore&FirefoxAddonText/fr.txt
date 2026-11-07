@@ -1,10 +1,10 @@
-Détecte la latence sur YouTube, Twitch, TwitCasting, TikTok et DAZN et ajuste la vitesse de lecture pour rattraper le direct.
+Détecte la latence sur YouTube, Twitch, TwitCasting, TikTok, DAZN et Kick et ajuste la vitesse de lecture pour rattraper le direct.
 
 Entre le moment où le streamer parle et le moment où tu le vois, il y a toujours quelques secondes de décalage. Ce décalage s'accroît à chaque fois que la connexion a un accroc, et il ne se résorbe jamais tout seul.
 
 Tu peux rattraper ce retard en passant manuellement en vitesse x1,25, mais il faut alors surveiller toi-même le niveau de ton buffer et ralentir avant qu'il ne se vide. Si tu oublies, la vidéo se fige sur la petite roue de chargement.
 
-Slipstream Live fait cette surveillance à ta place, environ 50 fois par seconde. Compatible avec YouTube Live, Twitch, TwitCasting, TikTok LIVE et DAZN. Une fois installé, tu n'as plus rien à faire.
+Slipstream Live fait cette surveillance à ta place, environ 50 fois par seconde. Compatible avec YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN et Kick. Une fois installé, tu n'as plus rien à faire.
 
 ■ Ça ne se fige pas, ça ne s'emballe pas. Une obsession pour la stabilité
 
@@ -40,9 +40,11 @@ Dans Chrome, sur les ordinateurs dotés de 6 cœurs de processeur ou plus, TikTo
 
 Sur DAZN, l'extension ne fonctionne qu'avec ton autorisation. Ouvre la fenêtre des réglages pendant que tu es sur DAZN, clique sur « Activer sur ce site » dans l'onglet DAZN, puis autorise l'accès quand le navigateur le demande. D'ici là, l'extension n'a aucun accès à DAZN, et tu peux retirer cette autorisation à tout moment depuis la gestion des extensions de ton navigateur. Seuls les directs sont pilotés ; les replays et les résumés ne sont pas touchés.
 
+Kick fonctionne de la même façon : tant que tu ne l'as pas autorisé, l'extension n'a aucun accès à Kick. Ouvre la fenêtre des réglages pendant que tu es sur Kick, clique sur « Activer sur ce site » dans l'onglet Kick, puis autorise l'accès quand le navigateur le demande : à kick.com et à player.kick.com, le lecteur Kick que d'autres sites intègrent. Sur Kick, il arrive que la vidéo cesse d'arriver pendant une dizaine de secondes ; la lecture continue ensuite avec autant de retard, car le lecteur de Kick ne le rattrape pas tout seul. Slipstream Live rattrape ce retard pour toi. Seuls les directs sont pilotés ; les VOD, les clips et les coupures publicitaires ne sont pas touchés.
+
 ■ Aucune communication réseau pendant le fonctionnement
 
-Pendant que tu regardes, l'extension ne se connecte jamais à un serveur externe, pas une seule fois. Pas d'analytique, pas de télémétrie, pas d'identifiants, pas de publicité. Elle ne nécessite que trois permissions : « storage », pour conserver tes réglages sur ton appareil, « activeTab », pour savoir si l'onglet ouvert est un site pris en charge quand tu ouvres la fenêtre des réglages, et « scripting », pour se mettre en route sur DAZN une fois que tu l'as autorisé. L'accès aux sites reste limité aux quatre plateformes prises en charge (YouTube, Twitch, TwitCasting, TikTok) et, seulement si tu l'autorises, à DAZN, et les réglages ne sont pas synchronisés : ils restent stockés uniquement sur ton appareil. Seule exception, la désinstallation : le navigateur ouvre alors un questionnaire facultatif. L'extension se contente d'enregistrer à l'avance une URL fixe, sans identifiant, sans tes réglages et sans rien sur ce que tu regardais.
+Pendant que tu regardes, l'extension ne se connecte jamais à un serveur externe, pas une seule fois. Pas d'analytique, pas de télémétrie, pas d'identifiants, pas de publicité. Elle ne nécessite que trois permissions : « storage », pour conserver tes réglages sur ton appareil, « activeTab », pour savoir si l'onglet ouvert est un site pris en charge quand tu ouvres la fenêtre des réglages, et « scripting », pour se mettre en route sur DAZN ou Kick une fois que tu l'as autorisé. L'accès aux sites reste limité aux quatre plateformes prises en charge (YouTube, Twitch, TwitCasting, TikTok) et, seulement si tu les autorises, à DAZN et à Kick, et les réglages ne sont pas synchronisés : ils restent stockés uniquement sur ton appareil. Seule exception, la désinstallation : le navigateur ouvre alors un questionnaire facultatif. L'extension se contente d'enregistrer à l'avance une URL fixe, sans identifiant, sans tes réglages et sans rien sur ce que tu regardais.
 
 Elle inclut aussi un badge d'affichage optionnel (désactivé par défaut) indiquant la vitesse de lecture, le retard en secondes et le niveau du buffer, une interface de réglages disponible en 19 langues, ainsi qu'une aide « ? » sur chaque option et un bouton de réinitialisation par section.
 

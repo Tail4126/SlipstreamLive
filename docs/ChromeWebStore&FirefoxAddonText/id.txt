@@ -1,10 +1,10 @@
-Mendeteksi latensi di YouTube, Twitch, TwitCasting, TikTok, dan DAZN, lalu mengatur kecepatan video untuk mengejar siaran langsung.
+Mendeteksi latensi di YouTube, Twitch, TwitCasting, TikTok, DAZN, dan Kick, lalu mengatur kecepatan untuk mengejar siaran langsung.
 
 Antara saat streamer berbicara dan saat Anda melihatnya, selalu ada jeda beberapa detik. Jeda ini bertambah setiap kali koneksi tersendat, dan tidak akan menyusut dengan sendirinya.
 
 Anda bisa mengejarnya dengan mengubah kecepatan ke 1,25x secara manual, tetapi Anda jadi harus terus memantau sisa buffer dan menurunkan kecepatan lagi sebelum buffer habis. Kalau lupa, video akan membeku dengan ikon loading yang berputar-putar.
 
-Slipstream Live mengambil alih tugas memantau itu untuk Anda, sekitar 50 kali per detik. Mendukung YouTube Live, Twitch, TwitCasting, TikTok LIVE, dan DAZN. Cukup pasang, selebihnya Anda tidak perlu melakukan apa-apa.
+Slipstream Live mengambil alih tugas memantau itu untuk Anda, sekitar 50 kali per detik. Mendukung YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN, dan Kick. Cukup pasang, selebihnya Anda tidak perlu melakukan apa-apa.
 
 ■ Tidak membeku, tidak kebablasan. Fokus pada stabilitas
 
@@ -40,9 +40,11 @@ Di Chrome pada komputer dengan 6 inti CPU atau lebih, TikTok LIVE diputar lewat 
 
 Di DAZN, ekstensi ini hanya berjalan dengan izin Anda. Buka popup saat berada di DAZN, tekan “Aktifkan di situs ini” di tab DAZN, lalu izinkan akses saat browser memintanya. Sebelum itu, ekstensi ini sama sekali tidak memiliki akses ke DAZN, dan Anda bisa mencabut izin tersebut kapan saja dari halaman pengelolaan ekstensi di browser. Yang dikendalikan hanya siaran langsung; tayangan ulang dan cuplikan tidak disentuh.
 
+Kick juga bekerja dengan cara yang sama: sebelum Anda mengizinkannya, ekstensi ini sama sekali tidak memiliki akses ke Kick. Buka popup saat berada di Kick, tekan “Aktifkan di situs ini” di tab Kick, lalu izinkan akses saat browser memintanya — ke kick.com dan ke player.kick.com, pemutar Kick yang disematkan di situs lain. Di Kick, video kadang berhenti datang selama sekitar 10 detik, lalu pemutaran berlanjut dengan tertinggal sejauh itu karena pemutar Kick tidak mengejar dengan sendirinya; Slipstream Live mengejar ketertinggalan itu untuk Anda. Yang dikendalikan hanya siaran langsung; video rekaman (VOD), klip, dan jeda iklan tidak disentuh.
+
 ■ Tanpa komunikasi jaringan saat berjalan
 
-Selama Anda menonton, ekstensi ini tidak pernah terhubung ke server eksternal, sekali pun. Tanpa analitik, tanpa telemetri, tanpa pengenal, tanpa iklan. Izin yang diperlukan hanya tiga: “storage” untuk menyimpan setelan di perangkat Anda, “activeTab” untuk mengetahui apakah tab yang sedang terbuka adalah situs yang didukung saat Anda membuka popup, dan “scripting” untuk mulai bekerja di DAZN setelah Anda mengizinkannya. Akses situs juga terbatas pada empat platform yang didukung (YouTube, Twitch, TwitCasting, TikTok), ditambah DAZN hanya jika Anda mengizinkannya, dan setelan tidak disinkronkan ke mana pun; semuanya hanya disimpan secara lokal di perangkat Anda. Satu-satunya pengecualian adalah saat pencopotan, ketika browser membuka formulir masukan yang bersifat opsional. Ekstensi ini hanya mendaftarkan URL tetap sejak awal — tanpa pengenal, tanpa setelan, dan tanpa informasi apa pun tentang apa yang Anda tonton.
+Selama Anda menonton, ekstensi ini tidak pernah terhubung ke server eksternal, sekali pun. Tanpa analitik, tanpa telemetri, tanpa pengenal, tanpa iklan. Izin yang diperlukan hanya tiga: “storage” untuk menyimpan setelan di perangkat Anda, “activeTab” untuk mengetahui apakah tab yang sedang terbuka adalah situs yang didukung saat Anda membuka popup, dan “scripting” untuk mulai bekerja di DAZN atau Kick setelah Anda mengizinkannya. Akses situs juga terbatas pada empat platform yang didukung (YouTube, Twitch, TwitCasting, TikTok), ditambah DAZN dan Kick hanya jika Anda mengizinkannya, dan setelan tidak disinkronkan ke mana pun; semuanya hanya disimpan secara lokal di perangkat Anda. Satu-satunya pengecualian adalah saat pencopotan, ketika browser membuka formulir masukan yang bersifat opsional. Ekstensi ini hanya mendaftarkan URL tetap sejak awal — tanpa pengenal, tanpa setelan, dan tanpa informasi apa pun tentang apa yang Anda tonton.
 
 Selain itu tersedia lencana tampilan opsional (nonaktif secara bawaan) yang menunjukkan kecepatan pemutaran, keterlambatan dalam detik, dan sisa buffer, layar setelan dalam 19 bahasa, bantuan “?” di setiap opsi, serta tombol setel ulang untuk setiap bagian.
 

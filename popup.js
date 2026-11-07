@@ -50,7 +50,7 @@
     /** ツールチップをマウス位置から下へずらす量（ピクセル）。 */
     const TIP_DY    = 18;
 
-    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn']）。 */
+    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn', 'kick']）。 */
     const sites  = Object.keys(SITES);
 
     /** 設定 1 行ぶんの要素（有効/無効の切り替えに使う）。 */
@@ -66,7 +66,7 @@
     const resetSite = document.getElementById('reset-site');
 
     /**
-     * 許可を得てから動かすサイト（DAZN）の案内と、その中の文言・ボタン。
+     * 許可を得てから動かすサイト（DAZN・Kick）の案内と、その中の文言・ボタン。
      * 表示するかどうかと文言は renderGrant() が決めます。
      */
     const grant       = document.getElementById('grant');
@@ -260,7 +260,7 @@
 
     /**
      * そのサイトを動かすのに許可が必要なら、許可を求めるアドレスの一覧を返す。
-     * shared/schema.js の SITES で origins を持つサイト（DAZN）だけが該当します。
+     * shared/schema.js の SITES で origins を持つサイト（DAZN・Kick）だけが該当します。
      * @param {string} site サイト ID
      * @returns {string[]|null} 許可を求めるアドレス（マッチパターン）。許可の要らないサイトなら null
      */
