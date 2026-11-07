@@ -1,10 +1,10 @@
-Erkennt die Latenz auf YouTube, Twitch, TwitCasting, TikTok und DAZN und passt die Wiedergabegeschwindigkeit an, um live aufzuholen.
+Erkennt die Latenz auf YouTube, Twitch, TwitCasting, TikTok, DAZN und Kick und passt das Wiedergabetempo an, um live aufzuholen.
 
 Zwischen dem Moment, in dem der Streamer spricht, und dem Moment, in dem du es siehst, liegen immer ein paar Sekunden Verzögerung. Diese Verzögerung wächst bei jeder Verbindungsstörung – und schrumpft von allein nicht wieder zurück.
 
 Manuell auf 1,25-fache Geschwindigkeit zu stellen, hilft dir aufzuholen, aber dann musst du selbst den Füllstand deines Puffers im Auge behalten und rechtzeitig zurückschalten, bevor er leer ist. Vergisst du das, bleibt das Bild mit dem Lade-Kreisel hängen.
 
-Slipstream Live übernimmt genau diese Wache für dich – rund 50 Mal pro Sekunde. Kompatibel mit YouTube Live, Twitch, TwitCasting, TikTok LIVE und DAZN. Einmal installiert, musst du dich um nichts mehr kümmern.
+Slipstream Live übernimmt genau diese Wache für dich – rund 50 Mal pro Sekunde. Kompatibel mit YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN und Kick. Einmal installiert, musst du dich um nichts mehr kümmern.
 
 ■ Nie hängen, nie ausrasten. Unsere Obsession für Stabilität
 
@@ -40,9 +40,11 @@ In Chrome auf Rechnern mit 6 oder mehr CPU-Kernen spielt TikTok LIVE über eine 
 
 Auf DAZN arbeitet die Erweiterung nur mit deiner Erlaubnis. Öffne das Popup, während du auf DAZN bist, klicke im Tab „DAZN" auf „Auf dieser Website aktivieren" und erlaube den Zugriff, wenn der Browser nachfragt. Bis dahin hat die Erweiterung keinerlei Zugriff auf DAZN, und du kannst die Erlaubnis jederzeit in der Erweiterungsverwaltung deines Browsers wieder entziehen. Gesteuert werden nur Livestreams; Wiederholungen und Highlights bleiben unberührt.
 
+Kick funktioniert genauso: Bis du es erlaubst, hat die Erweiterung keinerlei Zugriff auf Kick. Öffne das Popup, während du auf Kick bist, klicke im Tab „Kick" auf „Auf dieser Website aktivieren" und erlaube den Zugriff, wenn der Browser nachfragt – auf kick.com und auf player.kick.com, den Kick-Player, den andere Websites einbetten. Bei Kick kommt das Video manchmal rund 10 Sekunden lang nicht an, und die Wiedergabe läuft danach entsprechend verzögert weiter, weil der Kick-Player nicht von selbst aufholt; Slipstream Live holt diesen Rückstand für dich auf. Gesteuert werden nur Livestreams; VODs, Clips und Werbepausen bleiben unberührt.
+
 ■ Im Betrieb keinerlei Netzwerkverbindung
 
-Während du zuschaust, wird kein einziges Mal eine Verbindung zu einem externen Server aufgebaut. Keine Analytics, keine Telemetrie, keine Kennungen, keine Werbung. Benötigt werden nur drei Berechtigungen: „storage", um deine Einstellungen auf dem Gerät zu speichern, „activeTab", um beim Öffnen des Popups zu erkennen, ob der aktuelle Tab eine unterstützte Seite ist, und „scripting", um auf DAZN loszulegen, sobald du es erlaubst. Der Website-Zugriff bleibt auf die vier unterstützten Plattformen (YouTube, Twitch, TwitCasting, TikTok) und – nur wenn du es erlaubst – DAZN beschränkt, und Einstellungen werden nicht synchronisiert, sondern ausschließlich lokal auf deinem Gerät gespeichert. Die einzige Ausnahme ist die Deinstallation: Dann öffnet der Browser eine freiwillige Feedback-Seite. Die Erweiterung hinterlegt dafür lediglich eine feste URL – ohne Kennung, ohne Einstellungen, ohne irgendetwas darüber, was du gesehen hast.
+Während du zuschaust, wird kein einziges Mal eine Verbindung zu einem externen Server aufgebaut. Keine Analytics, keine Telemetrie, keine Kennungen, keine Werbung. Benötigt werden nur drei Berechtigungen: „storage", um deine Einstellungen auf dem Gerät zu speichern, „activeTab", um beim Öffnen des Popups zu erkennen, ob der aktuelle Tab eine unterstützte Seite ist, und „scripting", um auf DAZN oder Kick loszulegen, sobald du es erlaubst. Der Website-Zugriff bleibt auf die vier unterstützten Plattformen (YouTube, Twitch, TwitCasting, TikTok) und – nur wenn du es erlaubst – DAZN und Kick beschränkt, und Einstellungen werden nicht synchronisiert, sondern ausschließlich lokal auf deinem Gerät gespeichert. Die einzige Ausnahme ist die Deinstallation: Dann öffnet der Browser eine freiwillige Feedback-Seite. Die Erweiterung hinterlegt dafür lediglich eine feste URL – ohne Kennung, ohne Einstellungen, ohne irgendetwas darüber, was du gesehen hast.
 
 Dazu gibt es ein optionales Anzeige-Badge (standardmäßig aus) für Wiedergabegeschwindigkeit, Verzögerung in Sekunden und Pufferfüllstand, eine Einstellungsoberfläche in 19 Sprachen, „?"-Hilfen zu jeder Option sowie einen Reset-Button pro Abschnitt.
 

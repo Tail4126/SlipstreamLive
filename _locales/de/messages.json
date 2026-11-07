@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Latenz von Live-Streams automatisch erkennen und anpassen" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Erkennt die Latenz auf YouTube, Twitch, TwitCasting, TikTok und DAZN und passt die Wiedergabegeschwindigkeit an, um live aufzuholen." },
+    "appDesc": { "message": "Erkennt die Latenz auf YouTube, Twitch, TwitCasting, TikTok, DAZN und Kick und passt das Wiedergabetempo an, um live aufzuholen." },
     "enabled": { "message": "Wiedergabegeschwindigkeit ändern" },
     "speedup": { "message": "Bei Verzögerung beschleunigen" },
     "speedupDesc": { "message": "Beschleunigt automatisch, wenn genügend Puffer vorhanden ist, um zum Live-Signal aufzuholen. Kehrt zur normalen Geschwindigkeit zurück, sobald der Live-Punkt erreicht ist oder der Puffer sinkt." },

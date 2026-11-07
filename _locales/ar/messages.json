@@ -2,7 +2,7 @@
     "dir": { "message": "rtl" },
     "appName": { "message": "Slipstream Live — اكتشاف تأخير البث المباشر وضبطه تلقائيًا" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "يكتشف تأخير البث على YouTube وTwitch وTwitCasting وTikTok وDAZN، ويضبط سرعة التشغيل للّحاق بالبث المباشر في الوقت الفعلي." },
+    "appDesc": { "message": "يكتشف تأخير البث على YouTube وTwitch وTwitCasting وTikTok وDAZN وKick، ويضبط سرعة التشغيل للّحاق بالبث المباشر في الوقت الفعلي." },
     "enabled": { "message": "تغيير سرعة التشغيل" },
     "speedup": { "message": "التسريع عند التأخر" },
     "speedupDesc": { "message": "يسرّع التشغيل تلقائيًا عندما يكون في المخزن المؤقت ما يكفي للّحاق بالبث المباشر، ويعود إلى السرعة العادية بعد اللحاق به أو عند تناقص المخزن المؤقت." },

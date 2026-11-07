@@ -33,8 +33,8 @@
     ■ 画面の構造
         ヘッダー（ロゴ＋全体の ON/OFF）
         └ #scopes
-            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok / DAZN のタブで切り替え）
-            │           DAZN のタブでは、まだ許可していなければ先頭に「このサイトで有効にする」の案内（#grant）が出る
+            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok / DAZN / Kick のタブで切り替え）
+            │           DAZN と Kick のタブでは、まだ許可していなければ先頭に「このサイトで有効にする」の案内（#grant）が出る
             └ #common … 全サイト共通設定（画面上のバッジ表示）
         フッター（取扱説明書へのリンク）
 -->
@@ -128,7 +128,7 @@
             <div class="groups">
 
                 <!--
-                    許可を得てから動かすサイト（DAZN）の案内。
+                    許可を得てから動かすサイト（DAZN・Kick）の案内。
                     そのサイトのタブを選んでいて、まだサイトへのアクセスを許可していないときだけ
                     popup.js の render() が表示します（許可した直後は「有効にしました」に変わります）。
 
@@ -171,6 +171,21 @@
                     </label>
 
                     <!--
+                        自動調整の積極度を選ぶスライダー（0〜3 の 4 段階）。
+                        data-labels には目盛りの数だけラベルのキーを並べます。
+                        左から順に 0, 1, 2, 3 に対応し、つまみを動かすと
+                        popup.js の Tip がその位置のラベルを吹き出しで表示します。
+                        すぐ下の 2 本の手動しきい値は、このスライダーが「オフ」のときだけ使われるため、
+                        先にこちらを置き、上から読んだ順に「自動か手動か → 手動の値」と決められるようにしています。
+                    -->
+                    <label class="row" data-needs="enabled speedup">
+                        <span data-msg="speedupAuto"></span>
+                        <button class="help-icon" type="button" data-help="speedupAutoDesc">?</button>
+                        <input class="slider" type="range" data-key="speedupAuto"
+                            data-labels="speedupAutoOff speedupAutoStable speedupAutoStandard speedupAutoAggressive" />
+                    </label>
+
+                    <!--
                         手動しきい値（加速を開始する残量・加速を終了する残量の 2 本）。
                         data-not="speedupAuto" … 自動調整が ON（0 以外）のときは、この値が
                         使われないため、行ごとグレーアウトさせます。
@@ -187,19 +202,6 @@
                         <span data-msg="speedupStopThreshold"></span>
                         <button class="help-icon" type="button" data-help="speedupStopThresholdDesc">?</button>
                         <input class="number" type="number" data-key="speedupStopThreshold" />
-                    </label>
-
-                    <!--
-                        自動調整の積極度を選ぶスライダー（0〜3 の 4 段階）。
-                        data-labels には目盛りの数だけラベルのキーを並べます。
-                        左から順に 0, 1, 2, 3 に対応し、つまみを動かすと
-                        popup.js の Tip がその位置のラベルを吹き出しで表示します。
-                    -->
-                    <label class="row" data-needs="enabled speedup">
-                        <span data-msg="speedupAuto"></span>
-                        <button class="help-icon" type="button" data-help="speedupAutoDesc">?</button>
-                        <input class="slider" type="range" data-key="speedupAuto"
-                            data-labels="speedupAutoOff speedupAutoStable speedupAutoStandard speedupAutoAggressive" />
                     </label>
                 </div>
 

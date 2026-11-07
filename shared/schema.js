@@ -21,7 +21,7 @@
  * ■ 読み込まれる場所
  *   manifest.json の content_scripts で、common.js より先に読み込まれます。
  *   また popup.html からも同じ順番で読み込まれます。
- *   DAZN のように許可を得てから動かすサイトでは、background.js が登録するスクリプトの先頭に
+ *   DAZN・Kick のように許可を得てから動かすサイトでは、background.js が登録するスクリプトの先頭に
  *   入ります。background.js 自身も、対応サイトの一覧（SITES）を知るためにこのファイルを読み込みます
  *   （Chrome は importScripts()、Firefox は manifest の background.scripts で読み込みます）。
  *
@@ -70,7 +70,7 @@
      *   `$`          … ここで文字列が終わる
      *   → "twitch.tv" と "player.twitch.tv" は一致し、"nottwitch.tv" は一致しません。
      *
-     * ■ origins を持つサイト（DAZN）の動かし方
+     * ■ origins を持つサイト（DAZN・Kick）の動かし方
      *   1.6.0 までの 4 サイトは、manifest の content_scripts にスクリプトを静的に書いています。
      *   ここへホストを足すと、Chrome は更新時に新しい権限の承認を求め、承認されるまで
      *   すべての利用者の拡張機能を無効にしてしまいます。Firefox（Manifest V3）は、更新で
@@ -81,6 +81,10 @@
      *        スクリプトを登録する（manifest に書いたのと同じ 2 組。MAIN world・全フレーム・document_start）
      *   という手順で動かします。読み込むファイルは background.js の scriptsOf() が
      *   サイト ID から組み立てます（アダプターは adapters/<サイト ID>.js）。
+     *
+     *   origins に複数のアドレスを並べたサイト（Kick は本体の kick.com と、他のサイトに埋め込まれる
+     *   player.kick.com）は、1 回の許可ですべてを求め、すべてが揃っているときだけ動かします
+     *   （background.js の reconcileSite() は permissions.contains() で全部を確かめます）。
      * @type {Record<string, { label: string, host: RegExp, origins?: string[] }>}
      */
     const SITES = {
@@ -89,14 +93,19 @@
         twitcasting: { label: 'TwitCasting', host: /(^|\.)twitcasting\.tv$/ },
         tiktok:      { label: 'TikTok',      host: /(^|\.)tiktok\.com$/ },
         dazn:        { label: 'DAZN',        host: /(^|\.)dazn\.com$/, origins: ['https://www.dazn.com/*'] },
+        kick:        {
+            label: 'Kick',
+            host: /(^|\.)kick\.com$/,
+            origins: ['https://kick.com/*', 'https://player.kick.com/*'],
+        },
     };
 
-    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn']）。何度も使うので 1 度だけ作ります。 */
+    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn', 'kick']）。何度も使うので 1 度だけ作ります。 */
     const SITE_IDS = Object.keys(SITES);
 
     /**
      * 「全サイトに同じ既定値を配る」ためのヘルパー。
-     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true, dazn: true }
+     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true, dazn: true, kick: true }
      *
      * Object.fromEntries は [キー, 値] の配列をオブジェクトに変換する関数です。
      * SITES から鍵を起こすので、対応サイトを増やしても書き足しが要りません。
@@ -164,9 +173,12 @@
         // さらに Firefox の Twitch はバッファの読み取り方が異なるので ff で上書きします。
         // TikTok は映像が HTTP-FLV で 0.05〜0.2 秒刻みに途切れなく届き、バッファがほとんど
         // 波打たないため、ツイキャス（0.3）と YouTube（0.8）の間の 0.5 にしています。
+        // Kick は Twitch と同じ系統のプレーヤー（Amazon IVS）ですが、低遅延の配信ではバッファが
+        // 1.3〜2.5 秒ほどで落ち着くため、Twitch の 2.0 では、ふだんの再生のまま最低速度に入ってしまいます。
+        // 揺れは 0.05〜0.4 秒刻みと小さいので、YouTube・DAZN と同じ 0.8 にしています。
         floorThreshold: {
             range: [0, 10, 0.1],
-            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8 },
+            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8, kick: 0.8 },
             ff:  { twitch: 0.5 },
         },
 
@@ -176,11 +188,15 @@
 
         // recover は Twitch のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // （heal() を持たないサイトでは、ON にしても何も起きません。）
-        recover:          { def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false } },
+        recover:          {
+            def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false, kick: false },
+        },
 
         // forceMse は TikTok のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // TikTok では既定 ON です。OFF のままだと、Chrome（6 コア以上）では速度をまったく変えられないためです。
-        forceMse:         { def: { youtube: false, twitch: false, twitcasting: false, tiktok: true, dazn: false } },
+        forceMse:         {
+            def: { youtube: false, twitch: false, twitcasting: false, tiktok: true, dazn: false, kick: false },
+        },
     };
 
     /** 設定キーの一覧。settingsOf() が呼ばれるたびに作り直さないよう、1 度だけ作ります。 */

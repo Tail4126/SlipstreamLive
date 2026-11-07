@@ -1,10 +1,10 @@
-Deteta o atraso no YouTube, Twitch, TwitCasting, TikTok e DAZN e ajusta a velocidade de reprodução para alcançar o direto.
+Deteta o atraso no YouTube, Twitch, TwitCasting, TikTok, DAZN e Kick e ajusta a velocidade de reprodução para alcançar o direto.
 
 Entre o momento em que o streamer fala e o momento em que o vês, há sempre um atraso de alguns segundos. Esse atraso aumenta sempre que a ligação falha e nunca volta a diminuir sozinho.
 
 Podes recuperar o atraso passando manualmente para a velocidade 1,25x, mas depois tens de ser tu a vigiar o nível do buffer e a abrandar antes que se esgote. Se te esqueceres, o vídeo fica parado naquela rodinha de carregamento.
 
-O Slipstream Live faz essa vigilância por ti, cerca de 50 vezes por segundo. Compatível com o YouTube Live, a Twitch, o TwitCasting, o TikTok LIVE e a DAZN. Depois de o instalares, não precisas de fazer mais nada.
+O Slipstream Live faz essa vigilância por ti, cerca de 50 vezes por segundo. Compatível com o YouTube Live, a Twitch, o TwitCasting, o TikTok LIVE, a DAZN e a Kick. Depois de o instalares, não precisas de fazer mais nada.
 
 ■ Não bloqueia, não se descontrola. Uma obsessão pela estabilidade
 
@@ -40,9 +40,11 @@ No Chrome, em computadores com 6 ou mais núcleos de CPU, o TikTok LIVE é repro
 
 Na DAZN, a extensão só funciona com a tua permissão. Abre o pop-up enquanto estás na DAZN, carrega em «Ativar neste site» no separador DAZN e permite o acesso quando o navegador pedir. Até lá, a extensão não tem qualquer acesso à DAZN, e podes retirar a permissão a qualquer momento na gestão de extensões do navegador. Só as emissões em direto são controladas; as repetições e os resumos ficam intocados.
 
+A Kick funciona da mesma forma: até o permitires, a extensão não tem qualquer acesso à Kick. Abre o pop-up enquanto estás na Kick, carrega em «Ativar neste site» no separador Kick e permite o acesso quando o navegador pedir — ao kick.com e ao player.kick.com, o leitor da Kick que outros sites incorporam. Na Kick, por vezes o vídeo deixa de chegar durante cerca de 10 segundos e a reprodução continua depois com esse atraso, porque o leitor da Kick não o recupera sozinho; o Slipstream Live recupera esse tempo por ti. Só as emissões em direto são controladas; os vídeos gravados (VOD), os clipes e os intervalos publicitários ficam intocados.
+
 ■ Zero comunicações de rede durante o funcionamento
 
-Enquanto vês a transmissão, nunca se liga a um servidor externo, nem uma única vez. Sem análises, sem telemetria, sem identificadores, sem anúncios. Só precisa de três permissões: «storage», para guardar as tuas definições no dispositivo, «activeTab», para saber se o separador aberto é um site suportado quando abres o pop-up, e «scripting», para começar a funcionar na DAZN depois de o permitires. O acesso a sites está limitado às quatro plataformas suportadas (YouTube, Twitch, TwitCasting, TikTok) e, só se o permitires, à DAZN e as definições não são sincronizadas: ficam guardadas apenas localmente no teu dispositivo. A única exceção é a desinstalação, quando o navegador abre um formulário de opinião opcional. A extensão limita-se a registar previamente um URL fixo, sem identificador, sem as tuas definições e sem nada sobre o que estavas a ver.
+Enquanto vês a transmissão, nunca se liga a um servidor externo, nem uma única vez. Sem análises, sem telemetria, sem identificadores, sem anúncios. Só precisa de três permissões: «storage», para guardar as tuas definições no dispositivo, «activeTab», para saber se o separador aberto é um site suportado quando abres o pop-up, e «scripting», para começar a funcionar na DAZN ou na Kick depois de o permitires. O acesso a sites está limitado às quatro plataformas suportadas (YouTube, Twitch, TwitCasting, TikTok) e, só se o permitires, à DAZN e à Kick, e as definições não são sincronizadas: ficam guardadas apenas localmente no teu dispositivo. A única exceção é a desinstalação, quando o navegador abre um formulário de opinião opcional. A extensão limita-se a registar previamente um URL fixo, sem identificador, sem as tuas definições e sem nada sobre o que estavas a ver.
 
 Inclui ainda um indicador opcional no ecrã (desativado por predefinição) que mostra a velocidade de reprodução, o atraso em segundos e o nível do buffer, um ecrã de definições em 19 idiomas, ajuda «?» em cada opção e um botão de reposição por secção.
 

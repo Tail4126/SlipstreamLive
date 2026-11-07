@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Deteta e ajusta automaticamente o atraso dos diretos" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Deteta o atraso no YouTube, Twitch, TwitCasting, TikTok e DAZN e ajusta a velocidade de reprodução para alcançar o direto." },
+    "appDesc": { "message": "Deteta o atraso no YouTube, Twitch, TwitCasting, TikTok, DAZN e Kick e ajusta a velocidade de reprodução para alcançar o direto." },
     "enabled": { "message": "Alterar a velocidade de reprodução" },
     "speedup": { "message": "Acelerar quando houver atraso" },
     "speedupDesc": { "message": "Acelera automaticamente quando há buffer suficiente para alcançar o direto. Volta à velocidade normal assim que o atraso é recuperado ou se o buffer diminuir." },

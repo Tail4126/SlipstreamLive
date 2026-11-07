@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — लाइव स्ट्रीम की देरी को अपने-आप पहचानें और ठीक करें" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "YouTube, Twitch, TwitCasting, TikTok और DAZN पर स्ट्रीम की देरी पहचानकर प्लेबैक स्पीड अपने-आप बदलता है, ताकि लाइव से पीछे न रहें।" },
+    "appDesc": { "message": "YouTube, Twitch, TwitCasting, TikTok, DAZN और Kick पर देरी पहचानकर प्लेबैक स्पीड अपने-आप बदलता है, ताकि लाइव से पीछे न रहें।" },
     "enabled": { "message": "प्लेबैक स्पीड बदलें" },
     "speedup": { "message": "देरी होने पर स्पीड बढ़ाएं" },
     "speedupDesc": { "message": "बफ़र में काफ़ी गुंजाइश होने पर, लाइव तक पहुंचने के लिए अपने-आप स्पीड बढ़ाता है। लाइव तक पहुंचते ही या बफ़र घटने पर सामान्य स्पीड पर लौट आता है।" },

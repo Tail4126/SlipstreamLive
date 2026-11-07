@@ -1,10 +1,10 @@
-Detects latency on YouTube, Twitch, TwitCasting, TikTok, and DAZN, and adjusts playback speed to catch up to the live edge.
+Detects latency on YouTube, Twitch, TwitCasting, TikTok, DAZN, and Kick, and adjusts playback speed to catch up to the live edge.
 
 There's always a delay of a few seconds between the moment a streamer speaks and the moment you see it. That delay grows every time the connection hiccups, and it never shrinks back on its own.
 
 You can catch up by manually switching to 1.25x speed, but then you're stuck watching your own buffer level and have to slow back down before it runs dry. Forget, and the video freezes on that spinning buffering icon.
 
-Slipstream Live takes over that watch duty for you, checking about 50 times a second. Works with YouTube Live, Twitch, TwitCasting, TikTok LIVE, and DAZN. Install it, and you're done — nothing else to do.
+Slipstream Live takes over that watch duty for you, checking about 50 times a second. Works with YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN, and Kick. Install it, and you're done — nothing else to do.
 
 ■ Never freezes, never overreacts. Built for stability
 
@@ -40,9 +40,11 @@ In Chrome on computers with 6 or more CPU cores, TikTok LIVE plays through TikTo
 
 DAZN works only with your permission. Open the popup while you're on DAZN, press "Enable on this site" on the DAZN tab, and allow access when your browser asks. Until you do, the extension has no access to DAZN at all, and you can take that permission back at any time from your browser's extension settings. Only live streams are controlled; replays and highlights are left alone.
 
+Kick works the same way: until you allow it, the extension has no access to Kick at all. Open the popup while you're on Kick, press "Enable on this site" on the Kick tab, and allow access when your browser asks — to kick.com and to player.kick.com, the Kick player that other websites embed. Kick's video sometimes stops arriving for about 10 seconds, and playback then carries on that far behind, since Kick's player doesn't catch up on its own; Slipstream Live catches you back up. Only live streams are controlled; VODs, clips, and ad breaks are left alone.
+
 ■ Zero network activity while it runs
 
-While you're watching, it never connects to an external server — not once. No analytics, no telemetry, no identifiers, no ads. It needs just three permissions: "storage," to keep your settings on your device, "activeTab," to tell whether the tab you're on is a supported site when you open the popup, and "scripting," to start working on DAZN once you allow it. Site access stays limited to the four platforms it supports (YouTube, Twitch, TwitCasting, TikTok), plus DAZN only if you allow it, and settings aren't synced anywhere; they're stored locally on your device only. The one exception is uninstalling, when your browser opens an optional feedback form. All the extension does is register a fixed URL in advance — no identifier, no settings, nothing about what you were watching is ever attached.
+While you're watching, it never connects to an external server — not once. No analytics, no telemetry, no identifiers, no ads. It needs just three permissions: "storage," to keep your settings on your device, "activeTab," to tell whether the tab you're on is a supported site when you open the popup, and "scripting," to start working on DAZN or Kick once you allow it. Site access stays limited to the four platforms it supports (YouTube, Twitch, TwitCasting, TikTok), plus DAZN and Kick only if you allow them, and settings aren't synced anywhere; they're stored locally on your device only. The one exception is uninstalling, when your browser opens an optional feedback form. All the extension does is register a fixed URL in advance — no identifier, no settings, nothing about what you were watching is ever attached.
 
 It also comes with an optional on-screen badge (off by default) showing playback speed, delay in seconds, and buffer level, a settings UI available in 19 languages, a "?" help tooltip on every setting, and a reset button for each section.
 

@@ -55,7 +55,7 @@ To preview a UI language without touching your browser settings, open the settin
 
 ## Adding a site
 
-Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()`, plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`. Then make the site opt-in, the way DAZN works: add its hosts to `optional_host_permissions` in all three manifests (`manifest.json`, `manifest-chrome.json`, `manifest-firefox.json`), add an entry to `SITES` in `shared/schema.js` whose `origins` holds the same match patterns, and save the adapter as `adapters/<site id>.js`. `background.js` and the popup need no changes: the popup shows **Enable on this site** for the new tab, and once the user allows it, `scriptsOf()` in `background.js` registers the same ISOLATED/MAIN pair the manifests use for the original four sites (`shared/schema.js`, `common.js`, `content.js` / `shared/util.js`, your adapter, `inject.js`). **Don't add new hosts to the manifests' `content_scripts`** — Chrome would disable the extension for every user until they approve the new permission, and Firefox (MV3) never grants host permissions that an update adds. `media()` and `status()` run up to ten times a second, so returning the same result object each time is fine (and preferred). `inject.js` shouldn't need any changes, and neither should most of `KEYS` — defaults written with `all()` pick the new site up on their own, leaving `floorThreshold` as the only one to fill in.
+Write one adapter exposing `video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()`, plus `respectUserRate` / `gap` / `badgeClass` / `badgeStyle`. Then make the site opt-in, the way DAZN and Kick work: add its hosts to `optional_host_permissions` in all three manifests (`manifest.json`, `manifest-chrome.json`, `manifest-firefox.json`), add an entry to `SITES` in `shared/schema.js` whose `origins` holds the same match patterns, and save the adapter as `adapters/<site id>.js`. A site can list more than one pattern in `origins` (Kick lists `kick.com` and its embeddable player `player.kick.com`); the popup asks for all of them in one prompt, and the scripts are registered only while every one of them is granted. `background.js` and the popup need no changes: the popup shows **Enable on this site** for the new tab, and once the user allows it, `scriptsOf()` in `background.js` registers the same ISOLATED/MAIN pair the manifests use for the original four sites (`shared/schema.js`, `common.js`, `content.js` / `shared/util.js`, your adapter, `inject.js`). **Don't add new hosts to the manifests' `content_scripts`** — Chrome would disable the extension for every user until they approve the new permission, and Firefox (MV3) never grants host permissions that an update adds. `media()` and `status()` run up to ten times a second, so returning the same result object each time is fine (and preferred). `inject.js` shouldn't need any changes, and neither should most of `KEYS` — defaults written with `all()` pick the new site up on their own, leaving `floorThreshold` as the only one to fill in.
 
 Include the reasoning behind any site-specific defaults you pick, especially thresholds — those numbers end up in the README tables.
 
@@ -96,7 +96,7 @@ Some facts live in more than one file. Change only one and the project starts co
 
 * One logical change per PR.
 * Add an entry under `## [未リリース]` in `CHANGELOG.md`, using the existing headings (`追加` / `変更` / `非推奨` / `削除` / `修正` / `セキュリティ`). English is fine for the entries.
-* Say which browsers and which of the five sites you actually tested on. "Chrome only" is a fine answer — just say so.
+* Say which browsers and which of the six sites you actually tested on. "Chrome only" is a fine answer — just say so.
 * Match the surrounding style: plain modern JavaScript, no framework, no clever abstractions for their own sake.
 
 ## Security
@@ -162,7 +162,7 @@ window.__slipstreamliveDebug = true;
 
 ## サイトを追加する
 
-`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle` を公開するアダプタを1つ書いてください。そのうえで、DAZN と同じ「許可制」のサイトにします。3 つのマニフェスト（`manifest.json`・`manifest-chrome.json`・`manifest-firefox.json`）の `optional_host_permissions` にホストを足し、`shared/schema.js` の `SITES` に同じマッチパターンを `origins` として持つ項目を足し、アダプタを `adapters/<サイト ID>.js` に置いてください。`background.js` と設定画面には手を入れずに済みます。設定画面の新しいタブに「このサイトで有効にする」が出て、利用者が許可すると、`background.js` の `scriptsOf()` が、もとの 4 サイトでマニフェストが使っているのと同じ ISOLATED / MAIN の 2 組（`shared/schema.js`・`common.js`・`content.js` と、`shared/util.js`・作ったアダプタ・`inject.js`）を登録します。**マニフェストの `content_scripts` には新しいホストを足さないでください。** Chrome は新しい権限が承認されるまで全利用者の拡張機能を無効にし、Firefox（MV3）は更新で増えたホストの権限を付与しないためです。`media()` と `status()` は 1 秒に最大 10 回ほど呼ばれるので、毎回同じ結果オブジェクトを書き換えて返す形で構いません（そのほうが望ましいです）。`inject.js` は触らずに済むはずですし、`KEYS` もほとんど触らずに済みます。`all()` で書かれた既定値は新しいサイトを自動で拾うので、埋める必要があるのは `floorThreshold` だけです。
+`video()` / `media()` / `status()` / `needs()` / `root()` / `host()` / `reset()` と、`respectUserRate` / `gap` / `badgeClass` / `badgeStyle` を公開するアダプタを1つ書いてください。そのうえで、DAZN・Kick と同じ「許可制」のサイトにします。3 つのマニフェスト（`manifest.json`・`manifest-chrome.json`・`manifest-firefox.json`）の `optional_host_permissions` にホストを足し、`shared/schema.js` の `SITES` に同じマッチパターンを `origins` として持つ項目を足し、アダプタを `adapters/<サイト ID>.js` に置いてください。`origins` には複数のマッチパターンを並べられます（Kick は `kick.com` と、埋め込み用のプレーヤー `player.kick.com` の 2 つ）。設定画面は 1 回の確認ですべてを求め、すべて許可されているあいだだけスクリプトが登録されます。`background.js` と設定画面には手を入れずに済みます。設定画面の新しいタブに「このサイトで有効にする」が出て、利用者が許可すると、`background.js` の `scriptsOf()` が、もとの 4 サイトでマニフェストが使っているのと同じ ISOLATED / MAIN の 2 組（`shared/schema.js`・`common.js`・`content.js` と、`shared/util.js`・作ったアダプタ・`inject.js`）を登録します。**マニフェストの `content_scripts` には新しいホストを足さないでください。** Chrome は新しい権限が承認されるまで全利用者の拡張機能を無効にし、Firefox（MV3）は更新で増えたホストの権限を付与しないためです。`media()` と `status()` は 1 秒に最大 10 回ほど呼ばれるので、毎回同じ結果オブジェクトを書き換えて返す形で構いません（そのほうが望ましいです）。`inject.js` は触らずに済むはずですし、`KEYS` もほとんど触らずに済みます。`all()` で書かれた既定値は新しいサイトを自動で拾うので、埋める必要があるのは `floorThreshold` だけです。
 
 サイトごとの既定値、特にしきい値を決めたときは、その根拠も書いてください。README の表に載る数字になるので。
 
@@ -203,7 +203,7 @@ GitHub Pages のサイトは `docs/` にあり、このフォルダを含む変�
 
 * 1つのプルリクエストにつき、意味のある変更は1つに。
 * `CHANGELOG.md` の `## [未リリース]` 配下に、既存の見出し（`追加` / `変更` / `非推奨` / `削除` / `修正` / `セキュリティ`）を使って追記してください。本文は英語でも構いません。
-* どのブラウザと、5サイトのうちどれで実際に動かして確認したかを書いてください。「Chrome だけ」でも問題ありません、そう書いてあれば十分です。
+* どのブラウザと、6サイトのうちどれで実際に動かして確認したかを書いてください。「Chrome だけ」でも問題ありません、そう書いてあれば十分です。
 * 周りのコードのスタイルに合わせてください。素の現代的な JavaScript、フレームワークなし、抽象化のための抽象化もなしで。
 
 ## セキュリティ

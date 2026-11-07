@@ -1,10 +1,10 @@
-Detecta a latência no YouTube, Twitch, TwitCasting, TikTok e DAZN e ajusta a velocidade do vídeo para alcançar o ponto ao vivo.
+Detecta a latência no YouTube, Twitch, TwitCasting, TikTok, DAZN e Kick e ajusta a velocidade para alcançar o ponto ao vivo.
 
 Entre o momento em que o streamer fala e o momento em que você vê, sempre existe um atraso de alguns segundos. Esse atraso cresce cada vez que a conexão engasga, e não diminui sozinho.
 
 Você consegue se atualizar mudando manualmente para 1,25x, mas aí precisa ficar de olho no nível do seu buffer e voltar a velocidade antes que ele acabe. Se esquecer, o vídeo trava naquela rodinha de carregamento.
 
-O Slipstream Live faz essa vigilância por você, cerca de 50 vezes por segundo. Compatível com YouTube Live, Twitch, TwitCasting, TikTok LIVE e DAZN. Depois de instalar, você não precisa fazer mais nada.
+O Slipstream Live faz essa vigilância por você, cerca de 50 vezes por segundo. Compatível com YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN e Kick. Depois de instalar, você não precisa fazer mais nada.
 
 ■ Não trava, não surta. Uma obsessão por estabilidade
 
@@ -40,9 +40,11 @@ No Chrome, em computadores com 6 ou mais núcleos de CPU, o TikTok LIVE toca por
 
 No DAZN, a extensão só funciona com a sua permissão. Abra o popup enquanto estiver no DAZN, clique em "Ativar neste site" na aba DAZN e permita o acesso quando o navegador pedir. Até lá, a extensão não tem nenhum acesso ao DAZN, e você pode revogar a permissão a qualquer momento no gerenciamento de extensões do navegador. Só as transmissões ao vivo são controladas; reprises e melhores momentos ficam intocados.
 
+A Kick funciona do mesmo jeito: até você permitir, a extensão não tem nenhum acesso à Kick. Abra o popup enquanto estiver na Kick, clique em "Ativar neste site" na aba Kick e permita o acesso quando o navegador pedir — ao kick.com e ao player.kick.com, o player da Kick que outros sites incorporam. Na Kick, às vezes o vídeo para de chegar por uns 10 segundos e a reprodução continua depois com esse atraso, porque o player da Kick não o recupera sozinho; o Slipstream Live recupera esse tempo para você. Só as transmissões ao vivo são controladas; vídeos gravados (VODs), clipes e intervalos comerciais ficam intocados.
+
 ■ Zero comunicação de rede durante o uso
 
-Enquanto você assiste, ele nunca se conecta a um servidor externo, nem uma vez sequer. Sem analytics, sem telemetria, sem identificadores, sem anúncios. São necessárias apenas três permissões: "storage", para guardar suas configurações no aparelho, "activeTab", para saber se a aba aberta é um site compatível quando você abre o popup, e "scripting", para começar a funcionar no DAZN depois que você permitir. O acesso a sites fica limitado às quatro plataformas suportadas (YouTube, Twitch, TwitCasting, TikTok) e, só se você permitir, ao DAZN, e as configurações não são sincronizadas — ficam salvas só localmente, no seu dispositivo. A única exceção é na desinstalação, quando o navegador abre um formulário opcional de feedback. A extensão apenas deixa registrada uma URL fixa, sem identificador, sem suas configurações e sem nada sobre o que você estava assistindo.
+Enquanto você assiste, ele nunca se conecta a um servidor externo, nem uma vez sequer. Sem analytics, sem telemetria, sem identificadores, sem anúncios. São necessárias apenas três permissões: "storage", para guardar suas configurações no aparelho, "activeTab", para saber se a aba aberta é um site compatível quando você abre o popup, e "scripting", para começar a funcionar no DAZN ou na Kick depois que você permitir. O acesso a sites fica limitado às quatro plataformas suportadas (YouTube, Twitch, TwitCasting, TikTok) e, só se você permitir, ao DAZN e à Kick, e as configurações não são sincronizadas — ficam salvas só localmente, no seu dispositivo. A única exceção é na desinstalação, quando o navegador abre um formulário opcional de feedback. A extensão apenas deixa registrada uma URL fixa, sem identificador, sem suas configurações e sem nada sobre o que você estava assistindo.
 
 Também vem com um selo opcional na tela (desligado por padrão) mostrando velocidade de reprodução, atraso em segundos e nível de buffer, uma tela de configurações em 19 idiomas, ajuda com "?" em cada item e um botão de reset por seção.
 

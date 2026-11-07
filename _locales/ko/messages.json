@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — 라이브 스트리밍의 지연 시간을 자동으로 감지 및 조절" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "YouTube, Twitch, TwitCasting, TikTok, DAZN 라이브 스트리밍의 지연을 자동 감지하고 재생 속도를 스마트하게 조절하여 항상 최신 라이브 시점에 맞춥니다." },
+    "appDesc": { "message": "YouTube, Twitch, TwitCasting, TikTok, DAZN, Kick 라이브 스트리밍의 지연을 자동 감지하고 재생 속도를 스마트하게 조절하여 항상 최신 라이브 시점에 맞춥니다." },
     "enabled": { "message": "재생 속도 변경" },
     "speedup": { "message": "지연 시 가속" },
     "speedupDesc": { "message": "라이브 최신 시점에 추적하기 위해 버퍼 여유가 있을 때 자동으로 가속합니다. 최신 시점에 도달하거나 버퍼가 줄어들면 자동으로 일반 속도로 돌아옵니다." },

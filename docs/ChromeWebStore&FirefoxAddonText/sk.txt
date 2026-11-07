@@ -1,10 +1,10 @@
-Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu, TikToku a DAZN a úpravou rýchlosti prehrávania dobieha živé vysielanie.
+Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu, TikToku, DAZN a Kicku a úpravou rýchlosti dobieha živé vysielanie.
 
 Medzi okamihom, keď streamer prehovorí, a okamihom, keď to uvidíte, vždy uplynie niekoľko sekúnd. Toto oneskorenie rastie pri každom zakolísaní pripojenia a samo od seba sa už nezmenší.
 
 Dobehnúť ho môžete ručným prepnutím na rýchlosť 1,25x, lenže potom musíte sami strážiť, koľko zostáva v bufferi, a včas spomaliť, kým sa neminie. Keď zabudnete, obraz zamrzne na točiacom sa koliesku načítavania.
 
-Slipstream Live toto stráženie prevezme za vás a kontroluje stav približne 50-krát za sekundu. Funguje s YouTube Live, Twitchom, TwitCastingom, TikTok LIVE a DAZN. Stačí ho nainštalovať a viac nemusíte robiť nič.
+Slipstream Live toto stráženie prevezme za vás a kontroluje stav približne 50-krát za sekundu. Funguje s YouTube Live, Twitchom, TwitCastingom, TikTok LIVE, DAZN a Kickom. Stačí ho nainštalovať a viac nemusíte robiť nič.
 
 ■ Nezamŕza a nevystrája. Dôraz na stabilitu
 
@@ -40,9 +40,11 @@ V Chrome na počítačoch so 6 a viac jadrami procesora prehráva TikTok LIVE vl
 
 Na DAZN funguje rozšírenie iba s vaším povolením. Otvorte vyskakovacie okno, keď ste na DAZN, na karte DAZN kliknite na „Zapnúť na tomto webe“ a po otázke prehliadača prístup povoľte. Kým to neurobíte, rozšírenie nemá k DAZN vôbec prístup, a povolenie môžete kedykoľvek odobrať v správe rozšírení v prehliadači. Ovláda iba živé prenosy; záznamy a zostrihy nechá na pokoji.
 
+Na Kicku to funguje rovnako: kým to nepovolíte, rozšírenie nemá ku Kicku vôbec prístup. Otvorte vyskakovacie okno, keď ste na Kicku, na karte Kick kliknite na „Zapnúť na tomto webe“ a po otázke prehliadača povoľte prístup – ku kick.com a k player.kick.com, prehrávaču Kicku, ktorý vkladajú iné weby. Na Kicku sa občas asi na 10 sekúnd zastaví príjem videa a prehrávanie potom pokračuje s takým oneskorením, lebo prehrávač Kicku sám nedobieha; Slipstream Live toto oneskorenie dobehne za vás. Ovláda iba živé prenosy; záznamy, klipy a reklamné prestávky nechá na pokoji.
+
 ■ Počas prevádzky žiadna sieťová komunikácia
 
-Počas sledovania sa rozšírenie ani raz nepripojí k externému serveru. Žiadna analytika, telemetria, identifikátory ani reklamy. Potrebuje len tri povolenia: „storage“, aby mohlo ukladať vaše nastavenia do zariadenia, „activeTab“, aby po otvorení vyskakovacieho okna zistilo, či je v aktuálnej karte podporovaný web, a „scripting“, aby mohlo začať fungovať na DAZN, keď to povolíte. Prístup k webom je obmedzený na štyri podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a – iba s vaším povolením – na DAZN a nastavenia sa nikam nesynchronizujú – ukladajú sa iba lokálne vo vašom zariadení. Jedinou výnimkou je odinštalovanie: prehliadač vtedy otvorí nepovinný dotazník. Rozšírenie iba vopred zaregistruje pevnú adresu URL – bez identifikátora, bez nastavení a bez akýchkoľvek informácií o sledovanom obsahu.
+Počas sledovania sa rozšírenie ani raz nepripojí k externému serveru. Žiadna analytika, telemetria, identifikátory ani reklamy. Potrebuje len tri povolenia: „storage“, aby mohlo ukladať vaše nastavenia do zariadenia, „activeTab“, aby po otvorení vyskakovacieho okna zistilo, či je v aktuálnej karte podporovaný web, a „scripting“, aby mohlo začať fungovať na DAZN alebo na Kicku, keď to povolíte. Prístup k webom je obmedzený na štyri podporované platformy (YouTube, Twitch, TwitCasting, TikTok) a – iba s vaším povolením – na DAZN a Kick; nastavenia sa nikam nesynchronizujú – ukladajú sa iba lokálne vo vašom zariadení. Jedinou výnimkou je odinštalovanie: prehliadač vtedy otvorí nepovinný dotazník. Rozšírenie iba vopred zaregistruje pevnú adresu URL – bez identifikátora, bez nastavení a bez akýchkoľvek informácií o sledovanom obsahu.
 
 K tomu voliteľný ukazovateľ na obrazovke (predvolene vypnutý) s rýchlosťou prehrávania, oneskorením v sekundách a rezervou bufferu, nastavenia v 19 jazykoch, pomocník „?“ pri každej voľbe a tlačidlo na reset v každej sekcii.
 
