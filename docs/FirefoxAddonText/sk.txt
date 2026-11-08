@@ -1,0 +1,27 @@
+Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu, TikToku, Kicku a ďalších weboch a úpravou rýchlosti dobieha živé vysielanie.
+
+Každý živý prenos mešká o pár sekúnd a každý výpadok pripojenia pridá ďalšie. Dobiehať ručne na 1,25x znamená strážiť buffer sami — zabudnete spomaliť a obraz zamrzne.
+
+Slipstream Live to stráži za vás, približne 50-krát za sekundu. Funguje s YouTube Live, Twitchom, TwitCastingom, TikTok LIVE, DAZN a Kickom. Stačí nainštalovať.
+
+■ Nezamŕza, nepreháňa
+
+Zrýchľuje len vtedy, keď má buffer skutočnú rezervu (predvolene 1,25x), a tesne predtým, než sa vyprázdni, spomalí až na 0,15x a stíši zvuk. Keď doženiete živé vysielanie, prestane zrýchľovať, pretože rýchlejšie by to viedlo len k drobným zásekom. Hysterézia bráni neustálemu prepínaniu rýchlosti, a keď rýchlosť v prehrávači zmeníte sami, ovládanie sa vám hneď vráti.
+
+■ Štatisticky predpovedá „údolia“ bufferu
+
+Video prichádza po kúskoch, takže buffer rastie a klesá ako píla; zrýchlenie na vrchole ho môže vyprázdniť v ďalšom údolí. Slipstream Live odhaduje údolie z krátkodobého priemeru a smerodajnej odchýlky (údolie = priemer − √3 × smerodajná odchýlka) a kým nemá dosť údajov, nerobí nič. „Automaticky upravovať prah bufferu“ má štyri úrovne: Vypnuté, Stabilné, Štandardné a Agresívne.
+
+■ Vyladené pre každý web
+
+Predvolené hodnoty sú vyladené pre každý web a prehliadač. Prenosy, ktoré sa nedajú zrýchliť, napríklad prenosy TwitCastingu s nízkou latenciou (WebRTC), sa preskakujú a záznamov, klipov ani reklám sa nikdy nedotkne. Premiéry na YouTube necháva na pokoji, kým ich nezapnete. Keď sa prehrávač Twitchu zastaví s chybou ako „Error #3000“, stlačí vlastné tlačidlo Twitchu na opätovné načítanie, takže sa vráti len video.
+
+DAZN a Kick fungujú len s vaším povolením: na danom webe otvorte vyskakovacie okno a kliknite na „Zapnúť na tomto webe“. Dovtedy k nemu rozšírenie nemá žiadny prístup.
+
+■ Žiadna sieťová aktivita počas behu
+
+Žiadna analytika, telemetria, identifikátory ani reklamy a počas sledovania žiadne pripojenie k externým serverom. Len tri povolenia: „storage“ na nastavenia, „activeTab“ na zistenie, či je aktuálna karta podporovaná, a „scripting“ na spustenie na weboch, ktoré ste povolili. Nastavenia zostávajú vo vašom zariadení. Jediná výnimka: pri odinštalovaní prehliadač otvorí nepovinný formulár spätnej väzby, ku ktorému sa nič neprikladá.
+
+Ďalej obsahuje: voliteľné odznaky na obrazovke s rýchlosťou, oneskorením a bufferom, nastavenia v 19 jazykoch a pomocníka „?“ pri každej voľbe.
+
+Držte krok s „teraz“ prenosu — bez neustáleho strážania.

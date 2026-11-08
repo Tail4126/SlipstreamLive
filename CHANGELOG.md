@@ -8,6 +8,22 @@
 
 ## [未リリース]
 
+## [1.8.1] - 2026-11-08
+
+### 変更
+
+- **ストアの概要（`_locales/*/messages.json` の `appDesc`、19 言語）を「YouTube・Twitch・ツイキャス・TikTok・Kick など」の形にした。** 1.8.0 の、DAZN と Kick を足して 6 サイトを並べた概要と説明文は、Chrome ウェブストアの審査で「キーワードの詰め込み」（Keyword Stuffing）として不承認になった。再審査請求への回答で、よく知られたプラットフォーム名は 5 つまでにし、それを超える場合はリンクかスクリーンショットで示すよう求められたため、サイト名を 5 つに絞って「など」で受け、全サイトは掲載用のスクリーンショット（下記）で示すことにした。概要は Chrome と Firefox で共通である。132 文字の上限に収めるため、インドネシア語は「dll.」、マレー語は「dsb.」（どちらも「など」の略記）を使った。最長はポルトガル語（ポルトガル）・スロバキア語の 131 文字。
+
+### ドキュメント
+
+- **ストアの説明文を、Chrome ウェブストア用の `docs/ChromeWebStoreText/` と Firefox アドオン用の `docs/FirefoxAddonText/` に分けた**（どちらも 19 言語。旧 `docs/ChromeWebStore&FirefoxAddonText/` は削除）。
+  - **分量を約 4 割に減らした**（英語は 7,134 文字から 2,778 文字、日本語は 3,193 文字から 1,312 文字）。審査で長すぎると指摘されたため。統計的な谷の推定の説明は式 1 本にまとめ、サイトごとの調整・Twitch のエラーからの復帰・TikTok の再生方式の段落を 1 段落に縮め、許可制の説明を短くした。
+  - **Chrome 用は、サイト名を YouTube・Twitch・TwitCasting（ツイキャス）・TikTok・Kick の 5 つに限った。** DAZN の名前は出さず、「Kick など」「and more」と書いて、全サイトの一覧はスクリーンショットを見るよう案内する。許可制の段落も「Kick など一部のサイト」とした。サイト名と数えられないよう、Firefox・Edge の名前も出していない。
+  - **Firefox 用は 6 サイトをすべて挙げる**（審査で指摘されていないため）。「Chrome での速度変更を有効にする」は Chrome だけの機能なので、その文を除いた。
+  - 1 行目は共通の `appDesc` と同じ文。ボタン名・設定名は各言語の `grantHere`・`speedupAuto` などと同じ文言にしてある。
+- 掲載用の対応サイト一覧画像 `docs/images/supported-sites-ja.png`・`docs/images/supported-sites-en.png`（1280×800）を加えた。6 サイトの名前・ドメイン・対象範囲と、DAZN・Kick が許可制であることを示す。各サイトのロゴは使っていない。
+- 取扱説明書（英日）のページ見出しにあるバージョン表記を 1.8.0 から 1.8.1 へ更新した。
+
 ## [1.8.0] - 2026-11-08
 
 ### 追加
@@ -669,7 +685,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.8.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.5.0...v1.6.0

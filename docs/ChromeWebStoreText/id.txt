@@ -1,0 +1,27 @@
+Mendeteksi latensi di YouTube, Twitch, TwitCasting, TikTok, Kick, dll., lalu mengatur kecepatan untuk mengejar siaran langsung.
+
+Setiap siaran langsung selalu tertinggal beberapa detik, dan setiap gangguan koneksi menambah ketertinggalan itu. Mengejar secara manual dengan 1,25x berarti Anda harus mengawasi buffer sendiri — lupa memperlambat, video pun macet.
+
+Slipstream Live mengawasinya untuk Anda, sekitar 50 kali per detik. Bekerja di YouTube Live, Twitch, TwitCasting, TikTok LIVE, Kick, dan lainnya (daftar lengkapnya ada di tangkapan layar). Pasang, dan selesai.
+
+■ Tidak macet, tidak berlebihan
+
+Ekstensi ini hanya mempercepat saat buffer benar-benar longgar (default 1,25x), dan memperlambat hingga 0,15x sambil mengecilkan volume tepat sebelum buffer habis. Begitu Anda mengejar siaran langsung, percepatan dihentikan, karena lebih cepat lagi hanya menimbulkan jeda kecil. Histeresis mencegah kecepatan berganti-ganti, dan jika Anda mengubah kecepatan sendiri di pemutar, kendali langsung kembali kepada Anda.
+
+■ Memprediksi “lembah” buffer secara statistik
+
+Video datang per potongan, sehingga buffer naik-turun seperti gigi gergaji; mempercepat di puncak bisa menghabiskannya di lembah berikutnya. Slipstream Live memperkirakan lembah dari rata-rata dan simpangan baku jangka pendek (lembah = rata-rata − √3 × simpangan baku), dan tidak melakukan apa pun selama datanya belum cukup. “Sesuaikan ambang buffer otomatis” punya empat tingkat: Nonaktif, Stabil, Standar, dan Agresif.
+
+■ Disetel untuk setiap situs
+
+Nilai default disetel per situs dan per browser. Siaran yang tidak bisa dipercepat, seperti siaran latensi rendah (WebRTC) TwitCasting, dilewati, dan VOD, klip, serta iklan tidak pernah disentuh. Premiere YouTube juga dibiarkan kecuali Anda mengaktifkannya. Jika pemutar Twitch berhenti dengan galat seperti “Error #3000”, ekstensi ini menekan tombol muat ulang milik Twitch sendiri sehingga hanya videonya yang kembali. Di Chrome pada komputer dengan 6 inti CPU atau lebih, ekstensi ini membuat TikTok LIVE memakai mesin standarnya agar perubahan kecepatan berfungsi (bisa dimatikan).
+
+Beberapa situs, seperti Kick, hanya berjalan dengan izin Anda: buka popup di situs tersebut lalu tekan “Aktifkan di situs ini”. Sebelum itu, ekstensi ini sama sekali tidak memiliki akses ke situs tersebut.
+
+■ Tanpa aktivitas jaringan saat berjalan
+
+Tanpa analitik, telemetri, pengenal, atau iklan, dan tanpa koneksi ke server eksternal saat Anda menonton. Hanya tiga izin: “storage” untuk pengaturan, “activeTab” untuk memeriksa apakah tab saat ini didukung, dan “scripting” untuk mulai bekerja di situs yang Anda izinkan. Pengaturan tetap di perangkat Anda. Satu-satunya pengecualian: saat dicopot, browser membuka formulir masukan opsional tanpa data apa pun yang dilampirkan.
+
+Juga tersedia: lencana opsional di layar untuk kecepatan, keterlambatan, dan buffer, pengaturan dalam 19 bahasa, serta bantuan “?” di setiap pengaturan.
+
+Tetap ikuti “saat ini” dari siaran — tanpa harus terus mengawasinya.

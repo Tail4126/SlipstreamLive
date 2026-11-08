@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Automatyczne wykrywanie i korekta opóźnienia transmisji" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Wykrywa opóźnienie na YouTube, Twitchu, TwitCastingu, TikToku, DAZN i Kicku i zmienia prędkość, by dogonić transmisję na żywo." },
+    "appDesc": { "message": "Wykrywa opóźnienie na YouTube, Twitchu, TwitCastingu, TikToku, Kicku itp. i zmienia prędkość, by dogonić transmisję na żywo." },
     "enabled": { "message": "Zmieniaj prędkość odtwarzania" },
     "speedup": { "message": "Przyspieszaj przy opóźnieniu" },
     "speedupDesc": { "message": "Automatycznie przyspiesza odtwarzanie, gdy w buforze jest wystarczający zapas, by dogonić transmisję na żywo. Wraca do normalnej prędkości po nadrobieniu opóźnienia lub gdy zapas bufora spadnie." },
