@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Automatická detekcia a úprava oneskorenia živých prenosov" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu, TikToku, DAZN a Kicku a úpravou rýchlosti dobieha živé vysielanie." },
+    "appDesc": { "message": "Zisťuje oneskorenie na YouTube, Twitchi, TwitCastingu, TikToku, Kicku a ďalších weboch a úpravou rýchlosti dobieha živé vysielanie." },
     "enabled": { "message": "Meniť rýchlosť prehrávania" },
     "speedup": { "message": "Zrýchľovať pri oneskorení" },
     "speedupDesc": { "message": "Automaticky zrýchli prehrávanie, keď je v bufferi dosť rezervy na dobehnutie živého vysielania. Po dobehnutí alebo pri poklese bufferu sa vráti na normálnu rýchlosť." },

@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Détecter et ajuster automatiquement la latence du direct" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Détecte la latence sur YouTube, Twitch, TwitCasting, TikTok, DAZN et Kick et ajuste la vitesse de lecture pour rattraper le direct." },
+    "appDesc": { "message": "Détecte la latence sur YouTube, Twitch, TwitCasting, TikTok, Kick et plus encore, et ajuste la vitesse pour rattraper le direct." },
     "enabled": { "message": "Modifier la vitesse de lecture" },
     "speedup": { "message": "Accélérer en cas de retard" },
     "speedupDesc": { "message": "Accélère automatiquement lorsque le tampon est suffisant pour rattraper le direct. Reprend la vitesse normale une fois le direct rattrapé ou si le tampon diminue." },

@@ -1,0 +1,27 @@
+Mengesan kelewatan di YouTube, Twitch, TwitCasting, TikTok, Kick dsb., lalu melaraskan kelajuan untuk mengejar siaran langsung.
+
+Setiap siaran langsung sentiasa ketinggalan beberapa saat, dan setiap gangguan sambungan menambahnya. Mengejar secara manual pada 1.25x bermakna anda perlu memerhati penimbal sendiri — terlupa memperlahankan, video pun tersekat.
+
+Slipstream Live memerhatikannya untuk anda, kira-kira 50 kali sesaat. Berfungsi di YouTube Live, Twitch, TwitCasting, TikTok LIVE, Kick dan lain-lain (senarai penuh dalam tangkapan skrin). Pasang, dan siap.
+
+■ Tidak tersekat, tidak keterlaluan
+
+Ia hanya mempercepat apabila penimbal benar-benar ada ruang (lalai 1.25x), dan memperlahankan hingga 0.15x sambil merendahkan kelantangan sejurus sebelum penimbal habis. Sebaik sahaja anda sampai ke siaran langsung, ia berhenti mempercepat, kerana lebih laju hanya menyebabkan sekatan kecil. Histeresis menghalang kelajuan bertukar-tukar, dan jika anda menukar kelajuan sendiri dalam pemain, kawalan terus kembali kepada anda.
+
+■ Meramal “lembah” penimbal secara statistik
+
+Video tiba secara berketul, jadi penimbal naik turun seperti gigi gergaji; mempercepat di puncak boleh mengosongkannya di lembah seterusnya. Slipstream Live menganggar lembah daripada purata dan sisihan piawai jangka pendek (lembah = purata − √3 × sisihan piawai), dan tidak berbuat apa-apa selagi data belum mencukupi. “Laraskan ambang penimbal secara automatik” ada empat tahap: Mati, Stabil, Standard dan Agresif.
+
+■ Ditala untuk setiap tapak
+
+Nilai lalai ditala mengikut tapak dan pelayar. Siaran yang tidak boleh dipercepat, seperti siaran kependaman rendah (WebRTC) TwitCasting, dilangkau, dan VOD, klip serta iklan tidak pernah disentuh. Tayangan perdana YouTube juga dibiarkan kecuali anda menghidupkannya. Jika pemain Twitch terhenti dengan ralat seperti “Error #3000”, ia menekan butang muat semula Twitch sendiri supaya hanya video yang kembali. Dalam Chrome pada komputer dengan 6 teras CPU atau lebih, ia membuat TikTok LIVE menggunakan enjin standardnya supaya perubahan kelajuan berfungsi (boleh dimatikan).
+
+Sesetengah tapak, seperti Kick, hanya berfungsi dengan kebenaran anda: buka tetingkap timbul di tapak itu dan tekan “Dayakan di tapak ini”. Sebelum itu, Slipstream Live langsung tiada akses ke tapak tersebut.
+
+■ Tiada aktiviti rangkaian semasa berjalan
+
+Tiada analitik, telemetri, pengecam atau iklan, dan tiada sambungan ke pelayan luar semasa anda menonton. Hanya tiga kebenaran: “storage” untuk tetapan anda, “activeTab” untuk menyemak sama ada tab semasa disokong, dan “scripting” untuk mula berfungsi di tapak yang anda benarkan. Tetapan kekal pada peranti anda. Satu-satunya pengecualian: apabila dinyahpasang, pelayar membuka borang maklum balas pilihan tanpa sebarang data dilampirkan.
+
+Turut disertakan: lencana pilihan pada skrin untuk kelajuan, kelewatan dan penimbal, tetapan dalam 19 bahasa, dan bantuan “?” pada setiap tetapan.
+
+Terus ikuti “kini” siaran — tanpa perlu terus memerhatikannya.

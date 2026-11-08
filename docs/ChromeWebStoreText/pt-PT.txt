@@ -1,0 +1,27 @@
+Deteta o atraso no YouTube, Twitch, TwitCasting, TikTok, Kick e outros, e ajusta a velocidade de reprodução para alcançar o direto.
+
+Cada emissão em direto chega com alguns segundos de atraso, e cada falha na ligação aumenta-o. Para recuperar à mão a 1,25x, tens de vigiar o buffer — se te esqueceres de abrandar, o vídeo congela.
+
+O Slipstream Live vigia por ti, cerca de 50 vezes por segundo. Funciona com o YouTube Live, a Twitch, o TwitCasting, o TikTok LIVE, a Kick e outros (a lista completa está nas capturas de ecrã). Basta instalar.
+
+■ Nunca congela, nunca exagera
+
+Só acelera quando o buffer tem folga real (1,25x por predefinição) e desce até 0,15x, baixando o volume, mesmo antes de o buffer se esgotar. Quando chega ao direto, deixa de acelerar, porque ir mais depressa só causaria pequenas paragens. A histerese evita que a velocidade ande sempre a mudar, e se mudares tu a velocidade no leitor, o controlo volta logo para ti.
+
+■ Prevê os «vales» do buffer com estatística
+
+O vídeo chega aos blocos, por isso o buffer sobe e desce em dente de serra; acelerar num pico pode esvaziá-lo no vale seguinte. O Slipstream Live estima o vale a partir da média e do desvio padrão de curto prazo (vale = média − √3 × desvio padrão) e não faz nada enquanto não houver dados suficientes. «Ajustar o limiar de buffer automaticamente» tem quatro níveis: Desativado, Estável, Padrão e Agressivo.
+
+■ Afinado para cada site
+
+Os valores predefinidos estão afinados por site e por navegador. As emissões que não podem ser aceleradas, como as de baixa latência (WebRTC) do TwitCasting, são ignoradas, e VOD, clipes e anúncios nunca são tocados. As estreias do YouTube ficam de fora, a não ser que as atives. Se o leitor da Twitch parar com um erro como «Error #3000», carrega no próprio botão de recarregar da Twitch para que só o vídeo volte. No Chrome, em computadores com 6 ou mais núcleos de CPU, faz o TikTok LIVE usar o motor padrão para que as mudanças de velocidade funcionem (pode ser desativado).
+
+Alguns sites, como a Kick, só funcionam com a tua autorização: abre o pop-up nesse site e carrega em «Ativar neste site». Até lá, a extensão não tem qualquer acesso a esse site.
+
+■ Nenhuma atividade de rede durante o funcionamento
+
+Sem análises, telemetria, identificadores ou anúncios, e sem ligações a servidores externos enquanto vês. Apenas três permissões: «storage» para as tuas definições, «activeTab» para verificar se o separador atual é suportado e «scripting» para começar nos sites que permitiste. As definições ficam no teu dispositivo. A única exceção: ao desinstalar, o navegador abre um formulário de opinião opcional, sem nenhum dado anexado.
+
+Inclui também: emblemas opcionais no ecrã com a velocidade, o atraso e o buffer, definições em 19 idiomas e ajuda «?» em cada opção.
+
+Acompanha o «agora» da emissão sem teres de estar de vigia.

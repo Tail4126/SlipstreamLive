@@ -1,0 +1,27 @@
+Erkennt die Latenz auf YouTube, Twitch, TwitCasting, TikTok, Kick und weiteren Seiten und passt das Tempo an, um live aufzuholen.
+
+Jeder Livestream läuft ein paar Sekunden hinterher, und jeder Verbindungsaussetzer macht es schlimmer. Wer von Hand auf 1,25x stellt, muss den Puffer selbst im Blick behalten – vergisst du zu bremsen, friert das Bild ein.
+
+Slipstream Live übernimmt das für dich, etwa 50-mal pro Sekunde. Es funktioniert mit YouTube Live, Twitch, TwitCasting, TikTok LIVE, Kick und mehr (die vollständige Liste zeigen die Screenshots). Installieren, fertig.
+
+■ Friert nie ein, übertreibt nie
+
+Es beschleunigt nur, wenn der Puffer echten Spielraum hat (standardmäßig 1,25x), und bremst kurz bevor er leerläuft auf bis zu 0,15x ab – dabei wird auch die Lautstärke gesenkt. Sobald du live aufgeholt hast, hört es mit dem Beschleunigen auf, denn noch schneller würde nur kleine Ruckler verursachen. Eine Hysterese verhindert ständiges Hin- und Herschalten, und sobald du im Player selbst das Tempo änderst, bekommst du die Kontrolle sofort zurück.
+
+■ Sagt die „Täler“ des Puffers statistisch voraus
+
+Video kommt in Stücken an, daher steigt und fällt der Puffer wie ein Sägezahn; wer an einer Spitze beschleunigt, kann im nächsten Tal leerlaufen. Slipstream Live schätzt das Tal aus einem kurzfristigen Mittelwert und der Standardabweichung (Tal = Mittelwert − √3 × Standardabweichung) und tut nichts, solange zu wenige Daten vorliegen. „Pufferschwelle automatisch anpassen“ bietet vier Stufen: Aus, Stabil, Standard und Aggressiv.
+
+■ Auf jede Website abgestimmt
+
+Die Standardwerte sind pro Website und pro Browser abgestimmt. Streams, die sich nicht beschleunigen lassen, etwa die Low-Latency-Streams (WebRTC) von TwitCasting, werden übersprungen, und VODs, Clips und Werbung bleiben unberührt. YouTube-Premieren bleiben außen vor, solange du sie nicht einschaltest. Bleibt der Twitch-Player mit einem Fehler wie „Error #3000“ stehen, drückt es den Neu-laden-Knopf von Twitch selbst, sodass nur das Video zurückkommt. In Chrome auf Computern mit 6 oder mehr CPU-Kernen sorgt es dafür, dass TikTok LIVE seine Standard-Engine nutzt, damit Tempoänderungen funktionieren (abschaltbar).
+
+Manche Websites, etwa Kick, funktionieren erst mit deiner Erlaubnis: Öffne auf der Website das Popup und klicke auf „Auf dieser Website aktivieren“. Bis dahin hat die Erweiterung keinerlei Zugriff auf diese Website.
+
+■ Kein Netzwerkverkehr im Betrieb
+
+Keine Analyse, keine Telemetrie, keine Kennungen, keine Werbung und keine Verbindung zu externen Servern, während du schaust. Nur drei Berechtigungen: „storage“ für deine Einstellungen, „activeTab“, um zu prüfen, ob der aktuelle Tab unterstützt wird, und „scripting“, um auf erlaubten Websites zu starten. Die Einstellungen bleiben auf deinem Gerät. Einzige Ausnahme: Beim Deinstallieren öffnet der Browser ein freiwilliges Feedback-Formular, ohne angehängte Daten.
+
+Außerdem dabei: optionale Badges für Tempo, Verzögerung und Pufferstand, Einstellungen in 19 Sprachen und eine „?“-Hilfe für jede Einstellung.
+
+Bleib am „Jetzt“ des Streams – ohne selbst aufpassen zu müssen.

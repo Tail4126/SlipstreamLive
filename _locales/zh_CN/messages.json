@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — 自动检测并调节直播延迟" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "自动检测 YouTube、Twitch、TwitCasting、TikTok、DAZN 和 Kick 直播延迟，智能调节播放速度，时刻追上最新直播画面（实时）。" },
+    "appDesc": { "message": "自动检测 YouTube、Twitch、TwitCasting、TikTok、Kick 等直播延迟，智能调节播放速度，时刻追上最新直播画面（实时）。" },
     "enabled": { "message": "调节播放速度" },
     "speedup": { "message": "落后时自动加速" },
     "speedupDesc": { "message": "为了追上最新直播画面，在缓冲充足时自动加速。追上直播或缓冲不足时，将自动恢复正常速度。" },

@@ -1,0 +1,27 @@
+Detects latency on YouTube, Twitch, TwitCasting, TikTok, Kick, and more, and adjusts playback speed to catch up to the live edge.
+
+Every live stream runs a few seconds behind, and each connection hiccup adds more. Catching up by hand at 1.25x means watching the buffer yourself — forget to slow down, and the video freezes.
+
+Slipstream Live does that watching for you, about 50 times a second. It works with YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN, and Kick. Install it, and you're done.
+
+■ Never freezes, never overreacts
+
+It speeds up only when the buffer has real headroom (1.25x by default), and drops to as low as 0.15x, turning the volume down, just before the buffer runs out. Once you reach the live edge it stops speeding up, since going faster would only cause tiny stalls. Hysteresis keeps the speed from flip-flopping, and if you change the speed in the player yourself, control goes straight back to you.
+
+■ Predicts the buffer's "valleys" statistically
+
+Video arrives in chunks, so the buffer rises and falls like a sawtooth; speeding up at a peak can run it dry at the next valley. Slipstream Live estimates the valley from a short-term average and standard deviation (trough = average − √3 × standard deviation), and does nothing until it has enough data. "Auto-adjust buffer threshold" offers four levels: off, stable, standard, and aggressive.
+
+■ Tuned for each site
+
+Defaults are tuned per site and per browser. Streams that can't be sped up, such as TwitCasting's low-latency (WebRTC) streams, are skipped, and VODs, clips, and ads are never touched. YouTube premieres are left alone unless you turn them on. If Twitch's player stops with an error like "Error #3000," it presses Twitch's own reload button so only the video comes back.
+
+DAZN and Kick work only after you allow them: open the popup on that site and press "Enable on this site." Until then, the extension has no access to that site at all.
+
+■ Zero network activity while it runs
+
+No analytics, telemetry, identifiers, or ads, and no connections to external servers while you watch. Just three permissions: "storage" for your settings, "activeTab" to check whether the current tab is supported, and "scripting" to start on sites you've allowed. Settings stay on your device. The only exception: on uninstall, your browser opens an optional feedback form, with nothing attached.
+
+Also included: optional on-screen badges for speed, delay, and buffer level, a settings screen in 19 languages, and "?" help on every setting.
+
+Keep up with the stream's "now" — without keeping watch yourself.

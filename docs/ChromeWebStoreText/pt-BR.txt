@@ -1,0 +1,27 @@
+Detecta a latência no YouTube, Twitch, TwitCasting, TikTok, Kick e mais, e ajusta a velocidade para alcançar o ponto ao vivo.
+
+Toda transmissão ao vivo chega alguns segundos atrasada, e cada falha na conexão aumenta o atraso. Para alcançar na mão a 1,25x, você precisa vigiar o buffer — se esquecer de desacelerar, o vídeo trava.
+
+O Slipstream Live faz essa vigilância por você, cerca de 50 vezes por segundo. Funciona com YouTube Live, Twitch, TwitCasting, TikTok LIVE, Kick e mais (a lista completa está nas capturas de tela). É só instalar.
+
+■ Nunca trava, nunca exagera
+
+Ele só acelera quando o buffer tem folga de verdade (1,25x por padrão) e desce até 0,15x, abaixando o volume, logo antes de o buffer acabar. Ao alcançar o ao vivo, para de acelerar, porque ir mais rápido só causaria pequenas travadas. A histerese evita que a velocidade fique alternando, e se você mudar a velocidade no player, o controle volta na hora para você.
+
+■ Prevê os "vales" do buffer com estatística
+
+O vídeo chega em blocos, então o buffer sobe e desce como um dente de serra; acelerar num pico pode esvaziá-lo no vale seguinte. O Slipstream Live estima o vale a partir da média e do desvio padrão de curto prazo (vale = média − √3 × desvio padrão) e não faz nada enquanto não tiver dados suficientes. "Ajustar limite de buffer automaticamente" tem quatro níveis: Desativado, Estável, Padrão e Agressivo.
+
+■ Ajustado para cada site
+
+Os valores padrão são ajustados por site e por navegador. Transmissões que não podem ser aceleradas, como as de baixa latência (WebRTC) do TwitCasting, são ignoradas, e VODs, clipes e anúncios nunca são tocados. As estreias do YouTube ficam de fora, a menos que você as ative. Se o player da Twitch parar com um erro como "Error #3000", ele aperta o próprio botão de recarregar da Twitch para que só o vídeo volte. No Chrome, em computadores com 6 ou mais núcleos de CPU, ele faz o TikTok LIVE usar o mecanismo padrão para que as mudanças de velocidade funcionem (dá para desativar).
+
+Alguns sites, como a Kick, só funcionam com a sua permissão: abra o popup nesse site e clique em "Ativar neste site". Até lá, a extensão não tem nenhum acesso a esse site.
+
+■ Nenhuma atividade de rede durante o uso
+
+Sem análises, telemetria, identificadores ou anúncios, e sem conexão com servidores externos enquanto você assiste. Só três permissões: "storage" para suas configurações, "activeTab" para verificar se a aba atual é compatível e "scripting" para começar nos sites que você permitiu. As configurações ficam no seu dispositivo. A única exceção: ao desinstalar, o navegador abre um formulário de feedback opcional, sem nenhum dado anexado.
+
+Inclui também: selos opcionais na tela com velocidade, atraso e buffer, configurações em 19 idiomas e ajuda "?" em cada opção.
+
+Acompanhe o "agora" da transmissão sem precisar ficar de olho.

@@ -1,0 +1,27 @@
+Detecta la latencia en YouTube, Twitch, TwitCasting, TikTok, Kick y más, y ajusta la velocidad del vídeo para alcanzar el directo.
+
+Toda transmisión en directo va unos segundos por detrás, y cada fallo de conexión suma más. Ponerte al día a mano a 1,25x obliga a vigilar el búfer tú mismo: si olvidas frenar, el video se congela.
+
+Slipstream Live vigila por ti, unas 50 veces por segundo. Funciona con YouTube Live, Twitch, TwitCasting, TikTok LIVE, Kick y más (consulta la lista completa en las capturas). Instálalo y listo.
+
+■ Nunca se congela, nunca se pasa
+
+Solo acelera cuando el búfer tiene margen real (1,25x por defecto) y baja hasta 0,15x, bajando también el volumen, justo antes de que se agote. Al alcanzar el directo deja de acelerar, porque ir más rápido solo provocaría pequeños cortes. La histéresis evita que la velocidad cambie sin parar, y si cambias tú la velocidad en el reproductor, el control vuelve a ti al instante.
+
+■ Predice los "valles" del búfer con estadística
+
+El video llega por fragmentos, así que el búfer sube y baja como un diente de sierra; acelerar en un pico puede vaciarlo en el siguiente valle. Slipstream Live estima el valle a partir de la media y la desviación estándar a corto plazo (valle = media − √3 × desviación estándar) y no hace nada hasta tener datos suficientes. "Ajustar automáticamente el umbral de búfer" ofrece cuatro niveles: Desactivado, Estable, Estándar y Agresivo.
+
+■ Ajustado para cada sitio
+
+Los valores por defecto están ajustados para cada sitio y navegador. Las transmisiones que no se pueden acelerar, como las de baja latencia (WebRTC) de TwitCasting, se omiten, y nunca toca VOD, clips ni anuncios. Los estrenos de YouTube quedan fuera salvo que los actives. Si el reproductor de Twitch se detiene con un error como "Error #3000", pulsa el propio botón de recarga de Twitch para que solo vuelva el video. En Chrome, en equipos con 6 o más núcleos de CPU, hace que TikTok LIVE use su motor estándar para que funcionen los cambios de velocidad (se puede desactivar).
+
+Algunos sitios, como Kick, solo funcionan con tu permiso: abre la ventana de ajustes en ese sitio y pulsa "Activar en este sitio". Hasta entonces, la extensión no tiene ningún acceso a ese sitio.
+
+■ Sin actividad de red mientras funciona
+
+Sin análisis, telemetría, identificadores ni anuncios, y sin conexiones a servidores externos mientras ves. Solo tres permisos: "storage" para tus ajustes, "activeTab" para comprobar si la pestaña actual es compatible y "scripting" para empezar en los sitios que hayas permitido. Los ajustes se quedan en tu dispositivo. La única excepción: al desinstalar, el navegador abre un formulario de opinión opcional, sin ningún dato adjunto.
+
+También incluye: indicadores opcionales en pantalla de velocidad, retraso y búfer, ajustes en 19 idiomas y ayuda "?" en cada opción.
+
+Sigue el "ahora" de la transmisión sin tener que vigilarlo tú.

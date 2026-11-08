@@ -1,0 +1,27 @@
+Détecte la latence sur YouTube, Twitch, TwitCasting, TikTok, Kick et plus encore, et ajuste la vitesse pour rattraper le direct.
+
+Chaque direct a quelques secondes de retard, et chaque coupure de connexion en ajoute. Rattraper à la main en 1,25x oblige à surveiller soi-même la mémoire tampon : oublie de ralentir, et la vidéo se fige.
+
+Slipstream Live surveille à ta place, environ 50 fois par seconde. Il fonctionne avec YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN et Kick. Installe-le, c'est tout.
+
+■ Ne se fige jamais, n'en fait jamais trop
+
+Il n'accélère que si la mémoire tampon a une vraie marge (1,25x par défaut) et descend jusqu'à 0,15x, en baissant le volume, juste avant qu'elle ne se vide. Une fois au direct, il arrête d'accélérer, car aller plus vite ne provoquerait que de petites coupures. Une hystérésis évite les va-et-vient de vitesse, et dès que tu changes toi-même la vitesse dans le lecteur, tu reprends la main.
+
+■ Prédit statistiquement les « creux » de la mémoire tampon
+
+La vidéo arrive par morceaux, donc la mémoire tampon monte et descend en dents de scie ; accélérer sur un pic peut la vider au creux suivant. Slipstream Live estime le creux à partir de la moyenne et de l'écart type à court terme (creux = moyenne − √3 × écart type) et ne fait rien tant qu'il manque de données. « Ajuster automatiquement le seuil de tampon » propose quatre niveaux : Désactivé, Stable, Standard et Agressif.
+
+■ Réglé pour chaque site
+
+Les valeurs par défaut sont réglées par site et par navigateur. Les directs impossibles à accélérer, comme ceux à faible latence (WebRTC) de TwitCasting, sont ignorés, et les VOD, clips et publicités ne sont jamais touchés. Les premières YouTube sont laissées de côté sauf si tu les actives. Si le lecteur Twitch s'arrête sur une erreur comme « Error #3000 », il appuie sur le bouton de rechargement de Twitch pour que seule la vidéo revienne.
+
+DAZN et Kick ne fonctionnent qu'avec ton autorisation : ouvre la fenêtre des réglages sur ce site et clique sur « Activer sur ce site ». D'ici là, l'extension n'a aucun accès à ce site.
+
+■ Aucune activité réseau en fonctionnement
+
+Pas d'analyse, de télémétrie, d'identifiants ni de publicité, et aucune connexion à des serveurs externes pendant que tu regardes. Seulement trois autorisations : « storage » pour tes réglages, « activeTab » pour vérifier si l'onglet actuel est pris en charge, et « scripting » pour démarrer sur les sites que tu as autorisés. Les réglages restent sur ton appareil. Seule exception : à la désinstallation, le navigateur ouvre un formulaire d'avis facultatif, sans aucune donnée jointe.
+
+Aussi inclus : des badges facultatifs à l'écran pour la vitesse, le retard et la mémoire tampon, des réglages en 19 langues et une aide « ? » pour chaque option.
+
+Reste sur le « maintenant » du direct, sans avoir à surveiller toi-même.

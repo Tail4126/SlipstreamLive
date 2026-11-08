@@ -2,7 +2,7 @@
     "dir": { "message": "ltr" },
     "appName": { "message": "Slipstream Live — Deteksi dan Atur Latensi Siaran Langsung secara Otomatis" },
     "appShortName": { "message": "Slipstream Live" },
-    "appDesc": { "message": "Mendeteksi latensi di YouTube, Twitch, TwitCasting, TikTok, DAZN, dan Kick, lalu mengatur kecepatan untuk mengejar siaran langsung." },
+    "appDesc": { "message": "Mendeteksi latensi di YouTube, Twitch, TwitCasting, TikTok, Kick, dll., lalu mengatur kecepatan untuk mengejar siaran langsung." },
     "enabled": { "message": "Ubah kecepatan pemutaran" },
     "speedup": { "message": "Percepat saat tertinggal" },
     "speedupDesc": { "message": "Otomatis mempercepat pemutaran saat buffer cukup untuk mengejar siaran langsung. Kembali ke kecepatan normal setelah berhasil mengejar atau jika buffer berkurang." },
