@@ -244,6 +244,13 @@
                         popup.js の render() が hidden 属性を付けて隠します。
                     -->
                     <p class="note" data-site="twitch" data-msg="floorThresholdNote_twitch"></p>
+
+                    <!--
+                        Kick のタブを選んでいるときだけ表示される注意書き。
+                        Kick は映像データの途切れが多く、既定値が他のサイトと大きく違う（自動調整がオフ、
+                        最低速度にする閾値が 2 秒など）ため、その理由をここで説明します。
+                    -->
+                    <p class="note" data-site="kick" data-msg="floorThresholdNote_kick"></p>
                 </div>
 
                 <!--
@@ -264,6 +271,21 @@
                     <label class="row" data-needs="enabled">
                         <span data-msg="recover"></span>
                         <button class="help-icon" type="button" data-help="recoverDesc">?</button>
+                        <input class="switch" type="checkbox" data-key="recover" />
+                    </label>
+                </div>
+
+                <!--
+                    Kick でしか意味を持たない設定のまとまり。
+                    設定キーは Twitch と同じ recover ですが、Kick で立て直す相手は「読み込み中のまま止まった
+                    プレーヤー」なので、文言（recover_kick / recoverDesc_kick）は Kick 専用のものを使います。
+                    同じ data-key の入力欄が 2 つになりますが、popup.js がサイトごとに別の id を振るため、
+                    行の文字を押しても、それぞれ自分のスイッチだけが切り替わります。
+                -->
+                <div class="group" data-site="kick">
+                    <label class="row" data-needs="enabled">
+                        <span data-msg="recover_kick"></span>
+                        <button class="help-icon" type="button" data-help="recoverDesc_kick">?</button>
                         <input class="switch" type="checkbox" data-key="recover" />
                     </label>
                 </div>

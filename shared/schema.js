@@ -147,7 +147,8 @@
      *   duck             … 下限モード中に音量を下げるか
      *   duckVolume       … 下げたときの音量（％）
      *   premiere         … YouTube のプレミア公開でも動作させるか
-     *   recover          … Twitch のプレイヤーがエラーで止まったとき、自動で復帰させるか
+     *   recover          … プレイヤーが止まったまま戻らないとき、自動で復帰させるか
+     *                      （Twitch は「エラー #3000」などのエラー、Kick は読み込み中のまま止まった状態が対象）
      *   forceMse         … Chrome の TikTok で、速度を変えられる再生方式（MSE）を選ばせるか
      *                      （仕組みは adapters/tiktok.js の冒頭を参照）
      * @type {Record<string, { scope?: string, def: unknown, range?: number[], ff?: Record<string, number>, cap?: string }>}
@@ -160,25 +161,41 @@
         showHealth:       { scope: 'common', def: false },
 
         // --- サイトごとに個別に保存される設定 ----------------------------------
+        //
+        // ■ Kick だけ、加速まわりの既定値が違う理由
+        //   Kick は映像データの到着が 10 秒ほど止まることが頻繁にあり、いったん読み込み中の
+        //   くるくる表示（バッファ切れ）になると、そのまま再生が戻らないことも多くあります
+        //   （adapters/kick.js の heal() を参照）。途切れるたびに統計が崩れるため自動調整では追いきれず、
+        //   既定では自動調整をオフ（speedupAuto: 0）にして、手動の閾値で次のように動かします。
+        //     - 加速は残量 5.5 秒以上で始め、5 秒を下回ったら止める … 遅れを詰めても 5 秒ほどの先読みを残す
+        //     - 最低速度にする閾値は 2 秒（floorThreshold）     … 残り 2 秒を 0.15 倍速で約 13 秒に引き延ばす
+        //   先読み 5 秒のうち 3 秒を等倍で、残り 2 秒を 0.15 倍速で使えば、データが 16 秒ほど届かなくても止まりません。
+        //   Chrome と Firefox で同じ値です（Kick には ff を設けていません）。
+        //
+        // `{ ...all(10), kick: 5.5 }` は「全サイト 10 にしたうえで、kick だけ 5.5 に上書き」という書き方です
+        // （スプレッド構文 `...` で all() の中身を展開し、後ろに書いた kick が同じキーを上書きします）。
         speedup:          { def: all(true) },
         speedupRate:      { range: [1.05, 4, 0.05], def: all(1.25) },
-        speedupThreshold: { range: [0.1, 100, 0.1], def: all(10) },
+        speedupThreshold: { range: [0.1, 100, 0.1], def: { ...all(10), kick: 5.5 } },
         // 開始（10 秒）より 1 秒低い 9 秒を既定にし、のこぎり波の 1 周期ごとに倍率が
         // 切り替わるのを抑えます。開始と同じ値にすれば、1.5.0 までと同じ 1 本の線の動きになります。
-        speedupStopThreshold: { range: [0.1, 100, 0.1], def: all(9), cap: 'speedupThreshold' },
-        speedupAuto:     { range: [0, 3, 1], def: all(2) },
+        // Kick は開始 5.5 秒・終了 5 秒です（上の説明を参照）。
+        speedupStopThreshold: { range: [0.1, 100, 0.1], def: { ...all(9), kick: 5 }, cap: 'speedupThreshold' },
+        speedupAuto:     { range: [0, 3, 1], def: { ...all(2), kick: 0 } },
         floor:            { def: all(true) },
 
         // floorThreshold だけはサイトごとに最適値が違うため、個別に既定値を持たせています。
         // さらに Firefox の Twitch はバッファの読み取り方が異なるので ff で上書きします。
         // TikTok は映像が HTTP-FLV で 0.05〜0.2 秒刻みに途切れなく届き、バッファがほとんど
         // 波打たないため、ツイキャス（0.3）と YouTube（0.8）の間の 0.5 にしています。
-        // Kick は Twitch と同じ系統のプレーヤー（Amazon IVS）ですが、低遅延の配信ではバッファが
-        // 1.3〜2.5 秒ほどで落ち着くため、Twitch の 2.0 では、ふだんの再生のまま最低速度に入ってしまいます。
-        // 揺れは 0.05〜0.4 秒刻みと小さいので、YouTube・DAZN と同じ 0.8 にしています。
+        // Kick は Twitch と同じ系統のプレーヤー（Amazon IVS）で、映像データの到着が 10 秒ほど止まるのも
+        // Twitch と同じです。止まって読み込み中のくるくる表示になると戻らないことが多いため、Twitch と同じ 2.0 にして、
+        // 途切れている間を最低速度でつなぎます（Firefox も同じ値です）。低遅延の配信はふだんバッファが
+        // 1.3〜2.5 秒ほどなので、2.0 だと最初のうちは最低速度に入りやすくなりますが、そのぶん先読みが溜まり、
+        // 1 度途切れた後は、手動の閾値（終了 5 秒）が残す余裕の上で再生が続きます。
         floorThreshold: {
             range: [0, 10, 0.1],
-            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8, kick: 0.8 },
+            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8, kick: 2.0 },
             ff:  { twitch: 0.5 },
         },
 
@@ -186,10 +203,12 @@
         duckVolume:       { range: [0, 100, 5], def: all(30) },
         premiere:         { def: all(false) },
 
-        // recover は Twitch のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
+        // recover は Twitch と Kick のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // （heal() を持たないサイトでは、ON にしても何も起きません。）
+        // 中身はサイトごとに違います。Twitch は「エラー #3000」などで止まったプレーヤーを、
+        // Kick は読み込み中のくるくる表示のまま進まなくなったプレーヤーを、ページを読み込み直さずに戻します。
         recover:          {
-            def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false, kick: false },
+            def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false, kick: true },
         },
 
         // forceMse は TikTok のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。

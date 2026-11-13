@@ -46,6 +46,7 @@ Slipstream Live does that watching for you, about 50 times per second.
 * 🔊 **Volume ducking** — quiets the distorted audio that extreme slow-motion produces.
 * 📊 **Optional on-screen badges** — current speed, live latency, and buffer health, right in the player.
 * 🩹 **Twitch error recovery** — when the player stops with a numbered error such as #3000, it presses Twitch's own reload button, so playback returns in about a second without reloading the page.
+* 🔁 **Kick endless-spinner recovery** — when playback stays on the loading spinner and never resumes, it has Kick's player reload the stream, so playback returns within a few seconds without reloading the page.
 * 🎛️ **TikTok LIVE on Chrome, too** — on most PCs, Chrome plays TikTok LIVE through a pipeline that ignores speed changes. Slipstream Live has TikTok use the standard one it already uses on Firefox and Edge, so the speed can be adjusted (can be switched off).
 * 🌍 **19 UI languages** — English, 日本語, 한국어, Deutsch, Español, Français, Português (BR), Português (PT), Polski, Čeština, Slovenčina, Русский, Українська, Bahasa Indonesia, Bahasa Melayu, हिन्दी, العربية, 简体中文, 繁體中文. Arabic gets a fully mirrored right-to-left layout.
 * 🔒 **No network access, no tracking** — see [PRIVACY.md](PRIVACY.md).
@@ -191,6 +192,18 @@ the player rights itself, tries a few times at widening intervals, and then stop
 hammering a stream that has simply ended. This is on by default and can be switched off on the
 **Twitch** tab.
 
+**Recovering from Kick's endless spinner.** On Kick, playback sometimes stays on the loading spinner
+and never resumes, typically after video data has stopped arriving for a while. No error is raised,
+so Kick's own reconnect logic never kicks in either, and the usual cure is again a page reload.
+When the position hasn't moved for about 6 seconds while loading, Slipstream Live has Kick's player
+reload the stream — the same steps Kick takes itself when recovering from an error. If the player is
+stuck on a seek that never completed, it first seeks again to the current position to finish it,
+because reloading alone doesn't clear it. The page stays as it is, and the picture comes back within a
+few seconds. It tries a few times at widening intervals and then stops, and never acts while you've
+paused, during ads, or on VODs. If the playback token has expired, Kick's own reconnect logic fetches a
+fresh one and loads it (Slipstream Live never makes a request itself). This is on by default and can be
+switched off with **Recover from endless loading** on the **Kick** tab.
+
 **TikTok LIVE on Chrome.** TikTok picks one of two playback pipelines when the page opens. On
 Chrome 122 or later with 6 or more CPU cores (Edge excluded), it decodes the video itself with
 WebCodecs and only *shows* the result in the `<video>` element as a live MediaStream. A MediaStream
@@ -230,15 +243,16 @@ decisions take precedence in the same way.)
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **Speed up when delayed** | ON / OFF | ON | ON | ON | ON | ON | ON | Master switch for catching up. |
 | **Speed-up playback rate** | 1.05x–4.00x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | How fast to catch up (0.05 steps). Higher = faster, but eats buffer. |
-| **Auto-adjust buffer threshold** | Off / Stable / Standard / Aggressive | Standard | Standard | Standard | Standard | Standard | Standard | Let Slipstream Live decide when it's safe to speed up. **Recommended.** |
-| **Speed-up start buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | 10.0s | 10.0s | 10.0s | Only used when auto-adjust is **Off**: start speeding up once this much video is loaded. With maximum slowdown on, speed-up won't start until buffer health is more than 0.4 s above the maximum slowdown threshold. |
-| **Speed-up stop buffer threshold** | 0.1–100.0s | 9.0s | 9.0s | 9.0s | 9.0s | 9.0s | 9.0s | Only used when auto-adjust is **Off**: while speeding up, return to normal speed once buffer health drops below this. Setting it above the start threshold raises the start threshold to match. |
+| **Auto-adjust buffer threshold** | Off / Stable / Standard / Aggressive | Standard | Standard | Standard | Standard | Standard | **Off** | Let Slipstream Live decide when it's safe to speed up. **Recommended.** (Kick alone defaults to Off — see *Why are Kick's defaults different?* below.) |
+| **Speed-up start buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | 10.0s | 10.0s | 5.5s | Only used when auto-adjust is **Off**: start speeding up once this much video is loaded. With maximum slowdown on, speed-up won't start until buffer health is more than 0.4 s above the maximum slowdown threshold. |
+| **Speed-up stop buffer threshold** | 0.1–100.0s | 9.0s | 9.0s | 9.0s | 9.0s | 9.0s | 5.0s | Only used when auto-adjust is **Off**: while speeding up, return to normal speed once buffer health drops below this. Setting it above the start threshold raises the start threshold to match. |
 | **Maximum slowdown on buffer depletion** | ON / OFF | ON | ON | ON | ON | ON | ON | Master switch for the 0.15x emergency brake. |
-| **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | 0.50s | 0.80s | 0.80s | Drop to 0.15x while buffer health is below this. |
+| **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | 0.50s | 0.80s | 2.00s | Drop to 0.15x while buffer health is below this. |
 | **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | ON | ON | ON | Ducks the audio while at 0.15x. |
 | **Volume during maximum slowdown** | 0–100% | 30% | 30% | 30% | 30% | 30% | 30% | Percentage of *your* current volume (5% steps). 100 = no change, 0 = mute. |
 | **Control premieres** | ON / OFF | OFF | — | — | — | — | — | Whether premieres count as live streams. Off = they're left alone entirely. YouTube only, so the row appears on that tab alone. |
 | **Recover from player errors** | ON / OFF | — | ON | — | — | — | — | Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so the row appears on that tab alone. |
+| **Recover from endless loading** | ON / OFF | — | — | — | — | — | ON | When the position hasn't moved for about 6 seconds on the loading spinner, has Kick's player reload the stream, so playback returns without a page reload (see *Recovering from Kick's endless spinner* above). Kick only, so the row appears on that tab alone. |
 | **Allow speed changes in Chrome** | ON / OFF | — | — | — | ON | — | — | Has TikTok pages see at most 4 CPU cores, so Chrome plays TikTok LIVE through the standard pipeline whose speed can be changed (see *TikTok LIVE on Chrome* above). Takes effect after a page reload, and does nothing on Firefox. TikTok only, so the row appears on that tab alone. |
 
 *FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only
@@ -254,12 +268,23 @@ site where it differs.*
 > **And DAZN's?** DAZN, like YouTube, streams MPEG-DASH in chunks (segments) a few seconds long,
 > and its buffer saw-tooths in much the same way, so it shares YouTube's 0.80s.
 
-> **And Kick's?** Kick's player comes from the same family as Twitch's, but on its low-latency streams
-> the buffer settles at only 1.3–2.5 seconds, so Twitch's 2.00s would keep normal playback in maximum
-> slowdown. The video arrives in small pieces every 0.05–0.4 seconds and the buffer barely saw-tooths,
-> so it shares YouTube's and DAZN's 0.80s. Kick, too, sometimes stops delivering video for around
-> 10 seconds; if that leaves you at 0.15x or stalled more often than you'd like, move **Auto-adjust buffer
-> threshold** toward **Stable**.
+> **Why are Kick's defaults different?** Kick often stops delivering video for around 10 seconds, and
+> once the loading spinner appears, playback frequently never resumes. Each gap throws off the statistics
+> auto-adjust relies on, so Kick alone has auto-adjust **Off** and uses three values chosen so that a gap
+> doesn't stop playback (the same on Chrome and Firefox):
+>
+> * **Speed-up starts at 5.5s of buffer and stops at 5.0s** — even after catching up, about 5 seconds of
+>   video stays loaded.
+> * **Maximum slowdown threshold is 2.00s** (the same as Twitch) — the last 2 seconds last about
+>   13 seconds at 0.15x.
+> * Together, spending 3 of those 5 seconds at 1.00x and the last 2 at 0.15x rides out about
+>   **16 seconds** without data.
+>
+> On low-latency streams the buffer normally sits at only 1.3–2.5 seconds, so 0.15x kicks in more often
+> at first, and the buffer builds up as it does. For the times playback stalls anyway, **Recover from
+> endless loading** on the **Kick** tab is on by default. If you'd rather keep latency lower, set
+> **Auto-adjust buffer threshold** back to **Standard** and the maximum slowdown threshold back to 0.80s
+> (the defaults up to 1.8.x).
 
 #### The four auto-adjust levels
 
@@ -495,6 +520,13 @@ Same as DAZN: if **Enable on this site** (or **Enable on Kick**) is showing at t
 press it and allow access, then reload the page if needed. VODs and clips are left alone, and so are ad
 breaks. Kick only builds its control bar while you move the mouse over the player, so the badges come
 and go with it.
+
+**Kick stays on the loading spinner.**
+Check that **Recover from endless loading** is on in the **Kick** tab. When it is, the stream is reloaded
+once the position hasn't moved for about 6 seconds. If a few attempts don't bring it back, the stream
+itself or your connection has most likely stopped, so reload the page. To hit the spinner less often in
+the first place, raise the maximum slowdown threshold (default 2.00s) and the speed-up stop buffer
+threshold (default 5.0s): more video stays loaded for the next gap, at the cost of more latency.
 
 **The badges don't appear.**
 They're off by default — turn them on in the **All sites** panel. If a site's control bar can't be
