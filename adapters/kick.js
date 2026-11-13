@@ -50,6 +50,36 @@
  *   そのあいだに再生が止まると、届かなかった分がまとめて届いて、以後は 10 秒ほど遅れたまま再生が続きました
  *   （IVS はこのとき自分では追いつきません）。Slipstream Live は、この溜まったバッファを使って最前線へ戻ります
  *   （同じ実測で、バッファ約 12 秒・遅延約 12 秒の状態から、1.25 倍で約 40 秒かけて遅延 1.6 秒前後まで戻りました）。
+ *   この途切れが頻繁なため、Kick の既定値は自動調整をオフにし、先読みを 5 秒ほど残して、残り 2 秒からは
+ *   最低速度で途切れをつなぐ設定にしています（shared/schema.js の KEYS を参照）。
+ *
+ * ■ 読み込み中のまま止まったときの復帰（heal）
+ *   Kick のプレーヤーは、IVS の状態が Buffering のあいだ、画面の中央に読み込み中のくるくる表示を出します。
+ *   データの途切れの後などに、エラーも出さずに Buffering のまま再生位置が進まなくなり、ページを
+ *   読み込み直すまで戻らないことがあります。Kick 自身にも再接続の仕組み（間隔を倍々に延ばしながら 5 回まで
+ *   読み込み直す）はありますが、それが動くのは IVS がエラーを出したとき（ネットワークのエラーや
+ *   再生用トークンの期限切れ）だけで、エラーの無い Buffering には何もしません。
+ *   そこで、この状態を見張って代わりに立て直します（heal()）。
+ *
+ *   2026 年 11 月の実機（Chrome、kick.com のライブ配信）で確かめたこと：
+ *     - IVS は、シーク（seekTo）を頼んでから完了の知らせが届くまでのあいだ、再生位置を Worker へ伝えません
+ *       （本体の onSinkTimeUpdate() が、シークの途中なら何もしないため）。シークが完了しないまま残ると、
+ *       Worker は再生位置が進んでいないと思い込んで先読みをやめ、エラーの無い Buffering が 2 分近く続きました
+ *       （<video> の再生位置をバッファの先へ直接動かして、この状態を作りました）。このとき isSeeking() は
+ *       true のままで、load() で読み込み直しても残りました（読み込み直した後も、約 30 秒で同じように止まりました）。
+ *       今の再生位置へ seekTo() し直すと、約 0.2 秒でシークが完了して再生が戻りました。
+ *     - それ以外の止まり方には、Kick 自身の再試行と同じ load(getPath()) と setAutoplay(true) が効きます。
+ *       約 1 秒で、最前線から再生し直しました（再生セッションの ID が変わります）。
+ *     - 再生用のトークンは約 10 分で期限が切れます。期限切れのまま load() すると IVS が認証のエラー
+ *       （ErrorAuthorization・code 7）を出しますが、Kick 自身の再接続が新しいトークンを取り直して、約 4 秒で戻りました。
+ *       この拡張機能が自分でトークンを取りに行く（通信する）ことはありません。
+ *     - 速度を変えずに（等倍・先読み 1.3〜2 秒ほどで）見ていると、自然に戻るまで 8〜9.5 秒かかる読み込み中が
+ *       何度も起きました。heal() を動かしておくと、5 分ほどのあいだに 4 回、止まって 6.5 秒前後で読み込み直し、
+ *       どれも約 1 秒で最前線から再生に戻りました。映像が本当に途絶えていたのではなく、IVS が受信の待ちから
+ *       抜け出せずにいたとみられます（ときどき「Read response timeout」という回復可能なエラーも出ていました）。
+ *   そこで、読み込み中のまま再生位置が HEAL_WAIT[0] だけ進まなければ、残ったシークがあれば seekTo() で終わらせ、
+ *   無ければ（または、それでも戻らなければ）load() で読み込み直します。間隔を広げながら数回だけ試し、
+ *   駄目なら打ち切ります。一時停止中・広告中・アーカイブには手を出しません。
  *
  * ■ バッジの位置
  *   コントロールバー下段の左側（再生・音量・経過時間・LIVE）の末尾に並べます（host() を参照）。
@@ -112,6 +142,31 @@
 
     /** IVS 自身の自動加速を無効化し直す間隔（ミリ秒）。Twitch と同じです。 */
     const TAME_MS = 2000;
+
+    /** 読み込み中のまま止まっていないかを確かめる間隔（ミリ秒）。Twitch と同じです。 */
+    const HEAL_POLL_MS = 500;
+
+    /**
+     * 復帰を試みる間隔（ミリ秒）。
+     *
+     * 先頭の値は「読み込み中のまま再生位置が進まなくなってから 1 回目まで」の猶予で、
+     * 2 つ目以降は前回の試行からの間隔です（2 回目以降も、今の止まりが先頭の値以上続いていることが条件です）。
+     * 配列の長さがそのまま試行回数の上限になり、配信が本当に止まっているときに延々と挑み続けないための歯止めになります。
+     *
+     * 先頭を 6 秒にしているのは、ふつうのバッファ切れ（数秒で戻るもの）には手を出さないためです。
+     * Kick の既定値では 16 秒ほどの途切れまで止まらずにつなぐので、そこからさらに 6 秒止まっていれば、
+     * 自然には戻らない状態とみなせます。読み込み直しは約 1 秒で済むので、待ちすぎるよりは早めに試します。
+     */
+    const HEAL_WAIT = [6000, 8000, 15000, 30000];
+
+    /** 正常な再生がこれだけ続いたら、試行回数を忘れる（ミリ秒）。Twitch と同じです。 */
+    const HEAL_CLEAR_MS = 5000;
+
+    /**
+     * 再生位置がこれ以上動いたら「止まっていない」とみなす幅（秒）。
+     * seekTo() で今の位置へシークし直すと、位置が 0.03 秒ほど動くことがあるため、少し幅を持たせます。
+     */
+    const HEAL_MOVED = 0.25;
 
     /**
      * IVS が、映像に差し込まれた広告の始まりと終わりに出すイベントの名前。
@@ -307,6 +362,32 @@
         /** @type {boolean} このプレーヤーでコントロールバーを 1 度でも見つけたか（host() を参照） */
         let barSeen = false;
 
+        // --- 読み込み中のまま止まったときの復帰（heal() を参照）で使う状態 ---
+        // 試行回数（tries）などは forget() では消しません。読み込み直すと再生セッションが変わり、
+        // inject.js が reset() として forget() を呼ぶためです。そこで回数を 0 に戻すと
+        // 「読み込み直す → また止まる → また読み込み直す」を際限なく繰り返せてしまいます（Twitch と同じ考え方です）。
+
+        /** @type {number} 止まっていないかを最後に確かめた時刻 */
+        let pollAt   = -Infinity;
+        /** @type {number} 読み込み中のまま再生位置が進まなくなった時刻。止まっていなければ NaN */
+        let stallAt  = NaN;
+        /** @type {number} 止まり始めたときの再生位置（秒） */
+        let stallPos = NaN;
+        /** @type {number} 最後に復帰を試みた時刻 */
+        let healAt   = -Infinity;
+        /** @type {number} 今回の異常で復帰を試みた回数 */
+        let tries    = 0;
+        /** @type {string} 最後に試した手（'seek' か 'reload'）。シークし直しを 2 回続けないために使います */
+        let lastTry  = '';
+        /** @type {number} 正常な再生が続き始めた時刻。途切れていれば NaN */
+        let goodAt   = NaN;
+        /**
+         * @type {boolean} この <video> で、1 度でも正常に再生できたか。
+         * 再生が始まる前（ページを開いた直後の読み込みや、配信の前に流れる広告の裏で待っている間）の
+         * Buffering は「止まった」ものではないので、復帰の対象にしません。
+         */
+        let played   = false;
+
         /**
          * コントロールバーが取り除かれている間、バッジを預けておく入れ物。
          * ページには入れないので、中のバッジは見えません（host() を参照）。
@@ -499,6 +580,11 @@
                 misses   = 0;
                 searchAt = -Infinity;
                 barSeen  = false;
+                // 復帰の見張りも、新しい video では「まだ再生していない」ところから始めます
+                // （試行回数は残します。上の「復帰で使う状態」の説明を参照）。
+                played   = false;
+                stallAt  = NaN;
+                goodAt   = NaN;
             }
             return video;
         }
@@ -588,6 +674,152 @@
             return stat;
         }
 
+        /**
+         * 配信の前などに流れる Google IMA の広告（本編とは別の <video title="Advertisement">）が再生中かどうか。
+         * そのあいだ本編が待っているのは止まっているからではないので、復帰の対象にしません。
+         * @returns {boolean} 再生中なら true
+         */
+        function imaPlaying() {
+            const ad = document.querySelector(`video${AD_VIDEO}`);
+            return ad instanceof HTMLVideoElement && !ad.paused && !ad.ended;
+        }
+
+        /**
+         * 正常に再生できているか（IVS の状態が Playing で、<video> がデータを持って進んでいるか）。
+         * @returns {boolean} 正常なら true
+         */
+        const healthy = () => Boolean(video) && !video.paused && video.readyState >= 3
+            && ask('getState', '') === 'Playing';
+
+        /**
+         * 読み込み中のくるくる表示が出たまま、復帰の対象になる状態かどうか。
+         *
+         * 次のすべてを満たすときだけ true です。
+         *   1) この <video> で 1 度は正常に再生できた（played。再生が始まる前の読み込みは対象外）
+         *   2) ライブ配信を流している（アーカイブ・クリップ・IVS が映像に差し込んだ広告の最中ではない。
+         *      media() が最後に求めた判定をそのまま使います）
+         *   3) IVS の状態が Buffering（Kick はこのとき画面にくるくる表示を出します）
+         *   4) ユーザーが一時停止していない。IVS の isPaused() は、利用者が止めたときだけ true になります
+         *      （Buffering のあいだは IVS が <video> を一時停止させるので、<video> の paused では見分けられません）
+         *   5) 配信の前などに流れる IMA の広告が再生中ではない
+         * IVS の実体が見つからないときは 3) で false になり、何もしません（打てる手が無いため）。
+         * 再生位置が本当に進んでいないかは、heal() が時刻と位置を控えて確かめます。
+         * @returns {boolean} 対象の状態なら true
+         */
+        function jammed() {
+            if (!video || !played || !current.live) return false;
+            if (ask('getState', '') !== 'Buffering') return false;
+            if (ask('isPaused', true) !== false) return false;
+            return !imaPlaying();
+        }
+
+        /**
+         * シークし直す先（秒）を決める。
+         *
+         * ふつうは今の再生位置です（読み込み済みの範囲の中にあれば、そこからそのまま再生を続けられます）。
+         * 再生位置が読み込み済みの範囲の外にあるとき（範囲の先へ飛んだシークが残っているときなど）は、
+         * そこへシークし直しても終わらないので、最後の範囲の終わりの 1 秒手前にします。
+         * 読み込み済みの範囲が 1 つも無ければ、今の再生位置のままにします。
+         * @returns {number} シーク先（秒）。決められなければ NaN
+         */
+        function anchor() {
+            try {
+                const at     = video.currentTime;
+                const ranges = video.buffered;
+                if (!ranges.length) return at;
+                for (let i = 0; i < ranges.length; i++) {
+                    if (at >= ranges.start(i) && at <= ranges.end(i)) return at;
+                }
+                const last = ranges.length - 1;
+                return Math.max(ranges.start(last), ranges.end(last) - 1);
+            } catch {
+                return NaN;
+            }
+        }
+
+        /**
+         * 復帰を 1 回試みる。
+         *
+         *   - 完了しないシークが残っていれば（isSeeking() が true）、今の再生位置へ seekTo() し直して終わらせます
+         *     （位置の決め方は anchor() を参照）。読み込み直しでは消えないため、先にこちらを試します。
+         *     ただし 2 回続けては試しません（シークし直しても戻らなかったのなら、原因は別にあるためです）。
+         *   - それ以外は、今の再生ソース（getPath()）を load() で読み込み直し、setAutoplay(true) で再生を始めさせます。
+         *     Kick 自身がエラーから立ち直るときと同じ手順で、最前線から再生し直します。トークンの期限が切れていれば
+         *     IVS がエラーを出し、Kick 自身の再接続が新しいトークンで読み込み直します。
+         * 再生ソースのアドレス（トークンを含みます）はログに出しません。
+         * @param {number} n 今回が何回目の試行か（1 から始まる）
+         * @returns {string} 何をしたかを表す短い文字列（デバッグログ用）
+         */
+        function attempt(n) {
+            if (lastTry !== 'seek' && ask('isSeeking', false) === true) {
+                const to = anchor();
+                if (Number.isFinite(to)) {
+                    lastTry = 'seek';
+                    ask('seekTo', null, to);
+                    return `seek #${n}`;
+                }
+            }
+
+            const path = ask('getPath', '');
+            if (typeof path !== 'string' || !path) return `giveup #${n}`;
+            lastTry = 'reload';
+            // 今の IVS は何も返しませんが、将来 Promise を返すようになっても、
+            // 拒否されたときに未処理の警告が出ないよう受けておきます。
+            const done = ask('load', null, path);
+            if (typeof done?.catch === 'function') done.catch(() => { });
+            ask('setAutoplay', null, true);
+            return `reload #${n}`;
+        }
+
+        /**
+         * 読み込み中のまま止まったプレーヤーを見張り、必要なら復帰を試みる。
+         *
+         * ■ すぐに手を出さない理由
+         *   ふつうのバッファ切れは、データが届けば数秒で IVS 自身が再生に戻ります。そこへ割り込むと、
+         *   届きかけていた分を捨てて読み込み直すことになるため、再生位置が HEAL_WAIT[0] だけ進まないときだけ動きます。
+         *   以降も間隔を広げながら数回だけ試し、駄目なら諦めます（Twitch の heal() と同じ考え方です）。
+         * 止まり始めたことに気付いただけのときは何も返しません。inject.js は、この関数が文字列を返すと
+         * 速度と音量の横取りを解いて学習内容を捨てるため、ふつうのバッファ切れのたびにそうさせないためです。
+         * @returns {string|null} 試行したときだけ、その内容を表す文字列
+         */
+        function heal() {
+            const now = performance.now();
+            if (now - pollAt < HEAL_POLL_MS) return null;
+            pollAt = now;
+
+            // --- 止まっていない ---
+            if (!jammed()) {
+                stallAt = NaN;
+                if (!healthy()) { goodAt = NaN; return null; }
+
+                // 正常な再生が続いたら、今回の異常のことは忘れます。
+                played = true;
+                if (Number.isNaN(goodAt)) goodAt = now;
+                if (now - goodAt >= HEAL_CLEAR_MS) { tries = 0; lastTry = ''; healAt = -Infinity; }
+                return null;
+            }
+
+            // --- 読み込み中のまま ---
+            goodAt = NaN;
+
+            // 止まり始めた時刻と位置を控えます。位置が動いていれば止まってはいないので、そこから数え直します。
+            // `!(差 <= 幅)` と書くのは、位置が NaN のときも「数え直す」側へ倒すためです。
+            const at = video.currentTime;
+            if (Number.isNaN(stallAt) || !(Math.abs(at - stallPos) <= HEAL_MOVED)) {
+                stallAt  = now;
+                stallPos = at;
+                return null;
+            }
+
+            if (tries >= HEAL_WAIT.length) return null;       // 試せる回数を使い切った
+            if (now - stallAt < HEAL_WAIT[0]) return null;    // まだ自然に戻るかもしれない
+            if (now - healAt < HEAL_WAIT[tries]) return null; // 前回の試行から間を空ける
+
+            healAt = now;
+            tries += 1;
+            return attempt(tries);
+        }
+
         return {
             // Kick のライブのプレーヤーには速度変更のメニューがありません（歯車のメニューは画質だけです）。
             // IVS 自身が速度を書き換えても、横取りした側で受け止めて Slipstream Live の判断を優先します。
@@ -602,6 +834,13 @@
             badgeStyle: BADGE_STYLE_PLAIN,
 
             reset: forget,
+
+            /**
+             * 読み込み中のまま止まったプレーヤーを立て直す。
+             * Twitch とこのアダプターにだけある任意のメソッドで、設定の「読み込み中のまま止まったら自動復帰する」
+             * （recover）がオンのときだけ、inject.js がライブ判定より前に呼びます。
+             */
+            heal,
 
             /**
              * プレーヤーの外枠要素を返す（コントロールバーが見つからないときの、バッジの表示位置の基準）。

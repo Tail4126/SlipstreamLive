@@ -574,7 +574,13 @@
         // HTML の仕様では「ラベルの中で最初に現れる操作部品」が操作対象になるため、
         // 入力欄より手前にある「?」ボタンが選ばれてしまいます。すると行の文字を押したとき、
         // スイッチが切り替わらずに説明の吹き出しが開く、という食い違いが起きていました。
-        input.id = `key-${key}`;
+        //
+        // 同じ設定キーの入力欄が、サイトごとに別々の行として置かれることがあります
+        // （recover は、Twitch のタブと Kick のタブで文言の違う行を持ちます）。id が同じだと for が
+        // 先に書かれたほう（隠れている Twitch の行）を指してしまうので、data-site の中にある入力欄には
+        // サイト ID を付け足して、id がページの中で重ならないようにします。
+        const site = input.closest('[data-site]')?.dataset.site;
+        input.id = site ? `key-${key}-${site}` : `key-${key}`;
         const label = input.closest('label');
         if (label) label.htmlFor = input.id;
 

@@ -540,7 +540,7 @@ body
     pointer-events: none;
 }
 
-/* --- 注意書き（現在は Twitch の下限しきい値についての説明で使用）--- */
+/* --- 注意書き（現在は Twitch と Kick の既定値についての説明で使用）--- */
 .note
 {
     margin: 3px 5px 4px;
