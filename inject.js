@@ -77,6 +77,22 @@
     const PAINT_MS   = 100;
 
     /**
+     * 橋渡し役（content.js）へ送る呼びかけのイベント名。content.js の PING と同じ名前にします。
+     * 名前を変えると、更新の前後で古い版と新しい版が呼びかけ合えなくなるので、変えないでください。
+     */
+    const PING          = 'slipstreamlive:ping';
+
+    /** 橋渡し役へ呼びかける間隔（ミリ秒）。 */
+    const BRIDGE_MS     = 2000;
+
+    /**
+     * 何回続けて返事が無ければ、橋渡し役がいなくなったと判断するか。
+     * 更新で新旧の content.js が入れ替わる一瞬を、いなくなったと取り違えないための余裕です。
+     * BRIDGE_MS × この回数が、Firefox で無効化・削除してから速度が元に戻るまでの最長の時間になります。
+     */
+    const BRIDGE_MISSES = 2;
+
+    /**
      * 再生中のメディア（動画 ID・ライブかどうか）を問い合わせ直す間隔（ミリ秒）。
      * 動画の切り替わりや広告の始まりを 0.1 秒以内に気付ければ十分なため、毎回は聞きません。
      * なお、動画の読み込み開始などのイベントが届いたときは、間隔を待たずに問い合わせます。
@@ -677,6 +693,12 @@
     let raw      = null;
     /** @type {boolean} 設定の属性が変わったかもしれない（次の tick で読み直す）か */
     let dirty    = true;
+    /** @type {boolean} 橋渡し役（content.js）から、これまでに 1 度でも返事があったか */
+    let bridgeSeen   = false;
+    /** @type {number} 橋渡し役から返事が無かった回数（連続） */
+    let bridgeMisses = 0;
+    /** @type {boolean} 橋渡し役がいなくなったと判断したか（true の間は制御しない） */
+    let bridgeLost   = false;
     /** @type {HTMLVideoElement|null} 現在制御している video 要素 */
     let video    = null;
     /** @type {{ id: string|null, live: boolean, premiere?: boolean }} 最後に問い合わせたメディアの情報 */
@@ -1656,6 +1678,8 @@
         if (dirty) refresh();
 
         // 拡張機能が無効、または設定をまだ受け取っていなければ待機します。
+        // 橋渡し役（content.js）がいなくなったとき（probe() を参照）も、無効と同じに扱います。
+        if (bridgeLost) return sleep(0);
         if (!settings?.enabled) return sleep(settings === null ? IDLE_MS : 0);
 
         const now = performance.now();
@@ -1909,6 +1933,56 @@
     }
 
     watchSettings();
+
+    /**
+     * 橋渡し役（content.js）がまだ生きているかを確かめる。
+     *
+     * ■ なぜ必要？
+     *   このスクリプトはページ自身のスクリプトとして動くので、拡張機能が無効化・削除されても
+     *   止まりません。Chrome では、残った content.js が「無効」の設定を書き込んで止めてくれます
+     *   （content.js の liveness を参照）。ところが Firefox は、無効化・削除と同時に content.js を
+     *   取り除くため、誰も「無効」を書き込めず、ページを再読み込みするまで、最後に受け取った
+     *   設定のまま速度を変え続けてしまいます。そこで、こちらから定期的に呼びかけます。
+     *
+     * ■ 仕組み
+     *   document へ、取り消し可能なイベント（PING）を送ります。content.js は生きていれば
+     *   preventDefault() を呼びます。イベントは同期的に届くので、dispatchEvent() の戻り値
+     *   （誰かが preventDefault() を呼んでいれば false）で、その場で返事の有無が分かります。
+     *
+     * ■ 返事を 1 度も受け取っていない間は、いなくなったと判断しない
+     *   content.js を持たない古い版から更新された直後のタブや、開発中にこのファイルだけを
+     *   ページへ読み込んで試すときは、最初から返事がありません。そのときは今までどおり動きます。
+     *
+     * ■ 戻ってきたら再開する
+     *   Firefox は拡張機能の更新や再有効化のとき、開いているタブへ新しい content.js を入れ直します。
+     *   設定の内容が同じだと属性は書き換わらず、見張り役（settingsObserver）は呼ばれないので、
+     *   返事が戻ったことをきっかけに、ここで制御を再開します。
+     * @returns {void}
+     */
+    function probe() {
+        let answered = false;
+        try { answered = !document.dispatchEvent(new Event(PING, { cancelable: true })); } catch { }
+
+        if (answered) {
+            bridgeSeen   = true;
+            bridgeMisses = 0;
+            if (!bridgeLost) return;
+            bridgeLost = false;
+            dirty      = true;
+            log('bridge', 'back');
+            wake();
+            return;
+        }
+
+        if (!bridgeSeen || bridgeLost) return;
+        bridgeMisses += 1;
+        if (bridgeMisses < BRIDGE_MISSES) return;
+        bridgeLost = true;
+        log('bridge', 'lost');
+        run(false);
+    }
+
+    setInterval(probe, BRIDGE_MS);
 
     // タブが表示状態に戻ったとき。裏に回っている間はタイマーの精度が落ちるため、
     // 戻ってきた時点で最新の状況を確認し直します。

@@ -56,13 +56,25 @@
 
     /**
      * バッジを差し込みたい場所（コントロールバー内）の候補。上から順に試します。
-     * YouTube の UI 変更に耐えられるよう、候補を複数用意しています。
+     * どれも 2026 年 11 月の実際のページにある要素です。
+     *   1) モバイル版（m.youtube.com）のコントロール。#movie_player の外
+     *      （<player-time-display>）にあり、pick() がページ全体から探して見つけます。
+     *   2) PC 版（www.youtube.com、クラス ytp-delhi-modern の今の UI）。
+     *      .ytp-time-wrapper は「ライブ」の表示（button.ytp-live-badge）を包む枠で、バッジはその右隣に並びます。
+     *   3) 2) が無いときの控え。左側のコントロールの並びの末尾に置きます。
      */
     const BARS = [
-        'player-time-display .ytwPlayerTimeDisplayLiveDot', // 新 UI のライブ表示
-        '.ytp-time-display .ytp-time-wrapper',              // 時間表示の隣
-        '.ytp-chrome-controls .ytp-left-controls',          // 左側コントロール群
+        'player-time-display .ytwPlayerTimeDisplayLiveDot',
+        '.ytp-time-display .ytp-time-wrapper',
+        '.ytp-chrome-controls .ytp-left-controls',
     ];
+
+    /**
+     * 「今の時刻 − 取り込み時刻」を遅延として信用する範囲（秒）。
+     * 端末の時計が大きくずれているとこの範囲から外れるので、そのときは遅延を不明（NaN）にします。
+     */
+    const CLOCK_MIN = -5;
+    const CLOCK_MAX = 86400;
 
     /**
      * YouTube 用アダプターを生成する。
@@ -234,12 +246,28 @@
              * 現在の遅延と、ライブ最前線にいるかどうかを返す。
              * YouTube は「統計情報」API から実測値を教えてくれます。
              * （詳細統計情報の組み立ては重めなので、inject.js は 0.1 秒ごとにしか呼びません）
+             *
+             * ■ 統計情報 API が無いプレーヤーでの求め方
+             *   モバイル版（m.youtube.com）のプレーヤーには getStatsForNerds() がありません
+             *   （2026 年 11 月に確認）。そのままでは遅延が不明になり、遅延バッジが出ません。
+             *   getProgressState() の ingestionTime は「今再生している場面が YouTube に届いた時刻」
+             *   （1970 年からの秒数）なので、「今の時刻 − ingestionTime」が遅延になります。
+             *   PC 版で統計情報の値（16.14 秒）と並べると、差は 0.03 秒以内でした。
              * @returns {{ latency: number, atHead: boolean }}
              */
             status() {
-                stat.latency = toNum(call('getStatsForNerds')?.live_latency_secs);
+                const progress = call('getProgressState');
+
+                let latency = toNum(call('getStatsForNerds')?.live_latency_secs);
+                if (Number.isNaN(latency)) {
+                    const ingested = toNum(progress?.ingestionTime);
+                    const elapsed  = Date.now() / 1000 - ingested;
+                    if (ingested > 0 && elapsed > CLOCK_MIN && elapsed < CLOCK_MAX) latency = Math.max(elapsed, 0);
+                }
+
+                stat.latency = latency;
                 // isAtLiveHead が明示的に false のときだけ「巻き戻して視聴中」と判断します。
-                stat.atHead  = call('getProgressState')?.isAtLiveHead !== false;
+                stat.atHead  = progress?.isAtLiveHead !== false;
                 return stat;
             },
 

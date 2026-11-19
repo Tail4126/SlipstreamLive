@@ -3,7 +3,7 @@
 
     "name": "__MSG_appName__",
     "short_name": "__MSG_appShortName__",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "description": "__MSG_appDesc__",
 
     "default_locale": "en",
@@ -132,6 +132,7 @@
     "optional_host_permissions": [
         "https://www.dazn.com/*",
         "https://kick.com/*",
-        "https://player.kick.com/*"
+        "https://player.kick.com/*",
+        "https://abema.tv/*"
     ]
 }

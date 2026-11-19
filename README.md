@@ -6,7 +6,7 @@
 
 > **Live streams always run a few seconds behind. Slipstream Live quietly closes that gap for you.**
 
-**Slipstream Live** is a browser extension for **YouTube Live**, **Twitch**, **TwitCasting**, **TikTok LIVE**, **DAZN**, and **Kick**.
+**Slipstream Live** is a browser extension for **YouTube Live**, **Twitch**, **TwitCasting**, **TikTok LIVE**, **DAZN**, **Kick**, and **ABEMA**.
 
 It watches how much video your browser has buffered and nudges the playback speed up or down to
 keep you close to the live edge — **without** the video stopping to buffer.
@@ -38,8 +38,8 @@ Slipstream Live does that watching for you, about 50 times per second.
 
 ## ✨ Features
 
-* 🌐 **Six platforms** — YouTube, Twitch, TwitCasting, TikTok LIVE, DAZN, and Kick, each with its own tuned defaults.
-* 🔑 **DAZN and Kick only run once you allow them** — nothing is loaded into DAZN or Kick pages until you press **Enable on this site** in the settings popup and grant access to the site.
+* 🌐 **Seven platforms** — YouTube, Twitch, TwitCasting, TikTok LIVE, DAZN, Kick, and ABEMA, each with its own tuned defaults.
+* 🔑 **DAZN, Kick, and ABEMA only run once you allow them** — nothing is loaded into their pages until you press **Enable on this site** in the settings popup and grant access to the site.
 * 🚀 **Automatic catch-up** — speeds up only when it's actually safe to do so.
 * 🧠 **Learns each stream** — figures out the right safety margin by itself, so you don't have to guess a number.
 * 🛡️ **Freeze avoidance** — a last-resort 0.15x mode that keeps the picture moving while the buffer refills.
@@ -76,7 +76,7 @@ Install directly from the **[Chrome Web Store](https://chromewebstore.google.com
 
 Install directly from **[Firefox Add-ons](https://addons.mozilla.org/firefox/addon/slipstream-live/)**.
 
-Also available on **Firefox for Android** (v142.0 or later) — open the same page in
+Also available on **Firefox for Android** (v159.0 or later) — open the same page in
 Firefox for Android and tap **Add to Firefox**.
 
 <details>
@@ -99,9 +99,9 @@ Firefox for Android and tap **Add to Firefox**.
 ### ✅ Check that it works
 
 Open a **live** stream on [YouTube](https://www.youtube.com/), [Twitch](https://www.twitch.tv/),
-[TwitCasting](https://twitcasting.tv/), [TikTok LIVE](https://www.tiktok.com/live), [DAZN](https://www.dazn.com/), or [Kick](https://kick.com/), click the Slipstream Live icon, and turn on
+[TwitCasting](https://twitcasting.tv/), [TikTok LIVE](https://www.tiktok.com/live), [DAZN](https://www.dazn.com/), [Kick](https://kick.com/), or [ABEMA](https://abema.tv/), click the Slipstream Live icon, and turn on
 **Show playback rate**. A small `1.00x` should appear in the player's control bar, changing
-colour as Slipstream Live works. On DAZN and Kick, press **Enable on this site** first (see *Using DAZN and Kick* below).
+colour as Slipstream Live works. On DAZN, Kick, and ABEMA, press **Enable on this site** first (see *Using DAZN, Kick, and ABEMA* below).
 
 ---
 
@@ -109,7 +109,7 @@ colour as Slipstream Live works. On DAZN and Kick, press **Enable on this site**
 
 Click the toolbar icon to open the settings popup. It has two panels:
 
-* **Site settings** — tabs for YouTube / Twitch / TwitCasting / TikTok / DAZN / Kick. Each site remembers its own values,
+* **Site settings** — tabs for YouTube / Twitch / TwitCasting / TikTok / DAZN / Kick / ABEMA. Each site remembers its own values,
   and the popup automatically opens the tab for the site you're currently on. On any other site, it
   opens the tab you last had selected.
 * **All sites** — the master switch and the on-screen badges.
@@ -118,14 +118,14 @@ Every row has a **?** button with a plain-language explanation, and each section
 **Reset** button that puts that section back to its defaults. The link in the bottom-right corner
 opens the [user manual](https://tail4126.github.io/SlipstreamLive/manual.html), which walks through the same screen with figures.
 
-### Using DAZN and Kick
+### Using DAZN, Kick, and ABEMA
 
-DAZN and Kick are the two sites that don't work straight after installing. Open a DAZN (or Kick) page,
-click the icon, and press **Enable on this site** at the top of the **DAZN** (or **Kick**) tab. Your
+DAZN, Kick, and ABEMA are the sites that don't work straight after installing. Open a page on one of them,
+click the icon, and press **Enable on this site** at the top of that site's tab (**DAZN**, **Kick**, or **ABEMA**). Your
 browser asks for access to `www.dazn.com` — for Kick, to `kick.com` and `player.kick.com` (the player
-other sites embed) — and once you allow it, Slipstream Live starts working right away, including on
+other sites embed); for ABEMA, to `abema.tv` — and once you allow it, Slipstream Live starts working right away, including on
 pages that are already open (reload the page if it doesn't). Opened on any other page, the button
-reads **Enable on DAZN** or **Enable on Kick** instead.
+reads **Enable on DAZN**, **Enable on Kick**, or **Enable on ABEMA** instead.
 
 You can withdraw the access at any time from your browser's extension settings; Slipstream Live then
 stops running on that site from the next page load. (These sites work this way so that adding a site never
@@ -145,7 +145,8 @@ far playback trails the newest video received — usually the same number as buf
 On DAZN it usually shows how far playback trails real time, since most DAZN live streams time-stamp their video with the
 wall-clock time; on channels that don't, it falls back to the same measure as TikTok.
 On Kick it shows how far playback trails real time, using the time stamp Kick's player attaches to every
-frame (the moment it was broadcast). Both the DAZN and Kick figures assume your computer's clock is right.
+frame (the moment it was broadcast). On ABEMA it also shows how far playback trails real time, since ABEMA's
+TV channels time-stamp their video with the wall-clock time. The DAZN, Kick, and ABEMA figures assume your computer's clock is right.
 
 ---
 
@@ -219,17 +220,23 @@ changes in Chrome** off on the **TikTok** tab to let TikTok choose on its own; S
 leaves TikTok LIVE alone whenever the WebCodecs pipeline is in use.
 
 **What Slipstream Live leaves alone:** archived videos (VODs), clips, and ad breaks are never
-touched — only live playback is controlled. TwitCasting's low-latency mode is excluded too: it
+touched — only live playback is controlled. TwitCasting's "Ultra low latency (β)" mode (超低遅延, a
+switch in the player's settings menu) is excluded too: it
 delivers video over WebRTC, which has no read-ahead buffer to measure and ignores `playbackRate`
-entirely. Those streams are already close to real time, so there's nothing to catch up on. On
+entirely. Those streams are already close to real time, so there's nothing to catch up on.
+(TwitCasting streams with that switch off are controlled as usual.) On
 TikTok, only LIVE pages (`/live` and `/@name/live`) are watched; videos in the feed are never touched.
 On Kick, VODs (including the VOD of a stream that's still live) and clips are left alone, and so are the ad
 breaks Kick inserts into a live stream — the player announces them, and control resumes when they end.
+On ABEMA, on-demand videos are left alone, and so are the commercial breaks inserted into a TV channel;
+control resumes once the programme is back.
 
-**On YouTube and TwitCasting**, if *you* pick a speed other than 1.00x in the player menu,
-Slipstream Live hands control back to you and stops adjusting. (Twitch, TikTok LIVE, DAZN, and Kick have no such
-menu, so Slipstream Live stays in charge there — and on Twitch and Kick, whose players come from the
-same family, also stops the player's own built-in catch-up from fighting with it. On DAZN's low-latency
+**On YouTube and ABEMA**, if *you* pick a speed other than 1.00x in the player menu,
+Slipstream Live hands control back to you and stops adjusting. (On ABEMA, the speed setting lives in the
+on-demand style player used for chase play; the TV-channel player has none.) (Twitch, TwitCasting, TikTok LIVE, DAZN, and Kick have no such
+menu on live streams, so Slipstream Live stays in charge there — and on Twitch and Kick, whose players come from the
+same family, also stops the player's own built-in catch-up from fighting with it. When TwitCasting's player
+tries to catch up by itself at 1.02x, Slipstream Live's decisions take precedence too. On DAZN's low-latency
 streams, where the player (dash.js) tries to speed up and slow down by itself, Slipstream Live's
 decisions take precedence in the same way.)
 
@@ -239,21 +246,21 @@ decisions take precedence in the same way.)
 
 ### Site settings (per platform)
 
-| Setting | Range | YouTube | Twitch | TwitCasting | TikTok | DAZN | Kick | What it does |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Speed up when delayed** | ON / OFF | ON | ON | ON | ON | ON | ON | Master switch for catching up. |
-| **Speed-up playback rate** | 1.05x–4.00x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | How fast to catch up (0.05 steps). Higher = faster, but eats buffer. |
-| **Auto-adjust buffer threshold** | Off / Stable / Standard / Aggressive | Standard | Standard | Standard | Standard | Standard | **Off** | Let Slipstream Live decide when it's safe to speed up. **Recommended.** (Kick alone defaults to Off — see *Why are Kick's defaults different?* below.) |
-| **Speed-up start buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | 10.0s | 10.0s | 5.5s | Only used when auto-adjust is **Off**: start speeding up once this much video is loaded. With maximum slowdown on, speed-up won't start until buffer health is more than 0.4 s above the maximum slowdown threshold. |
-| **Speed-up stop buffer threshold** | 0.1–100.0s | 9.0s | 9.0s | 9.0s | 9.0s | 9.0s | 5.0s | Only used when auto-adjust is **Off**: while speeding up, return to normal speed once buffer health drops below this. Setting it above the start threshold raises the start threshold to match. |
-| **Maximum slowdown on buffer depletion** | ON / OFF | ON | ON | ON | ON | ON | ON | Master switch for the 0.15x emergency brake. |
-| **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | 0.50s | 0.80s | 2.00s | Drop to 0.15x while buffer health is below this. |
-| **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | ON | ON | ON | Ducks the audio while at 0.15x. |
-| **Volume during maximum slowdown** | 0–100% | 30% | 30% | 30% | 30% | 30% | 30% | Percentage of *your* current volume (5% steps). 100 = no change, 0 = mute. |
-| **Control premieres** | ON / OFF | OFF | — | — | — | — | — | Whether premieres count as live streams. Off = they're left alone entirely. YouTube only, so the row appears on that tab alone. |
-| **Recover from player errors** | ON / OFF | — | ON | — | — | — | — | Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so the row appears on that tab alone. |
-| **Recover from endless loading** | ON / OFF | — | — | — | — | — | ON | When the position hasn't moved for about 6 seconds on the loading spinner, has Kick's player reload the stream, so playback returns without a page reload (see *Recovering from Kick's endless spinner* above). Kick only, so the row appears on that tab alone. |
-| **Allow speed changes in Chrome** | ON / OFF | — | — | — | ON | — | — | Has TikTok pages see at most 4 CPU cores, so Chrome plays TikTok LIVE through the standard pipeline whose speed can be changed (see *TikTok LIVE on Chrome* above). Takes effect after a page reload, and does nothing on Firefox. TikTok only, so the row appears on that tab alone. |
+| Setting | Range | YouTube | Twitch | TwitCasting | TikTok | DAZN | Kick | ABEMA | What it does |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Speed up when delayed** | ON / OFF | ON | ON | ON | ON | ON | ON | ON | Master switch for catching up. |
+| **Speed-up playback rate** | 1.05x–4.00x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | 1.25x | How fast to catch up (0.05 steps). Higher = faster, but eats buffer. |
+| **Auto-adjust buffer threshold** | Off / Stable / Standard / Aggressive | Standard | Standard | Standard | Standard | Standard | **Off** | Standard | Let Slipstream Live decide when it's safe to speed up. **Recommended.** (Kick alone defaults to Off — see *Why are Kick's defaults different?* below.) |
+| **Speed-up start buffer threshold** | 0.1–100.0s | 10.0s | 10.0s | 10.0s | 10.0s | 10.0s | 5.5s | 10.0s | Only used when auto-adjust is **Off**: start speeding up once this much video is loaded. With maximum slowdown on, speed-up won't start until buffer health is more than 0.4 s above the maximum slowdown threshold. |
+| **Speed-up stop buffer threshold** | 0.1–100.0s | 9.0s | 9.0s | 9.0s | 9.0s | 9.0s | 5.0s | 9.0s | Only used when auto-adjust is **Off**: while speeding up, return to normal speed once buffer health drops below this. Setting it above the start threshold raises the start threshold to match. |
+| **Maximum slowdown on buffer depletion** | ON / OFF | ON | ON | ON | ON | ON | ON | ON | Master switch for the 0.15x emergency brake. |
+| **Maximum slowdown threshold** | 0.0–10.0s | 0.80s | 2.00s *(FF 0.50s)* | 0.30s | 0.50s | 0.80s | 2.00s | 0.80s | Drop to 0.15x while buffer health is below this. |
+| **Lower volume during maximum slowdown** | ON / OFF | ON | ON | ON | ON | ON | ON | ON | Ducks the audio while at 0.15x. |
+| **Volume during maximum slowdown** | 0–100% | 30% | 30% | 30% | 30% | 30% | 30% | 30% | Percentage of *your* current volume (5% steps). 100 = no change, 0 = mute. |
+| **Control premieres** | ON / OFF | OFF | — | — | — | — | — | — | Whether premieres count as live streams. Off = they're left alone entirely. YouTube only, so the row appears on that tab alone. |
+| **Recover from player errors** | ON / OFF | — | ON | — | — | — | — | — | Presses Twitch's own reload button when the player stops with a numbered error such as #3000, so playback returns without a page reload. Twitch only, so the row appears on that tab alone. |
+| **Recover from endless loading** | ON / OFF | — | — | — | — | — | ON | — | When the position hasn't moved for about 6 seconds on the loading spinner, has Kick's player reload the stream, so playback returns without a page reload (see *Recovering from Kick's endless spinner* above). Kick only, so the row appears on that tab alone. |
+| **Allow speed changes in Chrome** | ON / OFF | — | — | — | ON | — | — | — | Has TikTok pages see at most 4 CPU cores, so Chrome plays TikTok LIVE through the standard pipeline whose speed can be changed (see *TikTok LIVE on Chrome* above). Takes effect after a page reload, and does nothing on Firefox. TikTok only, so the row appears on that tab alone. |
 
 *FF = the default used on Firefox, which reports buffer levels differently. Twitch is the only
 site where it differs.*
@@ -267,6 +274,10 @@ site where it differs.*
 
 > **And DAZN's?** DAZN, like YouTube, streams MPEG-DASH in chunks (segments) a few seconds long,
 > and its buffer saw-tooths in much the same way, so it shares YouTube's 0.80s.
+
+> **And ABEMA's?** ABEMA also plays MPEG-DASH (dash.js); its TV channels arrive in chunks from a few seconds up to
+> about 10 seconds long. The buffer saw-tooths by that much, but even at the bottom of each tooth a few seconds are
+> usually left, so it shares YouTube's and DAZN's 0.80s.
 
 > **Why are Kick's defaults different?** Kick often stops delivering video for around 10 seconds, and
 > once the loading spinner appears, playback frequently never resumes. Each gap throws off the statistics
@@ -498,8 +509,8 @@ premieres are skipped until you turn it on. Right after the extension is updated
 that were already open stop being controlled; reload the page to pick up the new version.
 
 **Nothing happens on TwitCasting.**
-Check whether the stream is playing in low-latency mode. Low-latency streams arrive over WebRTC
-and are outside Slipstream Live's scope — turn low latency off in the player settings if you want
+Check whether "Ultra low latency (β)" (超低遅延) is switched on in the player's settings (gear) menu.
+That mode arrives over WebRTC and is outside Slipstream Live's scope — switch it off if you want
 Slipstream Live to manage the stream.
 
 **Nothing happens on TikTok.**
@@ -520,6 +531,13 @@ Same as DAZN: if **Enable on this site** (or **Enable on Kick**) is showing at t
 press it and allow access, then reload the page if needed. VODs and clips are left alone, and so are ad
 breaks. Kick only builds its control bar while you move the mouse over the player, so the badges come
 and go with it.
+
+**Nothing happens on ABEMA.**
+Same as DAZN: if **Enable on this site** (or **Enable on ABEMA**) is showing at the top of the **ABEMA** tab,
+press it and allow access, then reload the page if needed. Live playback such as the TV channels
+(`abema.tv/now-on-air/…`) is controlled; on-demand videos are left alone, and so are the commercial breaks
+inserted into a TV channel. ABEMA only shows its controls while you move the mouse over the player, so the
+badges (to the left of the fullscreen button) come and go with them.
 
 **Kick stays on the loading spinner.**
 Check that **Recover from endless loading** is on in the **Kick** tab. When it is, the stream is reloaded
@@ -568,8 +586,8 @@ Twitch's own troubleshooting resources are worth a look too:
 
 * **Manifest version:** V3
 * **Google Chrome / Chromium-based browsers:** v148 or later
-* **Mozilla Firefox:** v140.0 or later
-* **Firefox for Android:** v142.0 or later
+* **Mozilla Firefox:** v159.0 or later
+* **Firefox for Android:** v159.0 or later
 
 ---
 
@@ -579,9 +597,9 @@ Slipstream Live makes **no network requests while it runs**. It asks for three p
 
 * `storage` — to save your settings locally on your device.
 * `activeTab` — to see which supported site the popup was opened on, so it can pick the right tab.
-* `scripting` — to register DAZN's or Kick's scripts once you allow that site (nothing is registered for sites you haven't allowed).
+* `scripting` — to register DAZN's, Kick's, or ABEMA's scripts once you allow that site (nothing is registered for sites you haven't allowed).
 
-Access to DAZN (`https://www.dazn.com/*`) and to Kick (`https://kick.com/*` and `https://player.kick.com/*`) is an
+Access to DAZN (`https://www.dazn.com/*`), Kick (`https://kick.com/*` and `https://player.kick.com/*`), and ABEMA (`https://abema.tv/*`) is an
 **optional permission**, granted only when you press **Enable on this site** in the settings popup.
 
 The one exception is uninstalling: your browser then opens a short, optional feedback survey in a new
@@ -601,12 +619,12 @@ manifest.json          Extension manifest (MV3), shared by Chrome and Firefox �
 manifest-chrome.json   Same manifest trimmed for the Chrome Web Store package
 manifest-firefox.json  Same manifest trimmed for the addons.mozilla.org package
 background.js          Service worker (Chrome) / event page (Firefox): registers the uninstall survey URL and,
-                       for sites the user has allowed (DAZN, Kick), their scripts (scripting.registerContentScripts)
+                       for sites the user has allowed (DAZN, Kick, ABEMA), their scripts (scripting.registerContentScripts)
 popup.html/.css/.js    Settings UI (also serves as the options page)
 common.js              Wrapper around the storage API, plus log helpers
 content.js             ISOLATED world: pushes settings into <html data-slpstrm="...">
 inject.js              MAIN world: the control loop (buffer → mode → speed/volume)
-adapters/              Per-site glue: youtube.js, twitch.js, twitcasting.js, tiktok.js, dazn.js, kick.js (each site loads only its own)
+adapters/              Per-site glue: youtube.js, twitch.js, twitcasting.js, tiktok.js, dazn.js, kick.js, abema.js (each site loads only its own)
 shared/schema.js       Single source of truth for settings (types, ranges, defaults)
 shared/util.js         Small time-series, statistics and DOM helpers
 _locales/              UI translations for 19 languages
@@ -626,9 +644,10 @@ matching entries to `SITES` in `shared/schema.js` and to all three manifests: th
 ISOLATED-world entry, plus a MAIN-world entry of its own that loads `shared/util.js`, the new adapter and
 `inject.js`. `media()` and `status()` may hand back the same result object every time. `inject.js` itself
 doesn't need to change, and neither does most of `KEYS` — defaults written with `all()` pick the
-new site up automatically, leaving `floorThreshold` as the only one to fill in by hand.
+new site up automatically, leaving `floorThreshold` to fill in by hand, plus a `false` for the new site in
+`recover` and `forceMse`, which list every site by name.
 
-**New sites, however, should not go into the manifests' `content_scripts`; make them opt-in like DAZN and Kick.**
+**New sites, however, should not go into the manifests' `content_scripts`; make them opt-in like DAZN, Kick, and ABEMA.**
 Adding a host to the static `matches` makes Chrome ask every user to approve the new permission on
 update and disable the extension until they do, and Firefox (MV3) never grants host permissions
 that an update adds, so the new site simply wouldn't work there. An opt-in site needs only three

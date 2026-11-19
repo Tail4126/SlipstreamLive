@@ -2,7 +2,7 @@ YouTube, Twitch, TwitCasting, TikTok, Kick 등 라이브 스트리밍의 지연�
 
 라이브 방송은 늘 몇 초씩 늦게 도착하고, 회선이 흔들릴 때마다 지연은 더 늘어납니다. 직접 1.25배속으로 따라잡으려면 버퍼를 계속 지켜봐야 하고, 속도를 되돌리는 걸 잊으면 영상이 멈춥니다.
 
-Slipstream Live는 그 감시를 1초에 약 50회, 대신 해 줍니다. YouTube Live·Twitch·TwitCasting·TikTok LIVE·DAZN·Kick을 지원합니다. 설치하면 끝입니다.
+Slipstream Live는 그 감시를 1초에 약 50회, 대신 해 줍니다. YouTube Live·Twitch·TwitCasting·TikTok LIVE·DAZN·Kick·ABEMA를 지원합니다. 설치하면 끝입니다.
 
 ■ 멈추지 않고, 과하지 않게
 
@@ -16,7 +16,7 @@ Slipstream Live는 그 감시를 1초에 약 50회, 대신 해 줍니다. YouTub
 
 기본값은 사이트별·브라우저별로 조정되어 있습니다. TwitCasting의 저지연(WebRTC) 방송처럼 속도를 바꿀 수 없는 방송은 건너뛰며, 다시보기·클립·광고에는 손대지 않습니다. YouTube 최초 공개도 켜지 않는 한 대상이 아닙니다. Twitch 플레이어가 'Error #3000' 같은 오류로 멈추면 Twitch 자체의 새로고침 버튼을 눌러 영상만 되살립니다.
 
-DAZN과 Kick은 허용해야 동작합니다. 해당 사이트에서 팝업을 열고 '이 사이트에서 사용'을 눌러 주세요. 허용하기 전까지는 그 사이트에 전혀 접근하지 않습니다.
+DAZN, Kick, ABEMA는 허용해야 동작합니다. 해당 사이트에서 팝업을 열고 '이 사이트에서 사용'을 눌러 주세요. 허용하기 전까지는 그 사이트에 전혀 접근하지 않습니다.
 
 ■ 동작 중 통신 없음
 

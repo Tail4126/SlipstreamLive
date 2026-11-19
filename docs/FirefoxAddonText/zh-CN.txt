@@ -2,7 +2,7 @@
 
 直播总会慢上几秒，网络每波动一次，延迟就再拉长一些。手动切到 1.25 倍速虽然能追上，但得自己盯着缓冲，一旦忘了减速，画面就会卡住。
 
-Slipstream Live 每秒约 50 次替你盯着。支持 YouTube Live、Twitch、TwitCasting、TikTok LIVE、DAZN、Kick。装好就行，无需任何操作。
+Slipstream Live 每秒约 50 次替你盯着。支持 YouTube Live、Twitch、TwitCasting、TikTok LIVE、DAZN、Kick、ABEMA。装好就行，无需任何操作。
 
 ■ 不卡顿，不过激
 
@@ -16,7 +16,7 @@ Slipstream Live 每秒约 50 次替你盯着。支持 YouTube Live、Twitch、Tw
 
 默认值按网站和浏览器分别调校。像 TwitCasting 的低延迟（WebRTC）直播这类无法加速的直播会自动跳过，也绝不触碰录像、剪辑和广告。YouTube 首映默认不处理，开启后才会处理。Twitch 播放器因“Error #3000”之类的错误停止时，会替你按下 Twitch 自带的重新加载按钮，只让视频恢复。
 
-DAZN 和 Kick 采用授权制：在该网站上打开弹窗，点击“在此网站上启用”。在此之前，扩展程序完全不会访问该网站。
+DAZN、Kick 和 ABEMA 采用授权制：在该网站上打开弹窗，点击“在此网站上启用”。在此之前，扩展程序完全不会访问该网站。
 
 ■ 运行时零网络活动
 

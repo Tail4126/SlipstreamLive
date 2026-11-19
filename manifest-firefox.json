@@ -3,7 +3,7 @@
 
     "name": "__MSG_appName__",
     "short_name": "__MSG_appShortName__",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "description": "__MSG_appDesc__",
 
     "default_locale": "en",
@@ -12,10 +12,10 @@
         "gecko": {
             "id": "@slipstreamlive-tail4126",
             "data_collection_permissions": { "required": ["none"] },
-            "strict_min_version": "140.0"
+            "strict_min_version": "159.0"
         },
         "gecko_android": {
-            "strict_min_version": "142.0"
+            "strict_min_version": "159.0"
         }
     },
 
@@ -141,6 +141,7 @@
     "optional_host_permissions": [
         "https://www.dazn.com/*",
         "https://kick.com/*",
-        "https://player.kick.com/*"
+        "https://player.kick.com/*",
+        "https://abema.tv/*"
     ]
 }

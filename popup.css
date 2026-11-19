@@ -147,6 +147,18 @@
 }
 
 /*
+    ABEMA は、サイトの強調色の黄色（#da0。ボタンなどに使われる --color-abema-yellow）と同じ色相の、濃い山吹色です。
+    黄色そのままでは ON のスイッチの白いつまみとのコントラスト比が 2.1:1 しかなく、
+    つまみが背景に溶けるため、TikTok・DAZN・Kick と同じ基準（つまみとの差 3:1 以上、選択中のタブの
+    文字 4.5:1 以上）を満たす明るさまで落としています。DAZN の黄色（オリーブ寄り）より赤みのある色相なので、見分けられます。
+    ライトはつまみ 5.2:1・タブの文字 5.0:1、ダークはつまみ 3.3:1・タブの文字 5.7:1 です。
+*/
+:root[data-site = 'abema']
+{
+    --site-accent: light-dark(#876800, #af8700);
+}
+
+/*
     * はすべての要素に当てはまるセレクター。
     box-sizing: border-box は「指定した幅に、内側の余白と枠線も含める」という設定で、
     これがないと padding を足すたびに要素が幅からはみ出して、幅の計算が煩雑になります。
@@ -171,6 +183,12 @@
     width: max-content は「折り返さずに収まる最小幅」。
     min-width: 100% は、逆に中身が少ないときに親より狭くなりすぎないための下限です。
     19 言語対応で文字の長さが大きく変わるため、固定幅にしていません。
+
+    max-width: 800px は、ブラウザのポップアップの幅の上限です。中身がこれより広くなるとき
+    （文字幅の広いフォントの環境など）は、画面全体に横スクロールを出す代わりに、サイト別パネルを縮めて、
+    サイトタブの並びだけを横にスクロールさせます（#site・#common・#tabs の指定を参照）。
+    いまの 19 言語は、いちばん広いロシア語でも 794px で収まり、タブの並びはスクロールしません
+    （2026 年 11 月に Linux の Chromium で測った値です。system-ui の書体は Inter でした）。
 */
 html
 {
@@ -181,6 +199,7 @@ body
 {
     margin: 0 auto;   /* 左右 auto で中央寄せ */
     width: max-content;
+    max-width: 800px;
     background-color: var(--bg);
     color: var(--fg);
 
@@ -298,11 +317,25 @@ body
 
     /* タブを切り替えたとき、色が瞬時に変わらず 120 ミリ秒かけて滑らかに移り変わります。 */
     transition: background-color 120ms ease, border-color 120ms ease;
+
+    /*
+        min-width: 0 は「中身より狭くなってもよい」という指定です。flex で並べた要素は、ふだんは
+        中身（このパネルではサイトタブの並び）より狭くなりません。幅が上限に達したときに、このパネルを縮めて
+        タブの並びをスクロールさせるために外しています（#tabs を参照）。
+        このパネルの幅を決めているのはタブの並び（どの言語でも 413px）で、ほかの中身は、いちばん広い
+        ロシア語でも 244px で収まります（2026 年 11 月の実測）。
+    */
+    min-width: 0;
 }
 
-/* 共通設定パネル。こちらはサイト色を引き継がず、中立的な配色のままです。 */
+/*
+    共通設定パネル。こちらはサイト色を引き継がず、中立的な配色のままです。
+    幅が上限（body の max-width）に達したときは、こちらは縮めず、タブの並びをスクロールできる
+    サイト別パネルのほうを縮めます。
+*/
 #common
 {
+    flex-shrink: 0;
     background-color: var(--common-tint);
     border-color: var(--common-edge);
 }
@@ -320,21 +353,112 @@ body
 }
 
 /* --- サイト切り替えタブ（popup.js が動的に生成するボタン）--- */
+
+/*
+    端のぼかしの幅。@property で「長さ」として登録しておくと、値が途中の長さを通って滑らかに変わります
+    （登録しないカスタムプロパティは、途中を飛ばして一気に切り替わります）。
+    --fade-start は始まり側（左から右へ書く言語では左端）、--fade-end は終わり側の帯の幅で、
+    ふだんは 0（ぼかさない）です。
+*/
+@property --fade-start
+{
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+@property --fade-end
+{
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+
+/*
+    タブどうしの間隔は 3px（.scope-head の 5px から詰めています。.tab の余白の説明を参照）。
+
+    ポップアップの幅が上限に達したとき（body の max-width を参照）は、タブを 2 段に折り返さず、
+    1 段のまま横にスクロールさせます。折り返すと、タブの順番と、どれを選んでいるかが追いにくくなるためです。
+    幅が足りている間はスクロールせず、見た目も変わりません。
+      overflow-x: auto       … はみ出したときだけ横にスクロールできるようにする
+      scrollbar-width: none  … スクロールバーは出さず、続きがある側の端をぼかして知らせる（下の mask）
+      scroll-padding-inline  … キーボードで移ったタブや、選び直したタブ（popup.js の render() を参照）を、
+                               ぼかしの下で止めず、端から --fade-size 離れたところまで送る
+    padding と、同じ幅だけ外へ広げる負の margin は、フォーカスの枠（.tab:focus-visible の outline。
+    タブの外側へ 3px）が、スクロールの範囲で切り取られないための余白です。タブの位置と大きさは変わりません。
+*/
+#tabs
+{
+    --fade-size: 24px;
+    gap: 3px;
+    padding: 3px;
+    margin: -3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-padding-inline: var(--fade-size);
+
+    /*
+        端のぼかし。全体を見せる層（1 枚目）から、両端の帯（2・3 枚目。透明から不透明へのグラデーション）を
+        差し引き（subtract）ます。帯だけを差し引くので、ほかの部分はフォーカスの枠も含めてふだんどおり見えます。
+        no-clip は、層を要素の枠の内側で切り取らない指定です。帯の幅が 0 の間は、何も差し引かれません。
+    */
+    --fade-dir: right;
+    --fade-start-pos: 0;
+    --fade-end-pos: 100%;
+    mask:
+        linear-gradient(black, black) no-clip subtract,
+        linear-gradient(to var(--fade-dir), black, transparent) var(--fade-start-pos) 0 / var(--fade-start) 100% no-repeat no-clip,
+        linear-gradient(to var(--fade-dir), transparent, black) var(--fade-end-pos) 0 / var(--fade-end) 100% no-repeat no-clip;
+}
+
+/* グラデーションの向きと位置は左右で書くため、右から左へ書く言語では入れ替えます。 */
+#tabs:dir(rtl)
+{
+    --fade-dir: left;
+    --fade-start-pos: 100%;
+    --fade-end-pos: 0;
+}
+
+/*
+    帯の幅を、スクロールの位置に合わせて変えます。animation-timeline: scroll(self inline) は
+    「時間ではなく、この要素自身の横スクロールの位置でアニメーションを進める」指定です。
+      始まり側 … 端から --fade-size だけスクロールする間に、0 から --fade-size まで広がる
+      終わり側 … 最後の --fade-size の間に、--fade-size から 0 まで狭まる
+    スクロールできないときはアニメーションが働かず、帯は 0 のままです。
+    （Chrome 115 以降・Firefox 159 以降の機能です。マニフェストの最低バージョンもこれに合わせています）
+*/
+#tabs
+{
+    animation: reveal-fade-start linear both, hide-fade-end linear both;
+    animation-timeline: scroll(self inline);
+    animation-range: 0 var(--fade-size), calc(100% - var(--fade-size)) 100%;
+}
+@keyframes reveal-fade-start
+{
+    to { --fade-start: var(--fade-size); }
+}
+@keyframes hide-fade-end
+{
+    from { --fade-end: var(--fade-size); }
+}
+
 .tab
 {
     /*
         flex: 1 1 0 は「余った幅を等分に分け合う」指定。
         余白があるときはタブが同じ幅になり、名前の長さに左右されずに整列します。
-        （余白が無いときは、それぞれ名前が収まる幅まで縮みます）
+        （余白が無いときは、それぞれ名前が収まる幅まで縮みます。それより狭くはならないので、
+        並びがパネルより広くなったときは、縮まずに横へスクロールします。#tabs を参照）
     */
     flex: 1 1 0;
 
     /*
-        左右の内側の余白は 7px。タブが 6 つ（Kick を追加）になって並びが 55px 広がり、
+        左右の内側の余白は 4px。タブが 6 つ（Kick を追加）になって並びが 55px 広がり、
         ロシア語の画面の幅がブラウザのポップアップの上限（800px）を超えて 816px になったため、
-        10px から詰めました。いちばん広いロシア語でも 780px に収まります。
+        いったん 10px から 7px に詰めました。7 つ目（ABEMA）を足すとさらに 68px 広がって 848px になったため、
+        7px から 4px に詰め、タブどうしの間隔（#tabs の gap）も 5px から 3px に詰めました。
+        いちばん広いロシア語でも 794px に収まります（3px まで詰めると、文字が丸い端に触れて窮屈に見えます）。
     */
-    padding: 4px 7px;
+    padding: 4px 4px;
     background-color: var(--surface);
     color: var(--muted);
     border: 1px solid var(--line);
@@ -570,7 +694,7 @@ body
 
 /*
     -------------------------------------------------------------------------
-    「このサイトで有効にする」の案内（DAZN・Kick のように、許可してから動かすサイト用）
+    「このサイトで有効にする」の案内（DAZN・Kick・ABEMA のように、許可してから動かすサイト用）
     -------------------------------------------------------------------------
     設定のまとまり（.group）と同じ白いカードに、サイトの色の枠線を付けて目立たせます。
     中は「説明文 → ボタン」の縦並びです。

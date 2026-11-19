@@ -2,7 +2,7 @@ Zjišťuje zpoždění na YouTube, Twitchi, TwitCastingu, TikToku, Kicku a dalš
 
 Každý živý přenos se zpožďuje o pár sekund a každý výpadek připojení přidá další. Dohánět ručně na 1,25x znamená hlídat buffer sami — zapomenete zpomalit a obraz zamrzne.
 
-Slipstream Live to hlídá za vás, zhruba 50krát za sekundu. Funguje s YouTube Live, Twitchem, TwitCastingem, TikTok LIVE, DAZN a Kickem. Stačí nainstalovat.
+Slipstream Live to hlídá za vás, zhruba 50krát za sekundu. Funguje s YouTube Live, Twitchem, TwitCastingem, TikTok LIVE, DAZN, Kickem a ABEMA. Stačí nainstalovat.
 
 ■ Nezamrzá, nepřehání
 
@@ -16,7 +16,7 @@ Video přichází po kouscích, takže buffer roste a klesá jako pila; zrychlen
 
 Výchozí hodnoty jsou vyladěné pro každý web a prohlížeč. Přenosy, které zrychlit nejde, například přenosy TwitCastingu s nízkou latencí (WebRTC), se přeskakují a záznamů, klipů ani reklam se nikdy nedotkne. Premiéry na YouTube nechává být, dokud je nezapnete. Když se přehrávač Twitche zastaví s chybou jako „Error #3000“, stiskne vlastní tlačítko Twitche pro opětovné načtení, takže se vrátí jen video.
 
-DAZN a Kick fungují jen s vaším svolením: na daném webu otevřete vyskakovací okno a klikněte na „Zapnout na tomto webu“. Do té doby k němu rozšíření nemá žádný přístup.
+DAZN, Kick a ABEMA fungují jen s vaším svolením: na daném webu otevřete vyskakovací okno a klikněte na „Zapnout na tomto webu“. Do té doby k němu rozšíření nemá žádný přístup.
 
 ■ Žádná síťová aktivita za běhu
 

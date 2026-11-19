@@ -21,7 +21,7 @@
  * ■ 読み込まれる場所
  *   manifest.json の content_scripts で、common.js より先に読み込まれます。
  *   また popup.html からも同じ順番で読み込まれます。
- *   DAZN・Kick のように許可を得てから動かすサイトでは、background.js が登録するスクリプトの先頭に
+ *   DAZN・Kick・ABEMA のように許可を得てから動かすサイトでは、background.js が登録するスクリプトの先頭に
  *   入ります。background.js 自身も、対応サイトの一覧（SITES）を知るためにこのファイルを読み込みます
  *   （Chrome は importScripts()、Firefox は manifest の background.scripts で読み込みます）。
  *
@@ -70,7 +70,7 @@
      *   `$`          … ここで文字列が終わる
      *   → "twitch.tv" と "player.twitch.tv" は一致し、"nottwitch.tv" は一致しません。
      *
-     * ■ origins を持つサイト（DAZN・Kick）の動かし方
+     * ■ origins を持つサイト（DAZN・Kick・ABEMA）の動かし方
      *   1.6.0 までの 4 サイトは、manifest の content_scripts にスクリプトを静的に書いています。
      *   ここへホストを足すと、Chrome は更新時に新しい権限の承認を求め、承認されるまで
      *   すべての利用者の拡張機能を無効にしてしまいます。Firefox（Manifest V3）は、更新で
@@ -98,14 +98,15 @@
             host: /(^|\.)kick\.com$/,
             origins: ['https://kick.com/*', 'https://player.kick.com/*'],
         },
+        abema:       { label: 'ABEMA',       host: /(^|\.)abema\.tv$/, origins: ['https://abema.tv/*'] },
     };
 
-    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn', 'kick']）。何度も使うので 1 度だけ作ります。 */
+    /** 対応サイト ID の一覧（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn', 'kick', 'abema']）。何度も使うので 1 度だけ作ります。 */
     const SITE_IDS = Object.keys(SITES);
 
     /**
      * 「全サイトに同じ既定値を配る」ためのヘルパー。
-     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true, dazn: true, kick: true }
+     * 例: all(true) → { youtube: true, twitch: true, twitcasting: true, tiktok: true, dazn: true, kick: true, abema: true }
      *
      * Object.fromEntries は [キー, 値] の配列をオブジェクトに変換する関数です。
      * SITES から鍵を起こすので、対応サイトを増やしても書き足しが要りません。
@@ -193,9 +194,12 @@
         // 途切れている間を最低速度でつなぎます（Firefox も同じ値です）。低遅延の配信はふだんバッファが
         // 1.3〜2.5 秒ほどなので、2.0 だと最初のうちは最低速度に入りやすくなりますが、そのぶん先読みが溜まり、
         // 1 度途切れた後は、手動の閾値（終了 5 秒）が残す余裕の上で再生が続きます。
+        // ABEMA は DAZN と同じ dash.js で再生し、テレビでは数秒から 10 秒ほどのセグメントが届くたびに、残量が
+        // その長さぶん波打ちます（2026 年 11 月の実測で、ABEMA NEWS は等倍で約 6〜18 秒）。波の底でもたいてい
+        // 数秒の余裕があるため、YouTube・DAZN と同じ 0.8 にしています。
         floorThreshold: {
             range: [0, 10, 0.1],
-            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8, kick: 2.0 },
+            def: { youtube: 0.8, twitch: 2.0, twitcasting: 0.3, tiktok: 0.5, dazn: 0.8, kick: 2.0, abema: 0.8 },
             ff:  { twitch: 0.5 },
         },
 
@@ -208,13 +212,13 @@
         // 中身はサイトごとに違います。Twitch は「エラー #3000」などで止まったプレーヤーを、
         // Kick は読み込み中のくるくる表示のまま進まなくなったプレーヤーを、ページを読み込み直さずに戻します。
         recover:          {
-            def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false, kick: true },
+            def: { youtube: false, twitch: true, twitcasting: false, tiktok: false, dazn: false, kick: true, abema: false },
         },
 
         // forceMse は TikTok のアダプターにしか実装が無いため、他サイトは既定 OFF のまま置きます。
         // TikTok では既定 ON です。OFF のままだと、Chrome（6 コア以上）では速度をまったく変えられないためです。
         forceMse:         {
-            def: { youtube: false, twitch: false, twitcasting: false, tiktok: true, dazn: false, kick: false },
+            def: { youtube: false, twitch: false, twitcasting: false, tiktok: true, dazn: false, kick: false, abema: false },
         },
     };
 
