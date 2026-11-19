@@ -33,8 +33,8 @@
     ■ 画面の構造
         ヘッダー（ロゴ＋全体の ON/OFF）
         └ #scopes
-            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok / DAZN / Kick のタブで切り替え）
-            │           DAZN と Kick のタブでは、まだ許可していなければ先頭に「このサイトで有効にする」の案内（#grant）が出る
+            ├ #site   … サイト別設定（YouTube / Twitch / TwitCasting / TikTok / DAZN / Kick / ABEMA のタブで切り替え）
+            │           DAZN・Kick・ABEMA のタブでは、まだ許可していなければ先頭に「このサイトで有効にする」の案内（#grant）が出る
             └ #common … 全サイト共通設定（画面上のバッジ表示）
         フッター（取扱説明書へのリンク）
 -->
@@ -128,7 +128,7 @@
             <div class="groups">
 
                 <!--
-                    許可を得てから動かすサイト（DAZN・Kick）の案内。
+                    許可を得てから動かすサイト（DAZN・Kick・ABEMA）の案内。
                     そのサイトのタブを選んでいて、まだサイトへのアクセスを許可していないときだけ
                     popup.js の render() が表示します（許可した直後は「有効にしました」に変わります）。
 

@@ -2,7 +2,7 @@ Detecta a latência no YouTube, Twitch, TwitCasting, TikTok, Kick e mais, e ajus
 
 Toda transmissão ao vivo chega alguns segundos atrasada, e cada falha na conexão aumenta o atraso. Para alcançar na mão a 1,25x, você precisa vigiar o buffer — se esquecer de desacelerar, o vídeo trava.
 
-O Slipstream Live faz essa vigilância por você, cerca de 50 vezes por segundo. Funciona com YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN e Kick. É só instalar.
+O Slipstream Live faz essa vigilância por você, cerca de 50 vezes por segundo. Funciona com YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN, Kick e ABEMA. É só instalar.
 
 ■ Nunca trava, nunca exagera
 
@@ -16,7 +16,7 @@ O vídeo chega em blocos, então o buffer sobe e desce como um dente de serra; a
 
 Os valores padrão são ajustados por site e por navegador. Transmissões que não podem ser aceleradas, como as de baixa latência (WebRTC) do TwitCasting, são ignoradas, e VODs, clipes e anúncios nunca são tocados. As estreias do YouTube ficam de fora, a menos que você as ative. Se o player da Twitch parar com um erro como "Error #3000", ele aperta o próprio botão de recarregar da Twitch para que só o vídeo volte.
 
-O DAZN e a Kick só funcionam com a sua permissão: abra o popup nesse site e clique em "Ativar neste site". Até lá, a extensão não tem nenhum acesso a esse site.
+O DAZN, a Kick e o ABEMA só funcionam com a sua permissão: abra o popup nesse site e clique em "Ativar neste site". Até lá, a extensão não tem nenhum acesso a esse site.
 
 ■ Nenhuma atividade de rede durante o uso
 

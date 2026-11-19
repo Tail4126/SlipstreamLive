@@ -2,7 +2,7 @@ Wykrywa opóźnienie na YouTube, Twitchu, TwitCastingu, TikToku, Kicku itp. i zm
 
 Każda transmisja na żywo ma kilka sekund opóźnienia, a każdy problem z łączem je powiększa. Nadrabianie ręcznie na 1,25x oznacza samodzielne pilnowanie bufora — zapomnisz zwolnić, a obraz się zatnie.
 
-Slipstream Live pilnuje tego za ciebie, około 50 razy na sekundę. Działa z YouTube Live, Twitchem, TwitCastingiem, TikTok LIVE, DAZN i Kickiem. Zainstaluj i gotowe.
+Slipstream Live pilnuje tego za ciebie, około 50 razy na sekundę. Działa z YouTube Live, Twitchem, TwitCastingiem, TikTok LIVE, DAZN, Kickiem i ABEMA. Zainstaluj i gotowe.
 
 ■ Nie zacina się, nie przesadza
 
@@ -16,7 +16,7 @@ Wideo przychodzi kawałkami, więc bufor rośnie i spada jak piła; przyspieszen
 
 Wartości domyślne są dostrojone do każdej witryny i przeglądarki. Transmisje, których nie da się przyspieszyć, np. transmisje TwitCastingu o niskim opóźnieniu (WebRTC), są pomijane, a nagrania, klipy i reklamy nigdy nie są ruszane. Premiery na YouTube są pomijane, chyba że je włączysz. Jeśli odtwarzacz Twitcha zatrzyma się z błędem w rodzaju „Error #3000”, rozszerzenie naciska własny przycisk ponownego wczytania Twitcha, więc wraca tylko obraz.
 
-DAZN i Kick działają dopiero za twoją zgodą: otwórz wyskakujące okienko w tej witrynie i kliknij „Włącz w tej witrynie”. Do tego czasu rozszerzenie nie ma żadnego dostępu do tej witryny.
+DAZN, Kick i ABEMA działają dopiero za twoją zgodą: otwórz wyskakujące okienko w tej witrynie i kliknij „Włącz w tej witrynie”. Do tego czasu rozszerzenie nie ma żadnego dostępu do tej witryny.
 
 ■ Zero ruchu sieciowego podczas działania
 

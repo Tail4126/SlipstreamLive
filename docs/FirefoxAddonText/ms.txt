@@ -2,7 +2,7 @@ Mengesan kelewatan di YouTube, Twitch, TwitCasting, TikTok, Kick dsb., lalu mela
 
 Setiap siaran langsung sentiasa ketinggalan beberapa saat, dan setiap gangguan sambungan menambahnya. Mengejar secara manual pada 1.25x bermakna anda perlu memerhati penimbal sendiri — terlupa memperlahankan, video pun tersekat.
 
-Slipstream Live memerhatikannya untuk anda, kira-kira 50 kali sesaat. Berfungsi di YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN dan Kick. Pasang, dan siap.
+Slipstream Live memerhatikannya untuk anda, kira-kira 50 kali sesaat. Berfungsi di YouTube Live, Twitch, TwitCasting, TikTok LIVE, DAZN, Kick dan ABEMA. Pasang, dan siap.
 
 ■ Tidak tersekat, tidak keterlaluan
 
@@ -16,7 +16,7 @@ Video tiba secara berketul, jadi penimbal naik turun seperti gigi gergaji; mempe
 
 Nilai lalai ditala mengikut tapak dan pelayar. Siaran yang tidak boleh dipercepat, seperti siaran kependaman rendah (WebRTC) TwitCasting, dilangkau, dan VOD, klip serta iklan tidak pernah disentuh. Tayangan perdana YouTube juga dibiarkan kecuali anda menghidupkannya. Jika pemain Twitch terhenti dengan ralat seperti “Error #3000”, ia menekan butang muat semula Twitch sendiri supaya hanya video yang kembali.
 
-DAZN dan Kick hanya berfungsi dengan kebenaran anda: buka tetingkap timbul di tapak itu dan tekan “Dayakan di tapak ini”. Sebelum itu, Slipstream Live langsung tiada akses ke tapak tersebut.
+DAZN, Kick dan ABEMA hanya berfungsi dengan kebenaran anda: buka tetingkap timbul di tapak itu dan tekan “Dayakan di tapak ini”. Sebelum itu, Slipstream Live langsung tiada akses ke tapak tersebut.
 
 ■ Tiada aktiviti rangkaian semasa berjalan
 

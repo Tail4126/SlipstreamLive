@@ -52,6 +52,12 @@
      */
     const STOPPED = JSON.stringify({ enabled: false });
 
+    /**
+     * inject.js が「まだ生きているか」を確かめるために送ってくるイベントの名前。
+     * inject.js の PING と同じ名前にします（理由は inject.js の probe() を参照）。
+     */
+    const PING = 'slipstreamlive:ping';
+
     // 今開いているページがどのサイトか判定。対応外なら何もせず終了します。
     const site = siteOf();
     if (!site) return;
@@ -129,6 +135,13 @@
         if (json === null) apply(data);
     });
 
+    // inject.js からの呼びかけに答える。生きている間だけ preventDefault() を呼び、それが返事になります。
+    // Firefox で拡張機能が無効化・削除されると、このスクリプトごと取り除かれて返事が止まり、
+    // inject.js はそれを見て制御をやめます（Chrome では、下の liveness が「無効」を書き込みます）。
+    document.addEventListener(PING, (event) => {
+        if (!dead && alive()) event.preventDefault();
+    }, true);
+
     /**
      * 本体との接続が切れたら、ページ側の制御を止める。
      *
@@ -147,6 +160,7 @@
      *
      * ■ Firefox では
      *   拡張機能が無効化・削除されると、このスクリプトはその場で取り除かれ、ここも動きません。
+     *   代わりに、上の PING への返事が止まったことを inject.js が見て、自分で制御をやめます。
      *   更新のときは、新しい版のこのスクリプトが開いているタブへ読み込まれ、設定を書き直します。
      */
     const liveness = setInterval(() => {

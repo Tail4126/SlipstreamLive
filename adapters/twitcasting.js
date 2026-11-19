@@ -11,9 +11,11 @@
  *     - ライブ判定 … 動画の長さ（duration）が伸び続けているかで推定
  *   というように、標準の情報だけで工夫して判断しています。
  *
- * ■ WebRTC 配信について
- *   ツイキャスの一部の配信は WebRTC（リアルタイム通信）で届きます。
- *   この方式にはバッファという概念が無く、速度を変えても意味がない
+ * ■ 配信の届き方は 3 通り（2026 年 11 月に PlayerPage2.js で確認）
+ *   1) 低遅延 fMP4 … 既定。MSE（Worker 側の MediaSource）で届き、バッファは 0.2〜0.4 秒ほど。
+ *   2) HLS         … 環境によって使われる通常の方式。
+ *   3) WebRTC      … プレーヤーの設定で「超低遅延(β)」を入れたとき。
+ *   WebRTC にはバッファという概念が無く、速度を変えても意味がない
  *   （むしろ音声が壊れる）ため、対象外として扱います。
  *
  * ■ アダプターの役割については adapters/youtube.js の冒頭コメントを参照。
@@ -43,20 +45,29 @@
     function twitcasting() {
         /**
          * プレーヤーの外枠を探すためのセレクター候補（優先度順）。
-         * ツイキャスは PC 版・スマホ版・埋め込みで構造が違ううえ、
-         * 過去のバージョンも混在するため、候補を多めに用意しています。
+         *
+         * 2026 年 11 月のライブページの構造（外側 → 内側）：
+         *   div.tw-player > div.tw-player__body > div#player > div.tc-player
+         *     > div.tw-stream-movie-layout__movie > div.tw-stream-player > video.tw-stream-player-video
+         * <video> とコントロールの両方を含むいちばん内側の枠は `.tc-player` です。
          */
-        const ROOTS = ['.tc-player', '#player', '#player-container', '#playerarea', '#jsplayer',
-            '.tw-player', '.tw-stream-player-video', '.video-container'];
+        const ROOTS = ['.tc-player', '#player'];
 
         /**
-         * バッジを差し込むコントロールバーの候補。
-         * 末尾の 3 つは `[class*="..."]`（クラス名の部分一致）を使った、
-         * 「名前は分からないがそれらしい要素」を拾うための最後の砦です。
+         * バッジを差し込む場所の候補（優先度順）。
+         *
+         * コントロールバーは次の作りです（2026 年 11 月）：
+         *   div.tw-movie-control-layout
+         *     > div.tw-movie-control-layout__inner（横並び。左右の両端に寄せる）
+         *         > div.tw-movie-control-layout__bottom-item（左：音量）
+         *         > div.tw-movie-control-layout__bottom-item（右：設定・シアター・全画面）
+         * 1 つ目の候補は文書順で最初に当たる「左の組」で、バッジは音量の右隣に並びます。
+         *
+         * `.tw-player-control` を候補にしてはいけません。このクラスはバーではなく、音量の部品と
+         * 個々のボタンに付いていて、最初に当たるのは音量の部品（`.tw-volume-control`）そのものです。
+         * そこへ入れると、バッジが音量スライダーの部品の内側に入り込んでしまいます。
          */
-        const BARS = ['.tw-player-control', '.tw-movie-control-layout__inner', '.tw-movie-control-layout',
-            '.tw-player-controls', '.tw-player-buttons', '.tw-stream-player-controller',
-            '.vjs-control-bar', '[class*="player-control"]', '[class*="movie-control"]', '[class*="control-bar"]'];
+        const BARS = ['.tw-movie-control-layout__bottom-item', '.tw-movie-control-layout__inner'];
 
         /** 遅延を追跡し、巻き戻し視聴中かどうかを判定する道具。 */
         const latency = tracker();
@@ -91,11 +102,10 @@
         });
 
         /**
-         * この動画が WebRTC 配信かどうかを判定する。
+         * この動画が WebRTC 配信（超低遅延(β)）かどうかを判定する。
          *
-         * 通常の動画は src に URL が入りますが、WebRTC の場合は
-         * srcObject に MediaStream オブジェクトが入ります。そこを見ています。
-         * （MediaStream は最新の Chrome / Firefox なら必ず存在します）
+         * WebRTC のときは srcObject に MediaStream が入ります。既定の低遅延 fMP4 でも srcObject は
+         * 使われますが、入るのは MediaSourceHandle（Worker 側の MediaSource）なので区別できます。
          * @returns {boolean} WebRTC 配信なら true
          */
         const webrtc = () => watcher.video?.srcObject instanceof MediaStream;
@@ -132,8 +142,16 @@
         }
 
         return {
-            // ツイキャスのプレーヤーには速度変更機能があるため、ユーザー操作を尊重します。
-            respectUserRate: true,
+            // ライブのプレーヤーには再生速度のメニューがありません（設定にあるのは画質・超低遅延(β)・
+            // アイテム・テロップ・リスナーコラボの表示だけ。速度を選べるのは録画ページで、録画は
+            // もともと制御の対象外です）。そのため、尊重すべき「ユーザーが選んだ速度」はありません。
+            //
+            // 一方で、ツイキャス自身のプレーヤーは、遅れが大きいときに playbackRate を 1.02 にして
+            // 追いつこうとします（PlayerPage2.js の adjustPlaybackRate）。ここを true にしていると、
+            // その 1.02 を「ユーザーが選んだ速度」と取り違えて、ページが 1.00 に戻すまで加速も
+            // 最低速度も止めてしまいます。false にして、Twitch・Kick・DAZN と同じように
+            // ページからの書き込みを横取りし、この拡張機能の判断を優先します。
+            respectUserRate: false,
 
             // バッファはほぼ連続しているので、隙間の許容は小さめ（0.5 秒）。
             gap: 0.5,
@@ -177,7 +195,7 @@
             needs: () => 0.5,
 
             /**
-             * バッジを差し込みたい場所（コントロールバー）を返す。
+             * バッジを差し込みたい場所（コントロールバーの左の組）を返す。
              * @returns {Element|null}
              */
             host: () => pick(BARS, watcher.root),

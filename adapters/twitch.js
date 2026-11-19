@@ -86,14 +86,34 @@
         /** プレーヤーの外枠を探すためのセレクター候補（優先度順）。 */
         const ROOTS = ['div[data-a-target="video-player"]', '.video-player__container', '.persistent-player'];
 
-        /** 広告再生中を示す要素のセレクター（どれかがあれば広告中）。 */
-        const ADS = '[data-a-target="video-ad-label"], [data-a-target="video-ad-countdown"], .video-player__ad-container';
+        /**
+         * 広告再生中を示す要素のセレクター（どちらかがあれば広告中）。
+         *
+         * 広告の間は、プレーヤーの上端に「この広告のあとに…」の案内（video-ad-label）と
+         * 「広告 (0:12)」の残り時間（video-ad-countdown）が出ます。広告は本編と同じ <video> で流れ、
+         * 配信そのものはチャット欄の上の小さな別プレーヤー（.picture-by-picture-player）へ移ります
+         * （2026 年 11 月に www.twitch.tv の実際の広告で確認）。
+         */
+        const ADS = '[data-a-target="video-ad-label"], [data-a-target="video-ad-countdown"]';
 
-        /** 「LIVE」表示を示す要素のセレクター。 */
-        const LIVE = '[data-a-target="player-info-live-indicator"], .live-time';
+        /**
+         * 配信中であることを示す要素のセレクター（チャンネルページの配信時間の表示）。
+         * 動画の長さがまだ分からない間（NaN）だけ、ライブかどうかの手がかりに使います。
+         */
+        const LIVE = '.live-time';
 
-        /** バッジを差し込む場所（コントロールバー左側）のセレクター。 */
-        const BARS = ['.player-controls__left-control-group'];
+        /**
+         * バッジを差し込む場所（コントロールバー左側）のセレクター。
+         *
+         * www.twitch.tv のプレーヤーには、この要素が 2 つあることがあります（2026 年 11 月に確認）。
+         *   - `.video-player__overlay` の中のもの
+         *   - `.video-player__container` の直下のもの
+         * 画面に出ているのはどちらか片方だけで、もう片方は大きさ 0 のまま隠れています。
+         * どちらが出ているかは場面によって変わり（チャンネルを開いた直後は overlay 側が見えていて、
+         * 広告が明けた後は container 側だけになっていました）、文書順で先に当たるものが
+         * 見えているとは限りません。host() は、大きさのあるほうを選びます。
+         */
+        const BAR = '.player-controls__left-control-group';
 
         /**
          * media() の結果の入れ物。制御ループから頻繁に呼ばれるので、
@@ -176,12 +196,13 @@
 
             /**
              * 1 つのノードからプレーヤー実体を取り出す試み。
-             * Twitch のバージョンによって置き場所が 2 通りあるため、両方を確認します。
+             * 実体は、関数コンポーネントの props（memoizedProps）に mediaPlayerInstance という名前で
+             * 渡されています（2026 年 11 月の www.twitch.tv と player.twitch.tv では、どちらも
+             * プレーヤーの外枠から 23 階層上）。
              * @param {object|null|undefined} node React の内部ノード
              * @returns {object|null} 見つかった実体、または null
              */
-            const of = (node) =>
-                node?.memoizedProps?.mediaPlayerInstance ?? node?.stateNode?.props?.mediaPlayerInstance ?? null;
+            const of = (node) => node?.memoizedProps?.mediaPlayerInstance ?? null;
 
             // (1) 先祖方向へ辿る。node.return が「親ノード」を指します。
             for (let node = fiber, i = 0; node && i < 30; node = node.return, i++) {
@@ -239,8 +260,7 @@
 
             // React はツリーの根を __reactContainer$xxxxx という名前で置きます。
             // 末尾のランダム文字列は毎回変わるので、前方一致で探します。
-            const key = Object.keys(host).find((name) =>
-                name.startsWith('__reactContainer$') || name.startsWith('__reactFiber$'));
+            const key = Object.keys(host).find((name) => name.startsWith('__reactContainer$'));
             const fiber = key ? host[key] : null;
             if (!fiber) return null;
 
@@ -426,7 +446,7 @@
                         : /^\/(videos\/|[^/]+\/(video|clip)\/)/.test(location.pathname));
 
                 // 総合判定：録画でなく、長さが無限（か不明）で、広告中でもなく、
-                // かつ「LIVE 表示がある」「チャンネル名が取れる」のいずれかを満たすこと。
+                // かつ「配信時間の表示がある」「チャンネル名が取れる」のいずれかを満たすこと。
                 const live = !vod && (endless || unknown) && !document.querySelector(ADS)
                     && (endless || Boolean(document.querySelector(LIVE)) || Boolean(login));
 
@@ -454,9 +474,20 @@
 
             /**
              * バッジを差し込みたい場所（コントロールバー左側）を返す。
+             *
+             * 候補が複数あるときは、画面に出ているもの（幅が 0 でないもの）を選びます（BAR を参照）。
+             * 操作していない間にコントロールが薄れて消えるのは透明度の変化で、幅は変わりません。
+             * どれも隠れているときは、最初の候補を返します。
+             * （inject.js がここを呼ぶのは 1 秒に 1 回ほどなので、幅を測る負荷は問題になりません）
              * @returns {Element|null}
              */
-            host: () => pick(BARS, watcher.root),
+            host() {
+                const bars = (watcher.root ?? document).querySelectorAll(BAR);
+                for (const bar of bars) {
+                    if (bar.offsetWidth > 0) return bar;
+                }
+                return bars[0] ?? document.querySelector(BAR);
+            },
         };
     }
 

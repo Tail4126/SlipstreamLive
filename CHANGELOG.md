@@ -8,6 +8,73 @@
 
 ## [未リリース]
 
+## [1.10.0] - 2026-11-19
+
+### 追加
+
+- **ABEMA に対応した。** 7 つ目の対応サイトとして、`abema.tv` のライブ（テレビの `/now-on-air/<チャンネル>` のリニア放送など）を制御する。アダプター `adapters/abema.js` を追加し、`shared/schema.js` の `SITES` に ABEMA を加えた。設定画面には ABEMA のタブが増える。
+  - **ABEMA も DAZN・Kick と同じ「許可制」で動かす。** `https://abema.tv/*` を 3 つのマニフェストの `optional_host_permissions` に加え、`SITES` の ABEMA の項目に同じアドレスを `origins` として持たせた。静的な `content_scripts.matches` には足していない（足すと Chrome は承認されるまで全利用者の拡張機能を無効にし、Firefox（MV3）は更新で増えたホストの権限を付与しないため）。`background.js` と設定画面は 1.7.0 の仕組みのまま、手を入れずに動く。
+    1. 設定画面の ABEMA タブの先頭に、まだ許可していないときだけ案内を出す。ボタンは、今見ているページが ABEMA なら **「このサイトで有効にする」**、それ以外では **「ABEMA で有効にする」** になる。
+    2. ボタンのクリックの処理の中で、何も待たずに `permissions.request()` を呼ぶ。
+    3. 許可されると、`background.js` が ISOLATED world（`shared/schema.js`・`common.js`・`content.js`）と MAIN world（`shared/util.js`・`adapters/abema.js`・`inject.js`）の 2 組を `scripting.registerContentScripts()` で登録する（`allFrames: true`・`runAt: 'document_start'`・`persistAcrossSessions: true`）。すでに開いている ABEMA のタブにも `scripting.executeScript()` で入れる。
+  - `www.abema.tv` は接続できないアドレスで（2026 年 11 月に確認）、プレーヤーも別のホストの iframe には入っていないため、マッチパターンは `https://abema.tv/*` の 1 つだけにした。
+- **ABEMA のアダプター（`adapters/abema.js`）。** Web 版の ABEMA は、dash.js（ABEMA が手を入れた `4.7.2-abema.4`）で MPEG-DASH を再生する。本編の `<video>` は、テレビ・追っかけ再生・ライブイベント・ビデオのどの画面でも `video.com-a-Video__video-element` で、画面に映る面積がいちばん大きいものを選ぶ（止まっているもの・音を消しているものは半分に見積もる。DAZN と同じ）。ビデオの CM は本編とは別の `<video>`（`c-video_ad-VideoAdContainerView` の中）で流れるので、選ばない。
+  - **ライブ判定は「再生ソースがあり、差し込まれた Period（CM）の最中ではなく、動画の長さが `ENDLESS` 以上」。** ライブは長さが `Infinity` になる。ビデオ（見逃し配信）は長さが決まっているので対象外になる。`media()` の id は DAZN と同じ `パス#再生ソースの入れ替わり回数` で、チャンネルを移るとパスが変わる。
+  - **テレビの CM の間は制御しない。** テレビの CM は配信の映像そのものに差し込まれている（サーバー側の広告挿入。MPD のアドレスは Yospace の形式）。差し込まれた部分は別の Period になり、番組の Period の ID が数字だけなのに対し、`yo-1.0.1` のように `yo-` で始まる。今どの Period を再生しているかは dash.js のプレーヤーの実体に `getActiveStream().getStreamInfo().id` で尋ねる。実体は、React の内部データ（fiber）を `<video>` から上へ辿って探す（2026 年 11 月の実測では 3 段上のクラスコンポーネントが `player` に持っていた）。クラスコンポーネントの実体は描き直しても同じオブジェクトなので、古い描画の内容を読む心配が無い。`getVideoElement()` が今の `<video>` と一致するものだけを使う。見つからないときは 1 秒から倍々に延ばして最長 8 秒の間隔で探し直し、見つからないあいだは CM を見分けられないまま、ほかの判定だけで動く。CM の間は id の末尾に `#ad` を付ける（始まりと終わりを「別の配信になった」合図にするため。YouTube と同じ考え方）。画面（`TVScreen`）の props にある `adSlotId` は、CM の間もずっと `null` のままだったので使っていない。
+  - **遅延は「今の時刻 − 再生位置」で求める。** テレビの再生位置は 1970 年からの経過秒数にそろっている（MPD の `availabilityStartTime` が 1970 年。DAZN と同じ）。dash.js 自身の `getCurrentLiveLatency()` は、同じときに 19〜24 秒の間を 5 秒ずつ跳ねていたので使わない（端末の時計は、ABEMA のサーバーが返す `Date` ヘッダーと 1 秒以内で一致していた）。端末の時計が大きくずれていて −5 秒〜1 日の範囲から外れるときは、「シーク可能範囲の末尾 − 再生位置」、それも無ければ「受信済みの末尾 − 再生位置」を使う。シーク可能範囲の末尾も 1970 年からの経過秒数なので、DAZN と違って `ENDLESS` では区切らず、差が同じ範囲に収まるかで判断する。
+  - **巻き戻し（DVR）は `tracker()` で判定する（DAZN と同じ）。** テレビは一時停止でき、止めていたぶん遅れて再生を続けるので、そのときもバッジは `(DVR)` になる。再生が詰まったとき（`waiting`）は記録をやり直し、詰まっていた分を巻き戻しと取り違えないようにした。
+  - **必要なバッファの目安（`needs()`）は、直近 9 回の「バッファの末尾の伸び幅」の最大値。** DAZN は中央値を使うが、ABEMA のテレビは伸び方が揃っていない。音声と映像の届く時刻がずれて 10 秒の伸びが「0.3 秒＋10 秒」のように割れたり、CM の明けに 3〜4 秒の伸びが続いた後で 9 秒の伸びが来たりした。最初に中央値で作った版を実際のページで動かすと、CM の明けに目安が 2〜4 秒まで縮み、本体がその短さの窓で残量の波の底を高く見積もって加速しすぎ、次のセグメントが届く前に残量が尽きた（最低速度に落ちたうえで、読み込み待ちになった）。波の 1 周期をまるごと見られるよう、いちばん長いセグメントに合わせた。まだ測れていないあいだは 10 秒とする（ABEMA NEWS で測ったセグメントの長さ）。
+  - `gap` は DAZN と同じ 1.5 秒（ABEMA の dash.js の設定も `smallGapLimit` が 1.5 秒だった）。
+  - **`respectUserRate` は `true`（YouTube と同じ）。** 追っかけ再生とライブイベントで使う VOD 用の画面には「速度」の設定（1x / 1.3x / 1.5x / 1.7x / 2x）があるため、ユーザーが自分で速度を選んだら手を引く。テレビの画面には速度の設定が無く、ページ側が速度を書き換えることも無かった（dash.js の追いつき機能は、低遅延モードでないため動いていない）。
+  - **バッジは、コントロールの右側に並ぶボタンの先頭（左隣）に置く。** テレビはフルスクリーン・音量のボタン（`div.com-tv-TVController`）、VOD 用の画面は設定・ワイド表示・フルスクリーン・音量の並び（`div.com-vod-VideoControlBar__right`）、ペイパービューのライブイベントは `div.com-vod-LiveEventPayperviewControlBar__bottons`（綴りは ABEMA のまま）。どれも横並びの flex なので、`badgeStyle` に `order:-1` を付け、末尾に追加されたバッジを見た目だけ先頭へ移した。`<video>` から 8 階層まで上へ辿って探すので、ミニプレーヤーなど別のプレーヤーと取り違えない。どのコントロールもマウスを乗せたときだけ表示されるので、バッジも一緒に現れたり隠れたりする。
+  - **最低速度にする閾値の ABEMA の既定値は 0.8 秒**（YouTube・DAZN と同じ）。テレビは数秒から 10 秒ほどのセグメントで届き、残量はその長さぶん波打つが、波の底でもたいてい数秒の余裕がある（ABEMA NEWS は等倍で約 6〜18 秒の波だった）。`recover` と `forceMse` の既定値には `abema: false` を加えた。
+  - **実機での確認（2026 年 11 月 15 日、Chrome、ログインした ABEMA）。** アダプターと `inject.js` をテレビのページ（ABEMA NEWS・アニメのチャンネル）の MAIN world へ読み込み、設定の属性を手で書いて動かした（ABEMA の許可は、拡張機能を入れ直さずに試すため使っていない。登録の仕組みは下の Chromium での確認で見た）。
+    - 最初に作った版（`needs()` が中央値）では、開いた直後の遅延 22.9 秒から約 1 分で 20 秒前後まで詰め、波の底が 1 秒ほどまで下がった。CM の明けに目安が縮んだところで加速しすぎ、最低速度と読み込み待ちが起きた（上の `needs()` の項を参照）。
+    - 最大値に改めた版では、一時停止の後で 57.8 秒遅れていた状態から、残量 48 秒の余裕を使って 1.25x のまま約 2 分で 28.8 秒まで詰めた（ここで CM に入った）。その後もう一度 57 秒の遅れから約 3 分で 23.2 秒まで詰め、波の底が 5〜6 秒のところで等倍に落ち着いた。この間、最低速度には一度も入らなかった（ページからは `playbackRate` が 1 のまま見える）。
+    - CM（`yo-1.0.1`・`yo-1.0.2`・`yo-1.0.3` の 30 秒・30 秒・15 秒）の間は 1.00x に戻して横取りを解き、待機の間隔（1 秒）へ落ちた。CM が明けて番組の Period に戻ると、すぐに制御へ戻った。
+    - 6 秒一時停止して再生すると、遅延が 15.3 秒から 21.3 秒になり、遅延バッジが `(DVR)` になった。
+    - バッジは `1.00x 22.46s 10.73s` のように、フルスクリーンのボタンの左に並んだ。
+    - 追っかけ再生（ABEMA プレミアム）と、有料のライブイベントは、契約が無く確かめられていない。VOD 用の画面の作りはビデオのページで確かめ、ライブイベントのコントロール（ペイパービューのもの）はページのスタイルシートにあるクラス名から決めた。見つからないときは、従来どおりプレーヤーの左上に浮かべる。
+    - 音を消したままタブを裏に回すと、ABEMA 自身のプレーヤーが一時停止したり読み込みが遅れたりして、遅延が大きく伸びた（拡張機能が手を出していない CM の間にも起きた）。
+  - **Chromium（Playwright）での確認。** ABEMA のテレビを模したページ（1970 年基準の再生位置を持つ MSE のライブ、`yo-` の Period を返す dash.js と React の fiber の模型、`TVController` のある footer）を `abema.tv` に見立てて読み込み、17 項目を確かめた。許可した状態（テスト用の複製で `https://abema.tv/*` を `host_permissions` へ移して再現）で `abema-isolated`・`abema-main` が正しいファイル・マッチ・world・`document_start`・全フレーム・`persistAcrossSessions` で登録されること、ほかの許可制のサイトには何も登録されないこと、`content.js` が ABEMA の設定を書くこと、`inject.js` が MAIN world で動いて受け渡し用の変数を消すこと、加速してページからは 1.0 に見えること、遅延が縮むこと、`yo-` の Period の間は 1.00x で横取りを解くこと（`media` の id が `…#ad`・`live: false`）、明けたら制御に戻ること、バッジが `TVController` の中に `order: -1` で並ぶこと、全体のスイッチを切ると 1.00x に戻ってバッジが消えること、である。
+- 設定画面に ABEMA のテーマ色（ライト `#876800` / ダーク `#af8700`）を加えた。ABEMA の強調色の黄色（`--color-abema-yellow`、`#da0`）と同じ色相を、TikTok・DAZN・Kick と同じ基準（ON のスイッチの白いつまみとの差 3:1 以上、選択中のタブの文字 4.5:1 以上）を満たす明るさまで落としたもの。黄色そのままでは、つまみとの差が 2.1:1 しかない。ライトはつまみ 5.2:1・タブの文字 5.0:1、ダークはつまみ 3.3:1・タブの文字 5.7:1。DAZN のオリーブ寄りの黄色より赤みのある色相なので、見分けられる。
+
+### 修正
+
+- **ツイキャス：バッジが音量スライダーの部品の中に入り込んでいた。** バッジの差し込み先の第 1 候補 `.tw-player-control` は、今のツイキャスではコントロールバーではなく、音量の部品（`.tw-player-control.tw-volume-control`）と個々のボタンに付くクラスで、最初に当たるのは音量の部品そのものだった。差し込み先を、コントロールバーの左の組（`.tw-movie-control-layout__bottom-item` の 1 つ目）に改めた。見た目の位置（音量スライダーの右隣）は変わらない。
+- **ツイキャス：プレーヤー自身の追いつき（1.02x）を「ユーザーが選んだ速度」と取り違えて、制御を止めていた。** ツイキャスのプレーヤー（`PlayerPage2.js` の `adjustPlaybackRate`）は、遅れが大きいと `playbackRate` を 1.02 にする。アダプターの `respectUserRate` が `true` だったため、ページが 1.00 に戻すまで加速も最低速度も働かなかった。ライブのプレーヤーの設定には再生速度の項目が無い（画質・超低遅延(β)・アイテム・テロップ・リスナーコラボの表示だけ）ので、`respectUserRate` を `false` にし、Twitch・Kick・DAZN と同じくページからの書き込みを横取りして、この拡張機能の判断を優先するようにした。
+- **YouTube（モバイル版 m.youtube.com）：遅延バッジが出なかった。** モバイル版のプレーヤーには `getStatsForNerds()` が無く、遅延が不明（NaN）になっていた。`getProgressState().ingestionTime`（今の場面が YouTube に届いた時刻）から「今の時刻 − ingestionTime」で求めるようにした。PC 版で詳細統計情報の値（16.14 秒）と並べると、差は 0.03 秒以内だった。端末の時計が大きくずれているとき（−5 秒〜1 日の範囲外）は、今までどおり不明にする。
+- **Firefox：拡張機能を無効化・削除しても、開いているタブでは速度の制御が続いていた。** Firefox は無効化・削除と同時に `content.js` を取り除くため、Chrome のように「無効」の設定を書き込んで止める仕組み（`content.js` の liveness）が働かない。ページ側の `inject.js` はページ自身のスクリプトとして残り、最後に受け取った設定のまま動き続ける。`inject.js` が 2 秒ごとに `document` へ取り消し可能なイベント（`slipstreamlive:ping`）を送り、`content.js` が `preventDefault()` で答える仕組みを加えた。2 回続けて返事が無ければ、無効と同じ扱いで速度と音量をページへ返して止まる。返事が戻れば（更新や再有効化で新しい `content.js` が入ったとき）再開する。返事を 1 度も受け取っていない間は、いなくなったとは判断しない（`inject.js` だけをページへ読み込んで試す従来の確認方法は、そのまま使える）。**Firefox の実機では確かめていない。** Chromium で、返事が「ある → 止まる → 戻る」ときと「最初から無い」ときの動きを確かめた。
+
+### 変更
+
+- **ツイキャスのアダプターを、2026 年 11 月の DOM に合わせて整理した。** プレーヤーの外枠の候補を、今ある `.tc-player`・`#player` の 2 つに絞った（`#player-container`・`#playerarea`・`#jsplayer`・`.video-container` は今のページに無く、`.tw-stream-player-video` は `<video>` そのものだった）。バッジの差し込み先の候補も、今ある 2 つに絞った。
+- **Twitch のアダプターを、2026 年 11 月の DOM に合わせて整理した。** 今のページに無い `.video-player__ad-container`（広告）と `[data-a-target="player-info-live-indicator"]`（LIVE 表示）を外した（Twitch が配っているスクリプト約 1,800 個の中にも、この 2 つの名前は無かった）。広告の判定は、実際の広告で `video-ad-label`・`video-ad-countdown` の両方が出ることを確かめた。プレーヤーの実体の置き場所は `memoizedProps.mediaPlayerInstance` だけ、`#root` の入口は `__reactContainer$` だけを見る。
+- **Twitch：バッジの差し込み先は、画面に出ているほうを選ぶ。** `.player-controls__left-control-group` は 2 つあることがあり（`.video-player__overlay` の中と、`.video-player__container` の直下）、見えているのは片方だけ。どちらが見えているかは場面で変わる（開いた直後は overlay 側、広告が明けた後は container 側だけだった）ので、幅が 0 でないほうを選ぶようにした。
+- **Firefox の最低バージョンを 159.0 に上げた**（PC 版は 140.0 から、Android 版は 142.0 から。`manifest.json`・`manifest-firefox.json`）。下のサイトタブの端のぼかしに使う `animation-timeline: scroll()` が、Chrome 115 以降と Firefox 159 以降で使えるため。それが無いブラウザ向けの代わりの処理（`popup.js` の `watchEdges()` で `IntersectionObserver` を使って端に印を付けるもの、`popup.css` の `@supports` の囲みと `.more-start` / `.more-end`）は持たないことにした。それより古い Firefox には、ストアが 1.9.0 までの版を配り続ける。
+- **設定画面のサイトタブの左右の内側の余白を 7px から 4px に、タブどうしの間隔を 5px から 3px に詰めた。** タブが 7 つになって並びが 68px 広がり、ロシア語の画面の幅がブラウザのポップアップの上限（800px）を超えて 848px になったため（ドイツ語 832px・ウクライナ語 823px・ポルトガル語（ポルトガル）822px・スペイン語 814px も超えた）。詰めた後は、いちばん広いロシア語でも 794px に収まる（19 言語すべてを Linux の Chromium で測った。system-ui の書体は Inter で、書体が変わると幅も変わる）。3px まで詰めると 780px になるが、文字が丸い端に触れて窮屈に見えるため 4px にした。
+- **設定画面の幅に上限（`body` の `max-width: 800px`）を設けた。** 文字幅の広いフォントの環境などで中身がそれより広くなるときは、画面全体に横スクロールを出す代わりに、サイト別パネルを縮めて、サイトタブの並びだけを 1 段のまま横にスクロールさせる（2 段に折り返すと、タブの順番と、どれを選んでいるかが追いにくくなるため。全サイト共通のパネルは縮めない）。スクロールバーは出さず、続きがある側の端をぼかす。選んだタブは、開いたときに選ばれているタブも含めて、見える位置まで送る。端のぼかしはスクロールに連動するアニメーション（`animation-timeline: scroll()`）で描く。今の 19 言語はどれも上限に収まるので、タブの並びはスクロールせず、見た目も変わらない。Chromium で、19 言語の通常の幅と、上限を 700px（ロシア語）・600px（アラビア語。右から左）に下げた状態を確かめた。
+- `shared/schema.js` の `floorThreshold`・`recover`・`forceMse` の既定値に ABEMA の値（`0.8`・`false`・`false`）を加えた。
+
+### 移行に関する注意
+
+- **Firefox 158 以前では、この版に更新されない。** `strict_min_version` を 159.0 に上げたため（Firefox ESR 153 を含む）。古い Firefox を引き続き対象にするなら、`strict_min_version` を戻し、`popup.css` の `#tabs` のアニメーションを `@supports (animation-timeline: scroll())` で囲み直すこと（囲まないと、タブの並びの始まり側が常にぼけて見える）。
+- **権限の承認は求められない。** ABEMA へのアクセスは任意の権限なので、更新しても拡張機能が無効になったり、承認を求められたりはしない。
+- **ABEMA は、更新しただけでは動かない。** ABEMA のページで設定画面を開き、ABEMA タブの「このサイトで有効にする」を押して、ブラウザの確認で許可すること。許可はブラウザの拡張機能の管理画面からいつでも取り消せる。
+- 保存の形式は変わらない（`settingsVersion` は 2 のままで、移行の処理は無い）。
+
+### ドキュメント
+
+- `README.md` / `README.ja.md` の紹介文・主な機能・動作確認・使い方（「DAZN・Kick で使うには」を「DAZN・Kick・ABEMA で使うには」に改めた）・バッジの見かた（ABEMA の遅延の意味）・制御しないもの（ビデオと CM）・速度のメニューを尊重するサイト・設定一覧表（ABEMA の列）・「ABEMA の 0.80s は？」・困ったときは（「ABEMA で何も起こらない」）・プライバシー・ファイル構成を更新した。
+- `PRIVACY.md` と `docs/privacy-policy.html` の権限の説明に任意の権限 `https://abema.tv/*` を加え、`scripting` の説明・対象サイト・保存内容（ポップアップのタブ状態の `abema`）・第三者の説明に ABEMA を加え、「6 サイト」を 7 サイトに改めた。最終更新日を 2026-11-15 にした。`docs/privacy-policy.html` の説明文（`meta description`）にも ABEMA を加えた。
+- `CONTRIBUTING.md`（英日）・`SECURITY.md`・`TIPS.md`（`media` の id の形、「ABEMA で何も起きない」の切り分け）・不具合報告のテンプレートに ABEMA を加えた。`CONTRIBUTING.md` と README の「サイトを追加するには」は、`all()` で書かれていない `recover`・`forceMse` にも新しいサイトの値を足す必要があることを書き足した（Kick のときも足している）。
+- トップページ（`docs/index.html`）の紹介文・説明文（`meta`）・対応サイト・権限の説明に ABEMA を加えた。対応サイトの見出しが Kick を足す前の「5プラットフォーム対応」のままだったので、「7プラットフォーム対応」に改めた。
+- 上の「修正」「変更」に合わせて、`README.md` / `README.ja.md`・`CONTRIBUTING.md`（Firefox の最低バージョン、ツイキャスの超低遅延(β)、速度のメニューを尊重するサイト）、取扱説明書（`docs/manual.html` / `docs/manual.ja.html`。動作環境の Firefox の版と、速度のメニューを尊重するサイトからツイキャスを外し、ツイキャスのプレーヤー自身の 1.02x より Slipstream Live の判断を優先すると書き足したこと）、トップページ（`docs/index.html`。Firefox の版）を直した。
+- 取扱説明書（`docs/manual.html` / `docs/manual.ja.html`）に ABEMA を加えた。説明文（`meta`）・ページ見出しの対応サイト・動作環境の対応サイト・動作確認・サイトタブ・「このサイトで有効にする」の説明・遅延秒数の意味・6 章の見出し（「DAZN・Kick で使うには」を「DAZN・Kick・ABEMA で使うには」に改めた）と ABEMA のテレビの先読みとバッジの位置の段落・制御しないもの（ビデオと CM）・速度のメニューを尊重するサイト・設定一覧表（ABEMA の列）・「ABEMA の 0.80 は？」・困ったときは（「ABEMA で何も起こらない」）・プライバシーの権限の説明である。
+- 取扱説明書（英日）のページ見出しにあるバージョン表記を 1.9.0 から 1.10.0 へ更新した。
+- Firefox アドオン用のストアの説明文（`docs/FirefoxAddonText/`、19 言語）の対応サイトと許可制の段落に ABEMA を加えた。Chrome ウェブストア用（`docs/ChromeWebStoreText/`）は、1.8.1 でサイト名を 5 つまでに絞り、それ以外を「など」に含める形にしているため変えていない。
+- **まだ更新していないもの。** 掲載用の対応サイト一覧画像（`docs/StoreImages/supported-sites-*.png`。6 サイトのまま）と、設定画面のスクリーンショット（取扱説明書の図版と `docs/StoreImages/setting-*.png`。タブが 7 つになり、余白も変わった）。
+
 ## [1.9.0] - 2026-11-13
 
 ### 追加
@@ -727,7 +794,8 @@
 
 </details>
 
-[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.9.0...HEAD
+[未リリース]: https://github.com/Tail4126/SlipstreamLive/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/Tail4126/SlipstreamLive/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/Tail4126/SlipstreamLive/compare/v1.7.0...v1.8.0

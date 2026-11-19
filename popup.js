@@ -50,7 +50,7 @@
     /** ツールチップをマウス位置から下へずらす量（ピクセル）。 */
     const TIP_DY    = 18;
 
-    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn', 'kick']）。 */
+    /** 対応サイト ID の配列（['youtube', 'twitch', 'twitcasting', 'tiktok', 'dazn', 'kick', 'abema']）。 */
     const sites  = Object.keys(SITES);
 
     /** 設定 1 行ぶんの要素（有効/無効の切り替えに使う）。 */
@@ -59,6 +59,9 @@
     /** @type {Map<string, HTMLButtonElement>} サイト ID → タブボタン */
     const tabs   = new Map();
 
+    /** 最後に見える位置まで送ったタブのサイト ID（render() が、選び直したときだけ送るために使います）。 */
+    let shown    = '';
+
     /** サイトごとに表示を切り替える要素（選択中のサイトのものだけ表示する）。 */
     const scoped = [...document.querySelectorAll('#scopes [data-site]')];
 
@@ -66,7 +69,7 @@
     const resetSite = document.getElementById('reset-site');
 
     /**
-     * 許可を得てから動かすサイト（DAZN・Kick）の案内と、その中の文言・ボタン。
+     * 許可を得てから動かすサイト（DAZN・Kick・ABEMA）の案内と、その中の文言・ボタン。
      * 表示するかどうかと文言は renderGrant() が決めます。
      */
     const grant       = document.getElementById('grant');
@@ -260,7 +263,7 @@
 
     /**
      * そのサイトを動かすのに許可が必要なら、許可を求めるアドレスの一覧を返す。
-     * shared/schema.js の SITES で origins を持つサイト（DAZN・Kick）だけが該当します。
+     * shared/schema.js の SITES で origins を持つサイト（DAZN・Kick・ABEMA）だけが該当します。
      * @param {string} site サイト ID
      * @returns {string[]|null} 許可を求めるアドレス（マッチパターン）。許可の要らないサイトなら null
      */
@@ -372,6 +375,14 @@
         // タブの選択状態を更新（aria-selected はスクリーンリーダー向けの情報でもあり、
         // CSS もこの属性を見て選択中のタブを塗り分けます）。
         for (const [site, tab] of tabs) tab.ariaSelected = String(site === current);
+
+        // 選び直したタブが、横にスクロールしたタブの並び（popup.css の #tabs を参照）の外にあれば、
+        // 見える位置まで送ります。幅が足りているときは何も動きません。
+        // container: 'nearest' は「いちばん近いスクロールの入れ物（タブの並び）だけを動かす」指定です。
+        if (shown !== current) {
+            shown = current;
+            tabs.get(current)?.scrollIntoView({ block: 'nearest', inline: 'nearest', container: 'nearest' });
+        }
 
         // 選択中のサイト以外の要素を隠す。
         for (const node of scoped) node.hidden = node.dataset.site !== current;
