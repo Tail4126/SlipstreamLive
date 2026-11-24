@@ -49,7 +49,7 @@
         <h1>取扱説明書</h1>
         <p class="lede">Slipstream Live は、ブラウザがどれだけ先まで映像を読み込めているかを監視し、再生速度をほんの少しだけ上げ下げすることで、映像を止めずにライブ配信の「今」へ近づけ続けます。このページでは、インストール方法・すべての設定項目・うまく動かないときの対処をまとめています。</p>
         <div class="page-meta">
-            <span>バージョン 1.10.0</span>
+            <span>バージョン 1.11.0</span>
             <span>YouTube Live ・ Twitch ・ ツイキャス ・ TikTok LIVE ・ DAZN ・ Kick ・ ABEMA</span>
         </div>
     </div>
@@ -328,8 +328,8 @@
                 <thead><tr><th>段階</th><th class="num">谷を貯める窓</th><th class="num">安全余裕係数</th><th class="num">下限への上乗せ</th><th class="num">ヒステリシス</th><th>性格</th></tr></thead>
                 <tbody>
                     <tr><td><strong>オフ</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">開始−終了</td><td>自動調整せず<span class="ui">「加速を開始／終了するバッファ閾値」</span>をそのまま使います。</td></tr>
-                    <tr><td><strong>安定</strong></td><td class="num">60s</td><td class="num">10</td><td class="num">1.0s</td><td class="num">0.2s</td><td>最も長い窓と最も大きな係数。谷が長時間そろって高いときにしか加速しないため、最低速度へ落ちにくい代わりに加速の機会は少なくなります。音楽ライブ向け。</td></tr>
-                    <tr><td><strong>標準</strong></td><td class="num">30s</td><td class="num">5</td><td class="num">0.3s</td><td class="num">0.2s</td><td>安定と積極的の中間。既定値で、たいていの環境はこれで足ります。</td></tr>
+                    <tr><td><strong>安定</strong></td><td class="num">2 分</td><td class="num">10</td><td class="num">1.0s</td><td class="num">0.2s</td><td>最も長い窓と最も大きな係数。谷が長時間そろって高いときにしか加速しないため、最低速度へ落ちにくい代わりに加速の機会は少なくなります。音楽ライブ向け。</td></tr>
+                    <tr><td><strong>標準</strong></td><td class="num">20s</td><td class="num">5</td><td class="num">0.3s</td><td class="num">0.2s</td><td>安定と積極的の中間。既定値で、たいていの環境はこれで足ります。</td></tr>
                     <tr><td><strong>積極的</strong></td><td class="num">5s</td><td class="num">3</td><td class="num">0.1s</td><td class="num">0.2s</td><td>短い窓で直近の余裕へ素早く反応し、遅れをより詰めます。その代わり最低速度に入る頻度は上がります。</td></tr>
                 </tbody>
             </table>
@@ -468,7 +468,8 @@
         <p>1 秒ごとに、現在のモード・実再生速度・バッファ残量・短期統計・谷の統計・<code>room</code> の計算式・近道の基準値 <code>ample</code>・超過消費の累積 <code>drift</code>・定常判定 <code>calm</code>・加速の実効性 <code>gain</code> が出力されます。</p>
         <ul>
             <li>バッファ関連の数値が <code>----</code> の場合、値を取得できていない状態です。多くはバッファが空と報告されているためです。</li>
-            <li><code>calm=NO</code> が続く場合は定常でないと判定されており、谷の履歴が貯まらないため <code>room</code> も <code>----</code> になります。ただし残量が <code>ample</code> を超えている間は、その状態でも加速します。</li>
+            <li><code>calm=NO</code> はバッファの水準が速く動いていることを表します。バージョン 1.11.0 からはその間の谷も統計に入るため、谷の <code>sd</code> が大きくなり、揺れが谷の窓（安定 2 分・標準 20 秒・積極的 5 秒）から押し出されるまで <code>room</code> が小さくなります。これは意図した慎重さで、異常ではありません。</li>
+            <li>学習したデータを捨てたときは、<code>flush</code> の行にその理由（<code>seeked</code>・<code>media changed</code>・<code>recover (player healed)</code>、待機に入ったときの <code>idle: …</code>）が出ます。1.11.0 からは、配信が不安定になったときやモードが切り替わったときには捨てません。</li>
             <li><code>lat=</code> はサイトが報告する遅延です。<code>sd</code> は 5 秒窓の標準偏差、<code>jump</code> は直前 1 秒での最大変化量を表します。実測では定常時の <code>sd</code> は 0.11 以下、<code>jump</code> は 0.2 未満に収まります。<code>jump</code> がこれを大きく超え続ける場合、遅延の測定ノイズが大きく、見送りの自動解除が意図せず頻発している可能性があります。</li>
             <li><code>gain=</code> は「実際に詰められた秒数 / 詰められるはずだった秒数」です。右の値が 1 秒を超えているのに左が半分に届かないと <code>FUTILE</code> が付き、加速を見送っている状態になります。</li>
             <li><code>timer stopped</code> は機能を OFF にしたことを意味します。再生中に現れることはありません。</li>
