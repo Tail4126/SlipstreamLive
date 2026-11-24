@@ -175,15 +175,16 @@
      *   troughK      … 安全係数。標準偏差の何倍を安全マージンとして差し引くか。
      *                  大きいほど慎重（＝加速しにくい）。
      *   troughMs     … 「谷」を観測する時間窓の長さ（ミリ秒）。長いほど慎重。
+     *                  不安定だった区間の谷もこの窓のあいだ残り、ばらつきとして効き続けます。
      *   troughMargin … 最低限確保しておきたい余裕（秒）。
      *
      * 添字 0（オフ）にも値が入っているのは、参照時にエラーを出さないための保険です。
      */
     const AUTO_TUNING = [
-        { troughK: 10, troughMs: 60000, troughMargin: 1.0 },
-        { troughK: 10, troughMs: 60000, troughMargin: 1.0 },
-        { troughK:  5, troughMs: 30000, troughMargin: 0.3 },
-        { troughK:  3, troughMs:  5000, troughMargin: 0.1 },
+        { troughK: 10, troughMs: 120000, troughMargin: 1.0 },
+        { troughK: 10, troughMs: 120000, troughMargin: 1.0 },  // 安定（2 分）
+        { troughK:  5, troughMs:  20000, troughMargin: 0.3 },  // 標準（20 秒）
+        { troughK:  3, troughMs:   5000, troughMargin: 0.1 },  // 積極的（5 秒）
     ];
 
     /** 状態ごとのバッジの文字色（白＝平常／赤＝加速中／青＝下限モード）。 */
@@ -750,8 +751,17 @@
      *   そこで自分の加速による消費量を drift として累積し、
      *   統計に入れる前に差し引いて「自分の影響を消した値」で評価しています。
      *
+     * ■ 不安定な区間も捨てずに数える（1.11.0 から）
+     *   以前は、残量の水準が急に動いている（不安定な）間や、状態（通常／加速／下限）が
+     *   切り替わったときに谷の履歴を捨てていました。すると揺れが収まった直後の
+     *   「きれいな」谷だけで判断することになり、ばらつきが小さく見えて早めに加速し、
+     *   次の揺れで下限まで落ちる、ということが起きていました。
+     *   今は不安定な間の谷もそのまま長期の履歴へ積み、状態が変わっても捨てません。
+     *   揺れはそのまま谷のばらつきに入り、安全係数が掛かって room を小さくするので、
+     *   揺れやすい配信ほど、長期窓の長さのあいだ自然に慎重になります。
+     *
      * ■ 計算の速さ
-     *   統計は series() が足し引きだけで持ち回るので、窓が 60 秒ぶん（約 3,000 個）
+     *   統計は series() が足し引きだけで持ち回るので、窓が 2 分ぶん（約 6,000 個）
      *   埋まっていても 1 回の更新はほぼ一定の時間で済みます。結果は下の変数に
      *   書き込むだけで、毎回オブジェクトを作り直しません。
      */
@@ -800,7 +810,7 @@
         let n          = 0;     // 短期窓のサンプル数
         let avg        = NaN;   // 短期窓の平均（drift を差し引いた値）
         let sd         = NaN;   // 短期窓の標準偏差
-        let calm       = false; // 安定しているか
+        let calm       = false; // 安定しているか（デバッグ表示用。判断には使いません）
         let troughN    = 0;     // 谷の履歴の個数
         let troughSpan = 0;     // 谷の履歴が溜まっている期間（ミリ秒）
         let troughAvg  = NaN;   // 谷の平均（drift を差し引いた値）
@@ -827,8 +837,10 @@
          *
          * 判定方法：直近 1 秒間で平均値がどれだけ変化したかを傾き（秒/秒）で求め、
          * それが SETTLE_SLOPE 以内に収まっていれば安定とみなします。
-         * 読み込み直後のようにバッファが急激に増えている最中は、
-         * まだ谷の推定が当てにならないため加速を控えます。
+         *
+         * 1.10.0 までは、安定していない間は谷を記録せず、谷の履歴も捨てていました。
+         * 1.11.0 からは不安定な区間も統計に入れるため（上の説明を参照）、この結果は
+         * デバッグ表示の calm= にだけ使います。
          * @param {number} mean 現在の平均残量
          * @param {number} now 現在時刻
          * @returns {boolean} 安定していれば true
@@ -876,6 +888,7 @@
         function measure(now) {
             n = samples.size;
             if (n === 0) {
+                if (levels.size) log('flush', { what: 'levels', reason: 'no samples (残量が取れない状態が窓の長さ続いた)', levels: levels.size });
                 levels.clear();
                 settleAt = NaN;
                 avg  = NaN;
@@ -890,9 +903,10 @@
             const filled = samples.span() >= windowMs * COVER; // 窓が十分埋まったか
             avg          = mean - drift;                       // 自分の影響を差し引く
 
-            // 谷の推定は「サンプル数が足りる」「窓が埋まっている」「安定している」
-            // の 3 つがそろったときだけ。1 つでも欠ければ NaN（＝判断材料なし）にします。
-            return n >= MIN_N && filled && calm ? avg - RAMP * sd : NaN;
+            // 谷の推定は「サンプル数が足りる」「窓が埋まっている」の 2 つがそろったときだけ。
+            // どちらかが欠ければ NaN（＝判断材料なし）にします。安定しているかどうかは問いません。
+            // 残量の水準が動いている間は sd が大きくなり、谷は低めに見積もられます（慎重な側）。
+            return n >= MIN_N && filled ? avg - RAMP * sd : NaN;
         }
 
         /**
@@ -902,11 +916,10 @@
          * @returns {void}
          */
         function measureTrough(trough, now) {
-            // 不安定になったら、それまでの谷の履歴は当てにならないので全部捨てます。
-            if (!calm) troughs.clear();
+            // 不安定な間の谷も捨てずに積みます（揺れをばらつきとして数えるため）。
             // 履歴には drift を足し戻した「生の値」で保存します。こうしておくと、
             // 取り出すときに常に「その時点の drift」で引けて、時間差の影響を受けません。
-            else if (Number.isFinite(trough)) troughs.push(now, trough + drift);
+            if (Number.isFinite(trough)) troughs.push(now, trough + drift);
 
             troughs.trim(now, troughMs);
             troughN    = troughs.size;
@@ -982,11 +995,10 @@
             get needs() { return needsSec; },
 
             /**
-             * 谷の履歴を捨てる。状態が切り替わった直後は挙動が変わるため、
-             * 前の状態のデータを引きずらないようにします。
-             * @returns {void}
+             * いま溜まっているサンプル数（ログ用）。
+             * @returns {{ samples: number, troughs: number, levels: number }}
              */
-            shift() { troughs.clear(); },
+            held: () => ({ samples: samples.size, troughs: troughs.size, levels: levels.size }),
 
             /**
              * 現在の内部状態一式を返す（デバッグ表示用。1 秒に 1 回しか呼ばれません）。
@@ -1119,7 +1131,10 @@
 
                     // 遅延が再び広がった＝詰める余地が生まれたということ。
                     const behind = latency - idleLat >= recover;
-                    if (behind || now - idleAt >= COOL_MS) { idle = false; drop(); log('speedup re-armed', { recover }); }
+                    if (behind || now - idleAt >= COOL_MS) {
+                        if (asked.size) log('flush', { what: 'gain', reason: behind ? 're-armed (latency grew)' : 're-armed (cooldown)', asked: asked.size });
+                        idle = false; drop(); log('speedup re-armed', { recover });
+                    }
                     return;
                 }
 
@@ -1401,7 +1416,11 @@
      * @param {boolean} [release=false] true なら統計用に確保したメモリも手放す
      * @returns {void}
      */
-    function purge(release = false) {
+    function purge(release = false, reason = 'unknown') {
+        if (debugging()) {
+            const held = Auto.held();
+            if (held.samples || held.troughs || held.levels) log('flush', { what: 'all', reason, ...held });
+        }
         Auto.reset(release);
         Gain.reset(release);
         Noise.reset(release);
@@ -1411,10 +1430,11 @@
      * 観測データを捨て、状態も通常へ戻す（仕切り直し）。
      * 配信が切り替わったときなどに呼びます。遅延の情報も次の tick で問い合わせ直します。
      * @param {boolean} [release=false] true なら統計用に確保したメモリも手放す
+     * @param {string} [reason] デバッグログに出す理由
      * @returns {void}
      */
-    function restart(release = false) {
-        purge(release);
+    function restart(release = false, reason = 'unknown') {
+        purge(release, reason);
         state    = 'normal';
         stateAt  = -Infinity;
         statusAt = -Infinity;
@@ -1439,9 +1459,9 @@
         const opening = state === 'normal' && want === 'speedup';
         if (opening && !force && now - stateAt < DWELL_MS) return;
 
-        // 状態が変われば残量の挙動も変わるため、谷の履歴は捨てて集め直します。
-        // （加速開始時は、直前まで貯めたデータがそのまま有効なので残します）
-        if (!opening) Auto.shift();
+        // 谷の履歴は、状態が切り替わっても捨てません（1.11.0 から）。加速の終了や下限モードへの
+        // 出入りは揺れの最中に起きやすく、その前後のデータこそ「どれだけ揺れるか」を表すためです。
+        // 加速による減り方の違いは drift で差し引いてあるので、そのまま続けて使えます。
 
         state   = want;
         stateAt = now;
@@ -1571,7 +1591,7 @@
      * 学習内容を捨ててから判断をやり直します。
      * @returns {void}
      */
-    function jump() { purge(); pump(); }
+    function jump() { purge(false, 'seeked'); pump(); }
 
     /**
      * video 要素に登録するイベントと、その処理の対応表。
@@ -1654,7 +1674,7 @@
         if (media.id !== mediaId) {
             mediaId = media.id;
             adapter.reset();
-            restart();
+            restart(false, 'media changed');
             // アダプターは結果の入れ物を使い回すので、ログには写しを渡します。
             if (debugging()) log('media', { ...media });
         }
@@ -1679,8 +1699,8 @@
 
         // 拡張機能が無効、または設定をまだ受け取っていなければ待機します。
         // 橋渡し役（content.js）がいなくなったとき（probe() を参照）も、無効と同じに扱います。
-        if (bridgeLost) return sleep(0);
-        if (!settings?.enabled) return sleep(settings === null ? IDLE_MS : 0);
+        if (bridgeLost) return sleep(0, 'idle: bridge lost');
+        if (!settings?.enabled) return sleep(settings === null ? IDLE_MS : 0, settings === null ? 'idle: no settings' : 'idle: disabled');
 
         const now = performance.now();
 
@@ -1700,12 +1720,12 @@
             // 新しいストリームを掴まないよう、横取りを解除して学習内容も捨てます。
             Rate.release();
             Volume.release();
-            restart();
+            restart(false, 'recover (player healed)');
             mediaAt = -Infinity;
             log('recover', healed);
         }
 
-        if (!video) return sleep();
+        if (!video) return sleep(IDLE_MS, 'idle: no video');
 
         // --- 再生中のメディアを確認する ---
         syncMedia(now);
@@ -1714,7 +1734,7 @@
         // プレミア公開は、設定で明示的に許可されていない限り対象外です。
         // live はこの 2 つをまとめた「制御の対象か」を表し、stalled() のログにも使います。
         live = media.live && (!media.premiere || settings.premiere);
-        if (!live) return sleep();
+        if (!live) return sleep(IDLE_MS, media.live ? 'idle: premiere' : 'idle: not live');
 
         // --- ここから本格的な制御。高頻度モードへ切り替えます ---
         // ただし一時停止中は、待機と同じ 1 秒間隔にとどめます。止まっている間は残量も遅延も
@@ -1846,16 +1866,17 @@
      * これを忘れると、拡張機能が手を引いたのに速度が変わったままになります。
      * 統計用に確保したメモリも、このときに手放します。
      * @param {number} [ms=IDLE_MS] 待機中の確認間隔。0 ならタイマーを完全に止める
+     * @param {string} [reason] デバッグログに出す、待機に入る理由
      * @returns {void}
      */
-    function sleep(ms = IDLE_MS) {
+    function sleep(ms = IDLE_MS, reason = 'idle') {
         // 後片付けは、待機モードへ入る最初の 1 回だけ行います。
         if (!idling) {
             idling = true;
             Rate.release();
             Volume.release();
             Badges.detach();
-            restart(true);
+            restart(true, reason);
             paintAt = 0;
             live    = false;
         }

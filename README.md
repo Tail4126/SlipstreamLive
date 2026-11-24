@@ -302,8 +302,8 @@ site where it differs.*
 | Level | Trough window | Safety factor | Added margin | Hysteresis | Character |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Off** | — | — | — | start − stop | No estimation; uses the **Speed-up start/stop buffer thresholds** as-is. |
-| **Stable** | 60s | 10 | 1.0s | 0.2s | Longest window, largest factor. Speeds up only when the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. Good for music. |
-| **Standard** | 30s | 5 | 0.3s | 0.2s | The balanced middle ground. The default, and enough for most connections. |
+| **Stable** | 2 min | 10 | 1.0s | 0.2s | Longest window, largest factor. Speeds up only when the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. Good for music. |
+| **Standard** | 20s | 5 | 0.3s | 0.2s | The balanced middle ground. The default, and enough for most connections. |
 | **Aggressive** | 5s | 3 | 0.1s | 0.2s | Short window; reacts quickly to recent headroom and closes the gap harder, but reaches maximum slowdown more often. |
 
 *The window and the safety factor move together on purpose: a longer window makes a consistent
@@ -386,13 +386,18 @@ Two further corrections keep the estimate honest:
   `D(t) = ∫(rate − 1)dt`, and stores every sample in compensated coordinates (`health + D(t)`), so
   its own speed changes don't bias the trough or inflate the standard deviation. Without this, the
   system oscillates: speed up → headroom collapses → return to 1.00x → headroom recovers → repeat.
-* **Stationarity gate.** During start-up or recovery from a stall, the buffer *level* itself moves
-  fast, and the standard deviation would measure that drift rather than the sawtooth amplitude.
-  The slope of the compensated average reduces exactly to `(fetch rate − 1)`, so it isolates the
-  connection. While that slope exceeds 0.9 s/s, no trough is recorded and the trough history is
-  discarded outright — one contaminated sample would otherwise pollute the statistics for the rest
-  of the window. The slope itself is measured over a full second of history; over any shorter
-  interval, tiny wobbles in the average get amplified and the gate would report "never stationary".
+* **Unstable stretches are counted, not thrown away.** During start-up, recovery from a stall, or
+  any other stretch where the buffer *level* itself moves fast, the standard deviation measures that
+  movement rather than the sawtooth amplitude, so the trough estimate comes out low and scattered.
+  Up to 1.10.x such stretches were rejected and the trough history was discarded, and it was also
+  discarded on every mode change (except the start of a speed-up). That left the decision resting
+  on the clean troughs that follow a wobble: the scatter looked small, a speed-up began early, and
+  the next wobble pushed the buffer into maximum slowdown. From 1.11.0 the troughs from unstable
+  stretches stay in the history, and mode changes no longer clear it. The wobble becomes scatter,
+  `K` multiplies it, and `room` stays small for as long as the wobble remains inside the long window
+  — so a stream that tends to wobble keeps itself cautious automatically. Stationarity is still
+  measured (the slope of the compensated average, which reduces to `fetch rate − 1`, over one second
+  of history, against a 0.9 s/s limit), but only to report `calm=` in the debug log.
 
 Samples are collected only on the evenly-spaced timer ticks. The loop also runs on `timeupdate`,
 `progress` and `waiting`, but `waiting` fires precisely when the buffer empties, so feeding those
@@ -401,8 +406,8 @@ assumption. Event-driven ticks update `D(t)` only. Likewise, while playback is p
 waiting on data (`readyState < 3`), the buffer isn't being consumed at the nominal rate, so `D(t)`
 is not accrued for that interval either.
 
-Those trough estimates are then collected over a long window (60 s at Stable, 30 s at Standard, 5 s
-at Aggressive) and reduced by a safety factor `K` (10, 5 and 3 respectively) to get the usable
+Those trough estimates are then collected over a long window (2 minutes at Stable, 20 s at Standard,
+5 s at Aggressive) and reduced by a safety factor `K` (10, 5 and 3 respectively) to get the usable
 headroom:
 
 $$room = troughAvg - K \times troughSd$$
@@ -420,10 +425,9 @@ comparison against it is false, and Slipstream Live falls back to doing nothing.
 One shortcut sits above all of this. Once buffer health passes 20 seconds — or your maximum
 slowdown threshold plus 10 seconds, whichever is higher — the trough estimate is no longer what
 limits the decision, and Slipstream Live speeds up without waiting for it, falling back to the
-statistical test once health drops below 15 seconds. This matters after a manual seek: refilling
-the buffer drives the fetch rate far above 1.0, the stationarity gate correctly refuses to record
-troughs, and without the shortcut the extension would sit at 1.00x with a minute of video already
-loaded. The shortcut applies to the automatic levels only — with auto-adjust **Off**, your manual
+statistical test once health drops below 15 seconds. This matters after a manual seek: while the
+buffer refills, its level climbs steadily, the trough estimates lag behind it and scatter widely, and
+without the shortcut the extension would sit at 1.00x with a minute of video already loaded. The shortcut applies to the automatic levels only — with auto-adjust **Off**, your manual
 thresholds are used exactly as set: the speed-up begins the moment buffer health reaches the start
 threshold and ends the moment it drops below the stop threshold, with no added margin and no
 waiting period.
@@ -676,9 +680,16 @@ window.__slipstreamliveDebug = true;
 Once per second you'll get the current mode, the real playback rate, buffer health, the short-term
 statistics, the trough statistics, the `room` formula, the shortcut level `ample`, the accumulated
 excess consumption `drift`, and the stationarity verdict `calm`. Buffer figures shown as `----`
-mean `health` is `NaN`, usually because `video.buffered` is empty. A persistent `calm=NO` means the
-stationarity gate is rejecting samples, so no trough history builds up and `room` stays `----` as
-well — but a speed-up can still happen while buffer health is above `ample`.
+mean `health` is `NaN`, usually because `video.buffered` is empty. `calm=NO` means the buffer level
+is moving fast; from 1.11.0 those troughs are still recorded, so expect the trough `sd` to grow and
+`room` to shrink while it lasts — that is the intended caution, not a fault.
+
+Whenever learned data is thrown away, a `flush` line tells you why, e.g.
+`flush {what: 'all', reason: 'seeked', samples: 812, troughs: 5640, levels: 50}`. The reasons are
+`seeked`, `media changed`, `recover (player healed)`, and `idle: …` when the extension goes idle
+(not live, premiere, no video, disabled, no settings, bridge lost). `what: 'levels'` means buffer
+health could not be read for a whole short-term window, and `what: 'gain'` means the speed-up was
+re-armed after being found futile.
 
 To preview any UI language without changing your browser settings, open the settings page with a
 query string, e.g. `popup.html?locale=de`. `popup.html?locale=ar` shows the mirrored right-to-left

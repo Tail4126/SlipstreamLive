@@ -49,7 +49,7 @@
         <h1>User manual</h1>
         <p class="lede">Slipstream Live watches how much video your browser has loaded ahead and nudges the playback speed so you stay close to the live edge — without the video stopping to buffer. This manual covers installation, every setting, and what to do when something looks wrong.</p>
         <div class="page-meta">
-            <span>Version 1.10.0</span>
+            <span>Version 1.11.0</span>
             <span>YouTube Live ・ Twitch ・ TwitCasting ・ TikTok LIVE ・ DAZN ・ Kick ・ ABEMA</span>
         </div>
     </div>
@@ -328,8 +328,8 @@
                 <thead><tr><th>Level</th><th class="num">Trough window</th><th class="num">Safety factor</th><th class="num">Added margin</th><th class="num">Hysteresis</th><th>Character</th></tr></thead>
                 <tbody>
                     <tr><td><strong>Off</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">start − stop</td><td>No estimation; uses the <span class="ui">Speed-up start/stop buffer thresholds</span> as-is.</td></tr>
-                    <tr><td><strong>Stable</strong></td><td class="num">60 s</td><td class="num">10</td><td class="num">1.0 s</td><td class="num">0.2 s</td><td>Longest window, largest factor. Speeds up only once the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. A good fit for music.</td></tr>
-                    <tr><td><strong>Standard</strong></td><td class="num">30 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.2 s</td><td>The balanced middle ground. The default, and enough for most connections.</td></tr>
+                    <tr><td><strong>Stable</strong></td><td class="num">2 min</td><td class="num">10</td><td class="num">1.0 s</td><td class="num">0.2 s</td><td>Longest window, largest factor. Speeds up only once the troughs have stayed high for a while, so it rarely drops to 0.15x — at the cost of speeding up far less often. A good fit for music.</td></tr>
+                    <tr><td><strong>Standard</strong></td><td class="num">20 s</td><td class="num">5</td><td class="num">0.3 s</td><td class="num">0.2 s</td><td>The balanced middle ground. The default, and enough for most connections.</td></tr>
                     <tr><td><strong>Aggressive</strong></td><td class="num">5 s</td><td class="num">3</td><td class="num">0.1 s</td><td class="num">0.2 s</td><td>Short window; reacts quickly to recent headroom and closes the gap harder, but reaches maximum slowdown more often.</td></tr>
                 </tbody>
             </table>
@@ -468,7 +468,8 @@
         <p>Once per second you will see the current mode, the real playback rate, buffer health, the short-term and trough statistics, the <code>room</code> calculation, the shortcut level <code>ample</code>, the accumulated excess consumption <code>drift</code>, the stationarity verdict <code>calm</code>, and the speed-up effectiveness <code>gain</code>.</p>
         <ul>
             <li>Buffer figures shown as <code>----</code> mean the value is unavailable, usually because the browser reports an empty buffer.</li>
-            <li>A persistent <code>calm=NO</code> means the stationarity gate is rejecting samples, so <code>room</code> stays <code>----</code> as well. A speed-up can still happen while buffer health is above <code>ample</code>.</li>
+            <li><code>calm=NO</code> means the buffer level is moving fast. From version 1.11.0 the troughs measured during that time still go into the statistics, so the trough <code>sd</code> grows and <code>room</code> shrinks until the wobble leaves the trough window (2 minutes at Stable, 20 seconds at Standard, 5 seconds at Aggressive). That is the intended caution, not a fault.</li>
+            <li>When learned data is thrown away, a <code>flush</code> line says why: <code>seeked</code>, <code>media changed</code>, <code>recover (player healed)</code>, or <code>idle: …</code> when the extension goes idle. Since 1.11.0 the data is no longer thrown away when the stream turns unstable or the mode changes.</li>
             <li><code>lat=</code> is the latency the site reports. <code>sd</code> is the standard deviation over a 5-second window and <code>jump</code> is the largest change seen in the last second. In practice <code>sd</code> stays at or below 0.11 and <code>jump</code> below 0.2 while latency is steady. A <code>jump</code> that stays well above that means the latency reading is noisy enough to re-arm speed-ups that were correctly stood down.</li>
             <li><code>gain=</code> reads "seconds actually gained / seconds the speed-up asked for". When the right-hand figure passes 1 second and the left-hand one is under half of it, <code>FUTILE</code> is appended and speed-ups are being skipped.</li>
             <li><code>timer stopped</code> means the extension is switched off. During playback it should never appear.</li>
